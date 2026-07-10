@@ -1,4 +1,4 @@
-# Logos Harness
+# Logos
 
 Logos is a performance calibration harness for lifting Gemini Pro High 3.1
 toward Codex and Claude Code level coding-agent behavior.
