@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/run-result.schema.json",
+  "title": "Run Result",
+  "type": "object",
+  "required": ["task_id", "condition", "modified_files", "verification_result"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "condition": { "type": "string" },
+    "modified_files": { "type": "array", "items": { "type": "string" } },
+    "test_result": { "type": "string" },
+    "verification_result": { "type": "string" },
+    "failure_reason": { "type": "string" }
+  }
+}

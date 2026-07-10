@@ -1,0 +1,5 @@
+{
+  "project": "logos-harness",
+  "instructionFile": ".codex/CODEX.md",
+  "configFile": "logos.toml"
+}

@@ -1,0 +1,17 @@
+schema_version: 1
+guard: required-fields
+required_artifacts:
+  interview_draft:
+    - raw_request
+    - initial_mode
+    - final_mode
+    - confirmed_decisions
+    - open_questions
+    - excluded_scope
+  measurement_log:
+    - task_id
+    - condition
+    - host
+    - initial_mode
+    - final_mode
+    - final_success

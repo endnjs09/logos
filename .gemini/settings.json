@@ -1,0 +1,5 @@
+{
+  "project": "logos-harness",
+  "instructionFile": ".gemini/GEMINI.md",
+  "configFile": "logos.toml"
+}

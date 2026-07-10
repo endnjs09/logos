@@ -1,0 +1,59 @@
+[project]
+name = "logos"
+distribution = "logos-harness"
+purpose = "gemini_pro_high_coding_agent_calibration"
+design_version = "v12"
+architecture = "complete_structure_incremental_implementation"
+
+[paths]
+source = "src/logos"
+harness = "harness"
+schemas = "schemas"
+rules = "harness/rules"
+workflows = "harness/workflows"
+roles = "harness/roles"
+prompts = "harness/prompts"
+guards = "harness/guards"
+host_profiles = "harness/host_profiles"
+benchmarks = "benchmarks"
+runs = "runs"
+reports = "reports"
+docs = "docs"
+
+[hosts]
+default = "gemini"
+supported = ["gemini", "codex", "claude-code"]
+baseline_conditions = [
+  "gemini-baseline",
+  "gemini-logos",
+  "codex-baseline",
+  "claude-code-baseline"
+]
+
+[modes]
+default = "middle"
+allowed = ["low", "middle", "high"]
+user_selected_mode_required = true
+
+[logging]
+format = "jsonl"
+run_dir_template = "runs/{timestamp}-{task_id}-{condition}"
+comparison_report_dir = "reports/comp"
+
+[architecture_layers]
+runtime = ["core", "config", "hosts", "orchestration", "workflow", "policies", "context", "project_scan", "prompts", "artifacts", "eval", "telemetry", "cli", "utils"]
+harness_assets = ["roles", "rules", "workflows", "prompts", "guards", "host_profiles"]
+contracts = ["schemas", "benchmarks", "runs", "reports"]
+
+[safety]
+block_high_risk_override = true
+high_risk_domains = [
+  "auth",
+  "authorization",
+  "billing",
+  "payments",
+  "data-deletion",
+  "db-migration",
+  "secrets",
+  "production-deploy"
+]

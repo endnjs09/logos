@@ -1,0 +1,7 @@
+schema_version: 1
+guard: context-budget
+default_policy: smallest_sufficient_context
+track:
+  - executor_context_tokens
+  - estimated_full_context_tokens
+  - compression_ratio

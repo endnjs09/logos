@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/benchmark-suite.schema.json",
+  "title": "Benchmark Suite",
+  "type": "object",
+  "required": ["suite_id", "tasks"],
+  "properties": {
+    "suite_id": { "type": "string" },
+    "tasks": { "type": "array", "items": { "type": "string" } }
+  }
+}

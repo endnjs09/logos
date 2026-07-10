@@ -1,0 +1,18 @@
+schema_version: 1
+mode: high
+stages:
+  - request
+  - snapshot
+  - feature_scan
+  - question_candidates
+  - clarification
+  - interview_draft
+  - structured_spec
+  - task_plan
+  - context_handoff
+  - execution
+  - testing
+  - qualitative_review
+  - verification
+  - retry_or_rollback
+  - measurement_log

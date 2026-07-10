@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Runtime artifacts
+runs/
+reports/
+!runs/.gitkeep
+!reports/.gitkeep
+!reports/comp/
+!reports/comp/.gitkeep
+*.log
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/workspace.xml

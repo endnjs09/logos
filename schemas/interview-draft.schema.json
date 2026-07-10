@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/interview-draft.schema.json",
+  "title": "Interview Draft",
+  "type": "object",
+  "required": ["raw_request", "initial_mode", "final_mode", "confirmed_decisions", "open_questions", "excluded_scope"],
+  "properties": {
+    "raw_request": { "type": "string" },
+    "initial_mode": { "enum": ["low", "middle", "high"] },
+    "final_mode": { "enum": ["low", "middle", "high"] },
+    "confirmed_decisions": { "type": "array", "items": { "type": "string" } },
+    "open_questions": { "type": "array", "items": { "type": "string" } },
+    "excluded_scope": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/benchmark-task.schema.json",
+  "title": "Benchmark Task",
+  "type": "object",
+  "required": ["task_id", "request", "initial_mode", "success_criteria"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "request": { "type": "string" },
+    "initial_mode": { "enum": ["low", "middle", "high"] },
+    "success_criteria": { "type": "array", "items": { "type": "string" } },
+    "limits": { "type": "object" }
+  }
+}

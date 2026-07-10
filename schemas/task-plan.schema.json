@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/task-plan.schema.json",
+  "title": "Task Plan",
+  "type": "object",
+  "required": ["steps", "verification", "rollback"],
+  "properties": {
+    "steps": { "type": "array", "items": { "type": "string" } },
+    "target_files": { "type": "array", "items": { "type": "string" } },
+    "verification": { "type": "array", "items": { "type": "string" } },
+    "rollback": { "type": "array", "items": { "type": "string" } }
+  }
+}

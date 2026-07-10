@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/measurement-log.schema.json",
+  "title": "Measurement Log",
+  "type": "object",
+  "required": ["task_id", "condition", "host", "initial_mode", "final_mode", "final_success"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "condition": { "type": "string" },
+    "host": { "type": "string" },
+    "initial_mode": { "enum": ["low", "middle", "high"] },
+    "final_mode": { "enum": ["low", "middle", "high"] },
+    "llm_call_count": { "type": "integer" },
+    "retry_count": { "type": "integer" },
+    "final_success": { "type": "boolean" }
+  }
+}

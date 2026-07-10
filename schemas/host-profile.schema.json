@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/host-profile.schema.json",
+  "title": "Host Profile",
+  "type": "object",
+  "required": ["schema_version", "host", "role"],
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "host": { "type": "string" },
+    "role": { "type": "string" },
+    "known_risks": { "type": "array", "items": { "type": "string" } },
+    "known_strengths": { "type": "array", "items": { "type": "string" } }
+  }
+}

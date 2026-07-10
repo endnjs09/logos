@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/logos-config.schema.json",
+  "title": "Logos Config",
+  "type": "object",
+  "required": ["project", "paths", "hosts", "modes"],
+  "properties": {
+    "project": { "type": "object" },
+    "paths": { "type": "object" },
+    "hosts": { "type": "object" },
+    "modes": { "type": "object" }
+  }
+}

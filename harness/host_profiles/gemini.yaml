@@ -1,0 +1,8 @@
+schema_version: 1
+host: gemini
+role: primary_experiment_target
+known_risks:
+  - scope_drift
+  - weak_plan_following
+  - overconfident_verification
+  - context_sensitivity

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/role-profile.schema.json",
+  "title": "Role Profile",
+  "type": "object",
+  "required": ["role", "purpose"],
+  "properties": {
+    "role": { "type": "string" },
+    "purpose": { "type": "string" },
+    "permissions": { "type": "object" },
+    "inputs": { "type": "array", "items": { "type": "string" } },
+    "outputs": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/spec.schema.json",
+  "title": "Spec",
+  "type": "object",
+  "required": ["goal", "success_criteria", "excluded_scope"],
+  "properties": {
+    "goal": { "type": "string" },
+    "success_criteria": { "type": "array", "items": { "type": "string" } },
+    "quality_gates": { "type": "array", "items": { "type": "string" } },
+    "excluded_scope": { "type": "array", "items": { "type": "string" } }
+  }
+}

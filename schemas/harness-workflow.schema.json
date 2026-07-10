@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/harness-workflow.schema.json",
+  "title": "Harness Workflow",
+  "type": "object",
+  "required": ["schema_version", "mode", "stages"],
+  "properties": {
+    "schema_version": { "type": "integer" },
+    "mode": { "enum": ["low", "middle", "high"] },
+    "stages": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+  }
+}

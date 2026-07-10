@@ -1,0 +1,7 @@
+schema_version: 1
+host: codex
+role: baseline
+known_strengths:
+  - repository_editing
+  - tool_use
+  - implementation_followthrough

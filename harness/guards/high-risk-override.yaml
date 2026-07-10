@@ -1,0 +1,11 @@
+schema_version: 1
+guard: high-risk-override
+blocked_domains:
+  - auth
+  - authorization
+  - billing
+  - payments
+  - data-deletion
+  - db-migration
+  - secrets
+  - production-deploy

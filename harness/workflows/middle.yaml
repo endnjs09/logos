@@ -1,0 +1,13 @@
+schema_version: 1
+mode: middle
+stages:
+  - request
+  - snapshot
+  - feature_scan
+  - question_candidates
+  - clarification
+  - mini_spec
+  - task_plan
+  - execution
+  - verification
+  - measurement_log
