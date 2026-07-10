@@ -1,0 +1,14 @@
+[plugin]
+name = "minimal-plugin"
+version = "0.1.0"
+description = "Minimal Logos plugin example."
+kind = "harness-pack"
+
+[provides]
+commands = ["commands"]
+roles = ["roles"]
+skills = ["skills"]
+hooks = ["hooks"]
+guards = ["guards"]
+prompts = ["prompts"]
+workflows = ["workflows"]

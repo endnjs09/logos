@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/plugin-manifest.schema.json",
+  "title": "Logos Plugin Manifest",
+  "type": "object",
+  "required": ["plugin"],
+  "properties": {
+    "plugin": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "version": {
+          "type": "string",
+          "default": "0.1.0"
+        },
+        "description": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": ["harness-pack", "tool-pack", "benchmark-pack", "evaluator-pack", "mixed-pack"]
+        },
+        "author": {
+          "type": ["string", "object"]
+        }
+      }
+    },
+    "provides": {
+      "type": "object",
+      "properties": {
+        "commands": { "type": "array", "items": { "type": "string" } },
+        "roles": { "type": "array", "items": { "type": "string" } },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "hooks": { "type": "array", "items": { "type": "string" } },
+        "guards": { "type": "array", "items": { "type": "string" } },
+        "prompts": { "type": "array", "items": { "type": "string" } },
+        "workflows": { "type": "array", "items": { "type": "string" } },
+        "benchmarks": { "type": "array", "items": { "type": "string" } },
+        "schemas": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "hooks": { "type": "array", "items": { "type": "string" } },
+        "network": { "type": "boolean" },
+        "filesystem": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

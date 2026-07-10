@@ -13,7 +13,8 @@ policy, telemetry, and benchmark comparison.
 
 ```text
 runtime code      -> src/logos
-harness assets    -> harness
+core assets       -> core
+plugin assets     -> plugins
 schemas/contracts -> schemas
 benchmark inputs  -> benchmarks
 run artifacts     -> runs
@@ -40,9 +41,9 @@ design rationale  -> docs
 - `cli`: command surface for run, compare, validate, and inspect.
 - `utils`: low-level helpers.
 
-## Harness Assets
+## Core Assets
 
-`harness/` contains code-adjacent assets, not runtime implementation:
+`core/` contains built-in code-adjacent assets, not runtime implementation:
 
 - `roles`: planner, explorer, gap analyzer, plan reviewer, executor, tester, reviewer.
 - `rules`: mode, override, verification, context, and retry rules.
@@ -50,6 +51,16 @@ design rationale  -> docs
 - `prompts`: markdown prompts used by role prompt assembly.
 - `guards`: high-risk override, excluded scope, required fields, context budget.
 - `host_profiles`: Gemini, Codex, and Claude Code host behavior profiles.
+
+## Plugins
+
+`plugins/` is reserved for external harness packs. A Logos plugin can add or
+override commands, roles, skills, hooks, guards, prompts, workflows, benchmark
+tasks, schemas, or evaluator rubrics without changing Logos core runtime.
+
+Plugin loading is intentionally disabled at scaffold time. The structure and
+manifest contract exist now so later calibration packs can be added without
+redesigning the project.
 
 ## Implementation Strategy
 

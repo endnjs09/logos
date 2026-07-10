@@ -7,14 +7,15 @@ architecture = "complete_structure_incremental_implementation"
 
 [paths]
 source = "src/logos"
-harness = "harness"
+core_assets = "core"
+plugins = "plugins"
 schemas = "schemas"
-rules = "harness/rules"
-workflows = "harness/workflows"
-roles = "harness/roles"
-prompts = "harness/prompts"
-guards = "harness/guards"
-host_profiles = "harness/host_profiles"
+rules = "core/rules"
+workflows = "core/workflows"
+roles = "core/roles"
+prompts = "core/prompts"
+guards = "core/guards"
+host_profiles = "core/profiles"
 benchmarks = "benchmarks"
 runs = "runs"
 reports = "reports"
@@ -41,9 +42,18 @@ run_dir_template = "runs/{timestamp}-{task_id}-{condition}"
 comparison_report_dir = "reports/comp"
 
 [architecture_layers]
-runtime = ["core", "config", "hosts", "orchestration", "workflow", "policies", "context", "project_scan", "prompts", "artifacts", "eval", "telemetry", "cli", "utils"]
-harness_assets = ["roles", "rules", "workflows", "prompts", "guards", "host_profiles"]
+runtime = ["core", "config", "hosts", "orch", "workflow", "policies", "context", "scan", "prompts", "artifacts", "eval", "telemetry", "cli", "utils", "plugins"]
+core_assets = ["roles", "rules", "workflows", "prompts", "guards", "profiles"]
+extension_assets = ["plugins"]
 contracts = ["schemas", "benchmarks", "runs", "reports"]
+
+[plugins]
+enabled = false
+manifest = ".logos-plugin/plugin.toml"
+builtin_dir = "plugins/builtin"
+external_dir = "plugins/external"
+examples_dir = "plugins/examples"
+load_order = ["builtin", "external"]
 
 [safety]
 block_high_risk_override = true
