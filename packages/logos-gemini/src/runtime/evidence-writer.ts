@@ -1,0 +1,2 @@
+// Gemini evidence writer placeholder.
+

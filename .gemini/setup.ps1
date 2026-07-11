@@ -1,0 +1,2 @@
+# Gemini CLI setup placeholder.
+

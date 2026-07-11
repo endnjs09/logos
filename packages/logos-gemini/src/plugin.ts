@@ -1,0 +1,2 @@
+// Gemini CLI plugin placeholder.
+

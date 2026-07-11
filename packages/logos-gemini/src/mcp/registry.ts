@@ -1,0 +1,2 @@
+// MCP registry placeholder.
+

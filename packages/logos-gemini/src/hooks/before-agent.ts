@@ -1,0 +1,2 @@
+// BeforeAgent hook placeholder.
+

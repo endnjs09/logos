@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/target-manifest.schema.json",
+  "title": "Logos Target Manifest",
+  "type": "object",
+  "required": ["target"],
+  "properties": {
+    "target": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "properties": {
+        "name": {
+          "enum": ["gemini-cli", "codex-cli"]
+        },
+        "kind": {
+          "enum": ["primary", "baseline", "compatibility"]
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provides": {
+      "type": "object",
+      "properties": {
+        "commands": { "type": "string" },
+        "prompts": { "type": "string" },
+        "hooks": { "type": "string" },
+        "tools": { "type": "string" },
+        "templates": { "type": "string" },
+        "install": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

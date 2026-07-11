@@ -1,0 +1,2 @@
+// BeforeTool hook placeholder.
+

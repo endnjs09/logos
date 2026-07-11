@@ -1,0 +1,2 @@
+// PostCompact hook placeholder.
+

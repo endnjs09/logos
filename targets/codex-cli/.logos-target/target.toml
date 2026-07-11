@@ -1,0 +1,12 @@
+[target]
+name = "codex-cli"
+kind = "baseline"
+description = "Logos target for Codex CLI compatibility and baseline comparison."
+
+[provides]
+commands = "commands"
+prompts = "prompts"
+hooks = "hooks"
+tools = "tools"
+templates = "templates"
+install = "install"

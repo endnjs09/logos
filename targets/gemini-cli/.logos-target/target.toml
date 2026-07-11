@@ -1,0 +1,12 @@
+[target]
+name = "gemini-cli"
+kind = "primary"
+description = "Primary Logos target for Gemini CLI and Gemini Pro High calibration."
+
+[provides]
+commands = "commands"
+prompts = "prompts"
+hooks = "hooks"
+tools = "tools"
+templates = "templates"
+install = "install"

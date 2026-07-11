@@ -1,0 +1,2 @@
+# Gemini AfterTool Hook
+

@@ -1,0 +1,2 @@
+// Gemini session state placeholder.
+

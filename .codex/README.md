@@ -1,0 +1,2 @@
+# Codex CLI Install Output
+

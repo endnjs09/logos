@@ -1,0 +1,2 @@
+// Tool guard placeholder.
+

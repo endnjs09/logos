@@ -8,6 +8,7 @@ architecture = "complete_structure_incremental_implementation"
 [paths]
 source = "src/logos"
 core_assets = "core"
+targets = "targets"
 plugins = "plugins"
 schemas = "schemas"
 rules = "core/rules"
@@ -22,13 +23,12 @@ reports = "reports"
 docs = "docs"
 
 [hosts]
-default = "gemini"
-supported = ["gemini", "codex", "claude-code"]
+default = "gemini-cli"
+supported = ["gemini-cli", "codex-cli"]
 baseline_conditions = [
   "gemini-baseline",
   "gemini-logos",
-  "codex-baseline",
-  "claude-code-baseline"
+  "codex-baseline"
 ]
 
 [modes]
@@ -42,10 +42,16 @@ run_dir_template = "runs/{timestamp}-{task_id}-{condition}"
 comparison_report_dir = "reports/comp"
 
 [architecture_layers]
-runtime = ["core", "config", "hosts", "orch", "workflow", "policies", "context", "scan", "prompts", "artifacts", "eval", "telemetry", "cli", "utils", "plugins"]
+runtime = ["core", "config", "targets", "installer", "orch", "workflow", "policies", "context", "scan", "prompts", "tools", "artifacts", "eval", "telemetry", "cli", "utils", "plugins"]
 core_assets = ["roles", "rules", "workflows", "prompts", "guards", "profiles"]
+target_assets = ["gemini-cli", "codex-cli"]
 extension_assets = ["plugins"]
 contracts = ["schemas", "benchmarks", "runs", "reports"]
+
+[targets]
+default = "gemini-cli"
+manifest = ".logos-target/target.toml"
+supported = ["gemini-cli", "codex-cli"]
 
 [plugins]
 enabled = false

@@ -14,6 +14,7 @@ policy, telemetry, and benchmark comparison.
 ```text
 runtime code      -> src/logos
 core assets       -> core
+target assets     -> targets
 plugin assets     -> plugins
 schemas/contracts -> schemas
 benchmark inputs  -> benchmarks
@@ -61,6 +62,17 @@ tasks, schemas, or evaluator rubrics without changing Logos core runtime.
 Plugin loading is intentionally disabled at scaffold time. The structure and
 manifest contract exist now so later calibration packs can be added without
 redesigning the project.
+
+## Targets
+
+`targets/` contains host-mounted packaging assets for supported CLI hosts.
+
+- `targets/gemini-cli`: primary target for Gemini Pro High calibration.
+- `targets/codex-cli`: compatibility and baseline reference target.
+
+Targets are not model implementations. They are installation surfaces that map
+Logos core assets into each CLI host's command, prompt, hook, tool, and template
+format.
 
 ## Implementation Strategy
 
