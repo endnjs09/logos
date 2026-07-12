@@ -12,35 +12,35 @@ policy, telemetry, and benchmark comparison.
 ## Structure Rule
 
 ```text
-runtime code      -> src/logos
-core assets       -> core
-target assets     -> targets
-plugin assets     -> plugins
-schemas/contracts -> schemas
-benchmark inputs  -> benchmarks
-run artifacts     -> runs
-comparison output -> reports
-design rationale  -> docs
+core assets         -> core
+runtime packages    -> packages
+target assets       -> targets
+plugin assets       -> plugins
+schemas/contracts   -> schemas
+benchmark inputs    -> benchmarks
+run artifacts       -> runs
+comparison output   -> reports
+design rationale    -> docs
+compatibility shim  -> src/logos/cli
 ```
 
-## Runtime Package
+## Runtime Packages
 
-`src/logos` is a single Python package with clear internal boundaries:
+Logos runtime code is split by package boundary:
 
-- `core`: shared primitives, ids, errors, and common domain types.
-- `config`: configuration loading and validation.
-- `hosts`: Gemini, Codex, Claude Code, and fake host adapters.
-- `orchestration`: role-specific intelligence layers that compensate for Gemini.
-- `workflow`: v12 Low/Middle/High stage execution.
-- `policies`: mode fit, override, retry, quality, and scope policies.
-- `context`: context handoff, compression, and token budget control.
-- `project_scan`: code evidence, git state, file scan, hash diff, project intent.
-- `prompts`: role prompt assembly from harness assets.
-- `artifacts`: interview draft, spec, task plan, run result, measurement log.
-- `eval`: baseline comparison and benchmark reporting.
-- `telemetry`: calls, tokens, retries, failures, and quality measurements.
-- `cli`: command surface for run, compare, validate, and inspect.
-- `utils`: low-level helpers.
+- `packages/logos-core`: asset scanning, frontmatter validation, manifests,
+  prompt assembly, workflow primitives, guard models, context models, and shared
+  configuration.
+- `packages/logos-installer`: `logos install`, `uninstall`, `doctor`,
+  `status`, and Nous session-state commands.
+- `packages/logos-gemini`: Gemini CLI adapter, mode activation, injection,
+  hooks, runtime state, evidence, approvals, checkpoints, and target guards.
+- `packages/logos-eval`: baseline comparison, benchmark runs, measurement
+  logs, scoring, reports, and reproducibility records.
+
+`src/logos/cli` is kept only as a compatibility shim for older
+`python -m logos.cli.main` entrypoints. New runtime code should be added under
+`packages/`.
 
 ## Core Assets
 
@@ -78,9 +78,11 @@ format.
 
 Structure is complete from the start. Implementation is incremental:
 
-1. v1: schemas, fake host, workflow skeleton, measurement logs.
-2. v2: Gemini baseline and Gemini + Logos execution comparison.
-3. v3: planner, explorer, and context handoff.
-4. v4: gap analyzer, plan reviewer, and high-mode review.
-5. v5: retry policy, evaluator, benchmark suite hardening.
+1. v1: installer, doctor, target templates, Nous session state, and asset
+   validation.
+2. v2: core asset scanning, prompt assembly, manifests, and Gemini adapter
+   reality checks.
+3. v3: guard runtime, approvals, checkpoints, evidence, and hook emulation.
+4. v4: workflow orchestration, role routing, context handoff, and retry policy.
+5. v5: evaluator, measurement logs, benchmark suite, and reproducibility.
 6. v6: Codex and Claude Code baseline automation.

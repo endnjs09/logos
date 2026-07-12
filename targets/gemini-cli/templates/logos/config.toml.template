@@ -1,0 +1,9 @@
+[project]
+name = "{{project_name}}"
+logos_version = "{{logos_version}}"
+
+[paths]
+agents = ".agents"
+gemini = ".gemini"
+runtime = ".logos"
+

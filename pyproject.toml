@@ -18,6 +18,9 @@ dependencies = [
   "tomli-w>=1.0"
 ]
 
+[project.scripts]
+logos = "logos_installer.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2",
@@ -26,15 +29,46 @@ dev = [
 ]
 
 [tool.setuptools]
-package-dir = { "" = "src" }
+packages = [
+  "logos",
+  "logos.cli",
+  "logos_core",
+  "logos_core.assets",
+  "logos_core.config",
+  "logos_core.context",
+  "logos_core.evaluation",
+  "logos_core.guards",
+  "logos_core.manifests",
+  "logos_core.prompt_assembly",
+  "logos_core.rules",
+  "logos_core.workflow",
+  "logos_installer",
+  "logos_installer.targets",
+]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["logos*"]
+[tool.setuptools.package-dir]
+logos = "src/logos"
+"logos.cli" = "src/logos/cli"
+logos_core = "packages/logos-core/src/logos_core"
+"logos_core.assets" = "packages/logos-core/src/logos_core/assets"
+"logos_core.config" = "packages/logos-core/src/logos_core/config"
+"logos_core.context" = "packages/logos-core/src/logos_core/context"
+"logos_core.evaluation" = "packages/logos-core/src/logos_core/evaluation"
+"logos_core.guards" = "packages/logos-core/src/logos_core/guards"
+"logos_core.manifests" = "packages/logos-core/src/logos_core/manifests"
+"logos_core.prompt_assembly" = "packages/logos-core/src/logos_core/prompt_assembly"
+"logos_core.rules" = "packages/logos-core/src/logos_core/rules"
+"logos_core.workflow" = "packages/logos-core/src/logos_core/workflow"
+logos_installer = "packages/logos-installer/src/logos_installer"
+"logos_installer.targets" = "packages/logos-installer/src/logos_installer/targets"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = [
+  "src",
+  "packages/logos-core/src",
+  "packages/logos-installer/src"
+]
 
 [tool.ruff]
 line-length = 100
@@ -46,6 +80,8 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.12"
 packages = [
-  "logos"
+  "logos",
+  "logos_core",
+  "logos_installer"
 ]
 strict = true

@@ -1,2 +1,9 @@
-# Project Logos configuration.
+[project]
+name = "logos"
+logos_version = "0.1.0"
+
+[paths]
+agents = ".agents"
+gemini = ".gemini"
+runtime = ".logos"
 

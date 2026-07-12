@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/reproducibility.schema.json",
+  "title": "Reproducibility",
+  "type": "object"
+}

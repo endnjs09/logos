@@ -32,6 +32,22 @@
         "install": { "type": "string" }
       },
       "additionalProperties": false
+    },
+    "target_support": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "enum": ["confirmed", "emulated", "assumed", "unsupported"]
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false

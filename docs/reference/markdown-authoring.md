@@ -2,898 +2,497 @@
 
 This guide defines how Logos Markdown assets must be written.
 
-Logos uses Markdown files for two different audiences:
+In Logos, Markdown is not just documentation. Agent-facing Markdown is
+instruction source code. It is parsed, selected, assembled, injected into a
+target host, and later measured. Treat every instruction file as an operational
+asset with a clear contract.
 
-1. **Agent-facing assets**: instructions consumed by Gemini CLI, Codex CLI, or a Logos role.
-2. **Human-facing documentation**: explanations for maintainers and users.
+## Goals
 
-Do not mix these styles. A command, role, skill, rule, or prompt file is not a
-blog post. It is an operational instruction asset.
+Logos Markdown must be:
 
-## Asset Types
+- predictable enough to assemble into prompts
+- explicit enough to audit
+- narrow enough to avoid duplicated instructions
+- stable enough for benchmark reproducibility
+- structured enough for future validation tools
 
-| Location | Audience | Purpose |
+## Audiences
+
+Logos Markdown has two audiences.
+
+| Audience | Files | Style |
 |---|---|---|
-| `core/roles/*.md` | Agent | Define role identity, responsibilities, constraints, inputs, and outputs. |
-| `core/rules/*.md` | Agent + runtime | Define policy that controls decisions and workflow behavior. |
-| `core/prompts/*.md` | Agent | Reusable prompt fragments assembled into target instructions. |
-| `targets/*/commands/*.md` | Agent | User-invoked workflows for a specific CLI target. |
-| `targets/*/prompts/*.md` | Agent | Target-specific prompt wrappers. |
-| `plugins/*/commands/*.md` | Agent | Plugin-provided workflow commands. |
-| `plugins/*/roles/*.md` | Agent | Plugin-provided role definitions. |
-| `plugins/*/skills/*/SKILL.md` | Agent | Domain procedure, references, and execution protocol. |
-| `docs/**/*.md` | Human | Project documentation, design notes, references, and ADRs. |
-| `README.md` files | Human | Directory purpose and navigation. |
+| Agent-facing | `core/`, `.agents/`, `targets/`, `plugins/` | Instructional, structured, contract-driven |
+| Human-facing | `docs/`, `README.md`, ADRs | Explanatory, navigational, rationale-driven |
 
-## Global Rules
+Do not mix the two. A role, rule, command, guard, workflow, or skill file is not
+an essay. It must tell the receiving agent or runtime exactly what to do, what
+not to do, what inputs to use, and what outputs to produce.
 
-Use these rules for every Logos Markdown file.
+## Core Principle
 
-- Write in English unless the file is explicitly Korean-facing.
-- Use concise, direct instructions.
-- Prefer concrete requirements over abstract advice.
-- Define what the agent must do, must not do, and must output.
-- Avoid motivational language, marketing language, and vague adjectives.
-- Avoid long paragraphs in agent-facing files.
-- Use headings to separate purpose, inputs, process, output, and failure rules.
-- Keep reusable policy in `core/rules`, not duplicated inside every command.
-- Keep target-specific behavior in `targets/*`, not in core assets.
-- Keep plugin-specific behavior inside the plugin.
-- Do not include secrets, real API keys, private endpoints, or personal paths.
+Every agent-facing Markdown file must answer these questions:
 
-## Frontmatter
+1. What kind of asset is this?
+2. When is it used?
+3. What inputs does it require?
+4. What procedure does it impose?
+5. What outputs must be produced?
+6. What must not happen?
+7. What happens on failure?
+8. Which other assets does it depend on?
 
-Agent-facing Markdown files should start with YAML frontmatter when they need
-metadata.
+If a file cannot answer these questions, it is not ready to be used as a Logos
+instruction asset.
 
-Use frontmatter for:
+## Required Frontmatter
 
-- name
-- description
-- argument hints
-- target
-- mode
-- role
-- allowed tools
-- required inputs
-- expected outputs
-- version
-- tags
+All agent-facing instruction files must use YAML frontmatter.
 
-Do not use frontmatter for long instructions. Put instructions in the body.
-
-### Command Frontmatter
-
-Use this shape for command files:
+Minimum fields:
 
 ```yaml
 ---
-name: logos-plan
-description: Create a Logos task plan from a user request
-argument-hint: "<request>"
-target: gemini-cli
-mode: high
----
-```
-
-Required fields:
-
-- `description`
-
-Recommended fields:
-
-- `name`
-- `argument-hint`
-- `target`
-- `mode`
-
-### Role Frontmatter
-
-Use this shape for role files:
-
-```yaml
----
-name: planner
-description: Converts confirmed requirements into an auditable task plan
-role: planner
----
-```
-
-Required fields:
-
-- `name`
-- `description`
-- `role`
-
-### Skill Frontmatter
-
-Use this shape for skill files:
-
-```yaml
----
-name: security-review
-description: Review implementation plans and diffs for security-sensitive risks
+id: logos.<kind>.<name>
+kind: <role|implementation-role|skill|command|rule|guard|workflow|rubric|template|hook>
+name: <machine-readable-name>
+description: <short trigger-oriented description>
+status: draft
 version: 0.1.0
-tags:
-  - security
-  - review
 ---
 ```
 
-Required fields:
-
-- `name`
-- `description`
-
-Recommended fields:
-
-- `version`
-- `tags`
-
-### Rule Frontmatter
-
-Rules may omit frontmatter if the filename is self-explanatory. Use frontmatter
-when the rule is referenced by tools or plugins.
-
-```yaml
----
-name: high-risk-override
-description: Blocks unsafe user overrides for sensitive domains
-applies-to:
-  - mode-selection
-  - clarification
-  - execution
----
-```
-
-## Commands
-
-Commands are workflow entry points. They are invoked by a user but written as
-instructions for the agent.
-
-Commands must answer:
-
-- What is the command supposed to do?
-- What input does it receive?
-- What phases must it follow?
-- When must it ask the user before continuing?
-- What artifacts must it produce?
-- What must it not do?
-
-### Command Structure
-
-Use this structure:
-
-```markdown
----
-description: Short action-oriented description
-argument-hint: "<request>"
----
-
-# Command Name
-
-## Purpose
-
-One paragraph explaining the command outcome.
-
-## Input
-
-- `$ARGUMENTS`: What it represents.
-- Required project context.
-
-## Preconditions
-
-- Conditions that must be true before starting.
-- Stop conditions if they are not true.
-
-## Workflow
-
-### Phase 1: ...
-
-Goal:
-
-Actions:
-
-Output:
-
-### Phase 2: ...
-
-...
-
-## User Approval Gates
-
-- List points where the agent must stop and wait.
-
-## Output
-
-- Required artifact names.
-- Required summary format.
-
-## Failure Handling
-
-- Where to return when a failure occurs.
-```
-
-### Command Writing Rules
-
-- Use imperative instructions.
-- Do not describe what the command "will" do for the user; tell the agent what
-  to do.
-- Include user approval gates for implementation, destructive changes, risky
-  scope, or unclear requirements.
-- Use `$ARGUMENTS` only when the target command system supports it.
-- If a target does not support dynamic command arguments, describe the fallback
-  target behavior in `targets/<target>/commands/README.md`.
-- Commands should call roles, skills, rules, and workflows by name rather than
-  duplicating their full content.
-
-### Good Command Language
-
-```markdown
-Read the request, identify missing requirements, and ask blocking questions
-before creating the task plan.
-```
-
-```markdown
-Do not begin implementation until the user approves the selected approach.
-```
-
-```markdown
-Write the final task plan with target files, implementation steps, verification
-steps, risk signals, and rollback criteria.
-```
-
-### Bad Command Language
-
-```markdown
-This command helps you make a plan.
-```
-
-```markdown
-You will receive a nice summary after the work is done.
-```
-
-```markdown
-Try to be careful and do a good job.
-```
-
-## Roles
-
-Roles define reusable agent behavior. A role is not a workflow by itself. It is a
-bounded responsibility used inside a workflow.
-
-Core roles:
-
-- `planner`
-- `explorer`
-- `gap-analyzer`
-- `plan-reviewer`
-- `executor`
-- `tester`
-- `reviewer`
-
-### Role Structure
-
-Use this structure:
-
-```markdown
----
-name: role-name
-description: One-sentence role purpose
-role: role-name
----
-
-# Role Name
-
-## Mission
-
-Define the role's primary responsibility.
-
-## Inputs
-
-- Required input 1.
-- Required input 2.
-
-## Responsibilities
-
-- Concrete responsibility.
-- Concrete responsibility.
-
-## Constraints
-
-- What this role must not do.
-- What this role must defer to another role.
-
-## Process
-
-1. Step.
-2. Step.
-3. Step.
-
-## Output Format
-
-Define the exact output structure.
-
-## Failure Conditions
-
-Define when this role must stop, escalate, or request clarification.
-```
-
-### Role Writing Rules
-
-- Keep roles narrow.
-- A role should not secretly perform another role's job.
-- The `planner` does not execute.
-- The `explorer` does not modify files.
-- The `gap-analyzer` does not write the final plan.
-- The `plan-reviewer` approves or rejects plans; it does not rewrite them
-  silently.
-- The `executor` follows an approved plan and executor context.
-- The `tester` verifies behavior and records results.
-- The `reviewer` checks quality, scope, and residual risk.
-
-### Role Output Requirements
-
-Every role should define an output shape.
-
-Example:
-
-```markdown
-## Output Format
-
-Return:
-
-- `summary`: 2-4 sentences.
-- `evidence`: file paths, lines, commands, or artifacts used.
-- `findings`: ordered list of issues or observations.
-- `open_questions`: blocking and non-blocking questions.
-- `next_step`: recommended next workflow step.
-```
-
-## Skills
-
-Skills package a reusable procedure or domain expertise. Use skills for tasks
-that need more than a role definition.
+Rules:
+
+- `id` must be globally unique.
+- `kind` must match one of the supported document types.
+- `name` must use lowercase letters, numbers, and hyphens.
+- `description` must explain when the asset applies, not market what it is.
+- `status` must be one of `draft`, `active`, `deprecated`, or `experimental`.
+- `version` must follow Logos asset semver.
+- `guard` files must include `enforcement_status`.
+
+Detailed frontmatter rules live in
+`docs/reference/frontmatter-reference.md`.
+
+## Asset Versioning
+
+Logos uses semantic versioning for instruction assets because asset behavior is
+part of benchmark reproducibility.
+
+Use this meaning:
+
+| Change | When To Use |
+|---|---|
+| `patch` | Wording, examples, typo fixes, or clarifications that do not change selection, decisions, outputs, or enforcement |
+| `minor` | Backward-compatible behavior additions, optional steps, extra examples, new non-required outputs, or stricter wording that does not break existing schemas |
+| `major` | Changed decision criteria, changed required outputs, changed schema expectations, changed guard behavior, changed trigger conditions, or removed behavior |
 
 Examples:
 
-- security review
-- frontend implementation guidance
-- migration procedure
-- benchmark authoring
-- plugin creation
-- PR review
-- test strategy
+- `0.1.0 -> 0.1.1`: clarify wording in a role without changing its duties.
+- `0.1.0 -> 0.2.0`: add an optional review step to a workflow.
+- `0.1.0 -> 1.0.0`: change a guard from approval to hard block.
 
-### Skill Structure
+Benchmark reports must record the Logos harness version and enough asset
+identity to explain behavior changes. At minimum, measurement records should be
+able to identify the harness git SHA and the versions or hash of assembled core
+assets.
 
-Use this structure:
+## Status Lifecycle
 
-```markdown
----
-name: skill-name
-description: Trigger conditions and purpose
-version: 0.1.0
----
+Use `status` to control whether an asset may be assembled into runtime
+instructions.
 
-# Skill Name
+| Status | Meaning | Assembly Rule |
+|---|---|---|
+| `draft` | Incomplete or under review | Must not be included in normal Nous Mode or benchmark assembly |
+| `experimental` | Usable only for named experiments | Include only when the active profile explicitly enables experimental assets |
+| `active` | Approved for runtime use | May be included by normal assembly |
+| `deprecated` | Kept for compatibility or historical comparison | Must not be included unless a pinned benchmark profile requests it |
 
-## When To Use
+Default prompt assembly must include only `active` assets. Any run that includes
+`experimental` or `deprecated` assets must record that fact in the measurement
+log.
 
-Define trigger conditions.
+## Assembly Priority
 
-## When Not To Use
+When multiple instruction assets are assembled, conflicts must resolve by layer
+and enforcement strength.
 
-Define exclusions.
+Priority from strongest to weakest:
 
-## Required Inputs
+1. Runtime hard guard decisions
+2. Target host safety constraints
+3. `core/guards/` hard policies
+4. `core/workflows/` state transitions
+5. `core/roles/` active role procedure
+6. `.agents/skills/` active skill procedure
+7. `core/rules/` soft model guidance
+8. `core/prompts/` style or response fragments
+9. User preference, unless it conflicts with any higher layer
 
-- Input.
-- Input.
+If two assets at the same priority conflict, prompt assembly must stop and record
+a conflict instead of silently choosing one. Guard decisions always override
+rules, skills, and role text.
 
-## Procedure
+## Document Types
 
-### Phase 0: Orient
+Use one file type per responsibility.
 
-Actions:
+| Kind | Purpose |
+|---|---|
+| `role` | Orchestration role such as planner, explorer, executor, tester |
+| `implementation-role` | Specialist role such as frontend, backend, database, security |
+| `skill` | Reusable procedural package loaded when a task pattern matches |
+| `command` | User or host entrypoint, usually a thin wrapper around a skill |
+| `rule` | Soft instruction that guides model behavior |
+| `guard` | Hard policy that must be enforced by code |
+| `workflow` | Ordered state transition or task lifecycle |
+| `rubric` | Evaluation criteria |
+| `template` | Required output shape |
+| `hook` | Lifecycle event behavior for a target host |
 
-Evidence:
+Detailed type requirements live in `docs/reference/document-types.md`.
 
-Output:
+## Rules vs Guards
 
-### Phase 1: Analyze
+This distinction is mandatory.
 
-...
-
-## Required Output
-
-Define the artifact or response.
-
-## Quality Bar
-
-Define what must be true for completion.
-
-## Failure Handling
-
-Define stop, retry, or escalation rules.
-```
-
-### Skill Writing Rules
-
-- A skill must have clear trigger conditions.
-- A skill must state when not to use it.
-- A skill must define required inputs.
-- A skill must define output artifacts.
-- A skill must include verification or quality criteria.
-- If a skill uses optional tools, it must define fallback behavior.
-- If a skill writes files, it must name the file paths or path pattern.
-
-## Rules
-
-Rules define policy. They should be stable, small, and reusable.
+`rules` are instructions to the model.
 
 Examples:
 
-- mode selection
-- low fast path
-- override policy
+- prefer smallest sufficient change
+- ask clarification before high-risk implementation
+- summarize verification honestly
+
+`guards` are deterministic or host-enforced gates.
+
+Examples:
+
+- block dangerous shell commands
+- block writes outside task-plan boundaries
+- detect secrets in diffs
+- prevent protected branch mutation
+- require approval before dependency installation
+
+Do not put hard safety requirements only in `core/rules/`. If violating the
+policy could damage files, leak secrets, alter production data, or invalidate
+research results, it belongs in `core/guards/` and must eventually be enforced
+by code.
+
+## Progressive Disclosure
+
+Keep high-frequency files within explicit size budgets and move detail
+downward.
+
+Size targets:
+
+| Asset | Target Size | Hard Review Threshold |
+|---|---:|---:|
+| Command file | 40-120 lines | 160 lines |
+| `SKILL.md` | 80-220 lines | 300 lines |
+| Role file | 60-180 lines | 240 lines |
+| Rule file | 40-140 lines | 200 lines |
+| Guard policy | 80-220 lines | 320 lines |
+| Workflow file | 80-260 lines | 360 lines |
+| Rubric file | 60-180 lines | 240 lines |
+| Template file | 40-160 lines | 220 lines |
+
+When a file crosses the hard review threshold, split detailed material into
+`references/`, `examples/`, or a narrower sibling file unless the added length is
+required for a single atomic procedure.
+
+Recommended pattern for skills:
+
+```text
+skill-name/
+├─ SKILL.md
+├─ references/
+├─ examples/
+├─ scripts/
+└─ assets/
+```
+
+Use:
+
+- `SKILL.md` for core workflow and trigger behavior
+- `references/` for detailed domain knowledge
+- `examples/` for concrete cases and outputs
+- `scripts/` for deterministic repeated operations
+- `assets/` for reusable output resources
+
+Do not duplicate detailed policy in both `SKILL.md` and `references/`. The
+shorter file should point to the longer one.
+
+## Command Design
+
+Commands should be thin entrypoints.
+
+Good command behavior:
+
+- activate a mode
+- load a skill
+- pass user arguments into a workflow
+- define preconditions and failure behavior
+
+Avoid command files that duplicate full skill logic. If a command needs more
+than a short procedure, create or reference a skill.
+
+## Skill Design
+
+Skills are procedural packages. They should describe how to do a task, not just
+what the task is.
+
+Every `SKILL.md` must include:
+
+- trigger conditions
+- activation conditions
+- required context
+- procedure
+- outputs
+- failure behavior
+- references to detailed files
+
+The frontmatter `description` is critical. It should include concrete phrases or
+task patterns that should trigger the skill.
+
+## Role Design
+
+Roles define identity, boundaries, and outputs. They should not contain target
+host implementation details.
+
+Every role must include:
+
+- mission
+- when to use
+- inputs
+- outputs
+- responsibilities
+- non-goals
+- procedure
+- escalation rules
+- failure modes
+- completion criteria
+
+Orchestration roles and implementation specialist roles must be separated.
+
+## Workflow Design
+
+Workflows define state transitions. They must not be vague prose.
+
+Every workflow must include:
+
+- entry conditions
+- exit conditions
+- modes
+- steps
+- state transitions
+- required outputs
 - retry policy
-- context handoff
-- verification
+- failure handling
 
-### Rule Structure
+If a workflow can pause for user input, approval, or external feedback, define
+the waiting state explicitly.
 
-Use this structure:
+## Guard Design
 
-```markdown
-# Rule Name
+Guard documents are policy contracts for code. They must be testable.
 
-## Purpose
+Every guard must include:
 
-What decision this rule controls.
+- threat model
+- decision type
+- inputs
+- allow conditions
+- block conditions
+- approval conditions
+- evidence to record
+- failure behavior
+- test cases
+- related rules
 
-## Applies To
+Every guard must declare its implementation state:
 
-- Workflow stage.
-- Role.
-- Target.
-
-## Policy
-
-- Concrete rule.
-- Concrete rule.
-
-## Allow
-
-- Allowed case.
-
-## Block
-
-- Blocked case.
-
-## Record
-
-- Fields that must be logged.
-
-## Examples
-
-Short examples of allowed and blocked decisions.
+```yaml
+enforcement_status: policy-only
 ```
 
-### Rule Writing Rules
+Allowed values:
 
-- Rules should be enforceable.
-- Avoid rules that cannot be observed or logged.
-- Include what to record when the rule applies.
-- Include allow/block examples for risky rules.
-- Do not bury policy only inside role prompts.
+| Value | Meaning |
+|---|---|
+| `policy-only` | Policy is documented but not enforced by runtime code |
+| `implemented` | Runtime code exists and is wired to a hook or execution path |
+| `verified` | Runtime code exists and has passing tests or recorded verification evidence |
 
-## Prompts
+Do not describe a guard as enforced unless its `enforcement_status` is
+`implemented` or `verified`. Benchmark safety claims may rely only on `verified`
+guards.
 
-Prompt files are reusable fragments. They should be composable.
+Guard language must be deterministic. Avoid words like "probably", "maybe",
+"reasonable", or "safe enough" unless they are tied to explicit thresholds.
 
-Prompt files should not:
+## Rubric Design
 
-- define full workflows
-- duplicate command files
-- include target-specific install details
-- contain project-specific secrets
+Rubrics define evaluation criteria for plans, implementations, reviews, final
+responses, and benchmark scoring.
 
-Use prompts for:
+Every rubric must include:
 
-- role tone
-- evidence requirements
-- output style
-- target-specific instruction wrappers
-- common warnings
+- evaluated artifact
+- observable criteria
+- scoring scale
+- pass conditions
+- fail conditions
+- evidence required
+- examples
 
-### Prompt Structure
+Rubrics must evaluate evidence, not confidence. A rubric should prefer
+"test command passed with captured output" over "agent believes tests are
+sufficient."
 
-```markdown
-# Prompt Fragment Name
+## Template Design
 
-## Purpose
+Templates define required output shapes.
 
-Short purpose.
-
-## Instruction
-
-The reusable prompt text.
-
-## Variables
-
-- `{task_request}`
-- `{mode}`
-- `{executor_context}`
-```
-
-## Target Files
-
-Target files adapt core Logos assets to a specific CLI host.
-
-Targets currently include:
-
-- `targets/gemini-cli`
-- `targets/codex-cli`
-
-### Target Command Files
-
-Target command files should:
-
-- describe how the command appears in that host
-- reference core commands, roles, rules, and workflows
-- include host-specific limitations
-- avoid redefining core policy
-
-### Target Prompt Files
-
-Target prompt files should:
-
-- wrap core prompt fragments in host-compatible wording
-- compensate for known target behavior
-- name unsupported features clearly
-
-### Target README Files
-
-Target README files should explain:
-
-- what the target is
-- whether it is primary, baseline, or compatibility
-- what files are installed
-- what is not supported yet
-- how target-specific commands map to Logos concepts
-
-## Plugin Files
-
-Plugins extend Logos without changing core assets.
-
-Plugin Markdown should follow the same file-type rules:
-
-- plugin `commands` follow command rules
-- plugin `roles` follow role rules
-- plugin `skills` follow skill rules
-- plugin `guards` follow rule/guard rules
-- plugin `prompts` follow prompt rules
-
-Plugin files must not silently override core behavior unless the manifest or
-README clearly states the override.
-
-Plugin README files must include:
+Every template must include:
 
 - purpose
-- provided assets
-- required permissions
-- installation status
-- compatibility with targets
-- known limitations
+- when to use
+- fields
+- required fields
+- format
+- validation notes
+- example
 
-## Human Documentation
+When a schema exists, the template must reference it. If a required field changes
+in a template, update the matching schema and bump the template major version.
 
-Human-facing docs live under `docs/` and README files.
+## Output Contracts
 
-Human docs may explain:
+Agent-facing assets must specify their outputs. Use names that can map to files
+or schemas.
 
-- concepts
-- architecture
-- examples
-- rationale
-- migration
-- troubleshooting
+Examples:
 
-Human docs should not be used as agent instructions unless explicitly referenced
-by a command, skill, role, or prompt.
+- `spec`
+- `task-plan`
+- `context-handoff`
+- `guard-result`
+- `measurement-log`
+- `final-response`
 
-### Human Doc Structure
+If an output has a schema, reference it.
 
-Use this structure when possible:
+## Writing Style
 
-```markdown
-# Title
+Use direct instructional language.
 
-## Purpose
+Prefer:
 
-## Concepts
-
-## Usage
-
-## Examples
-
-## Notes
+```text
+Read the task plan, extract allowed write paths, and block writes outside that
+set.
 ```
-
-## Output Formats
-
-Agent-facing files must specify output when the task produces an artifact or
-decision.
-
-Use structured output names where possible.
-
-Common output sections:
-
-- `Summary`
-- `Evidence`
-- `Decisions`
-- `Open Questions`
-- `Risks`
-- `Excluded Scope`
-- `Verification`
-- `Next Step`
-
-For review-style outputs, use severity:
-
-- `Critical`
-- `High`
-- `Medium`
-- `Low`
-
-For workflow decisions, record:
-
-- selected mode
-- final mode
-- override status
-- risk signals
-- blocking questions
-- retry count
-- verification result
-
-## Evidence Requirements
-
-When a file claims something about the codebase, it should require evidence.
-
-Acceptable evidence:
-
-- file paths
-- line numbers when available
-- git diff summary
-- command output summary
-- test result
-- schema validation result
-- artifact path
 
 Avoid:
 
-- "seems like"
-- "probably"
-- "should be fine"
-- "I think"
-
-If evidence is unavailable, say so explicitly and mark the claim as an
-assumption.
-
-## User Approval Gates
-
-Agent-facing commands must stop for approval when:
-
-- implementation is about to start after planning
-- destructive file operations are proposed
-- mode override is requested
-- high-risk domains are involved
-- scope is ambiguous
-- tests cannot be run
-- verification is incomplete
-
-Use direct language:
-
-```markdown
-Stop and ask the user to approve the selected approach before implementation.
+```text
+It would be good to be careful about files that may be outside scope.
 ```
 
-Do not use vague language:
+Rules:
 
-```markdown
-Consider checking with the user.
+- Write in English unless the file is explicitly Korean-facing.
+- Use active voice.
+- Use short paragraphs.
+- Use ordered steps for procedures.
+- Use tables only for structured comparison.
+- Do not use motivational language.
+- Do not use marketing language.
+- Do not include secrets, tokens, private paths, or personal credentials.
+- Do not rely on unstated host behavior.
+
+## Linking
+
+Reference other Logos assets by `id` when possible.
+
+Example:
+
+```yaml
+depends_on:
+  - logos.workflow.socratic-intake
+  - logos.guard.file-write-boundary
 ```
 
-## Failure Handling
+In prose, include paths only when they help maintainers locate the asset.
 
-Commands and skills must define failure handling.
+## Change Discipline
 
-Minimum failure rules:
+Changing an agent-facing Markdown file can change model behavior. Treat it like
+code.
 
-- If required input is missing, ask a blocking question.
-- If code evidence is insufficient, return to exploration.
-- If success criteria are unclear, return to clarification.
-- If task plan is rejected, return to planning.
-- If execution fails, classify the failure before retrying.
-- If retry budget is exceeded, stop and report.
+For behavior-changing edits:
 
-## Naming Rules
+- update `version`
+- update related schemas if output changes
+- update templates if structure changes
+- record rationale in docs or ADR when the change is architectural
+- add or update examples when trigger behavior changes
 
-Use kebab-case for files that are not Python modules:
+## File Placement
+
+Use these locations:
 
 ```text
-low-fast-path.md
-context-handoff.md
-high-risk-override.yaml
-plugin-manifest.schema.json
+core/roles/                  # Source orchestration and specialist roles
+core/rules/                  # Soft model instructions
+core/guards/                 # Hard guard policies
+core/workflows/              # Lifecycle and state-machine instructions
+core/evaluation/             # Rubrics and quality gates
+core/prompts/                # Reusable prompt fragments
+.agents/                     # Installed/shared agent-facing skills and commands
+targets/<target>/            # Target-specific installed templates and wrappers
+plugins/<plugin>/            # Optional extension assets
+docs/reference/              # Human-facing specification docs
+docs/templates/              # Authoring templates
 ```
 
-Use snake_case only for Python package/module directories:
+## Required Templates
 
-```text
-gap_analyzer
-plan_reviewer
-test_runner
-```
+Use the templates in `docs/templates/` when adding new instruction assets:
 
-Use target names exactly:
+- `role.template.md`
+- `implementation-role.template.md`
+- `skill.template.md`
+- `command.template.md`
+- `rule.template.md`
+- `guard-policy.template.md`
+- `workflow.template.md`
+- `hook.template.md`
+- `rubric.template.md`
 
-```text
-gemini-cli
-codex-cli
-```
+Do not create a new file shape without first updating the authoring guide and
+template set.
 
-Use role names consistently:
+## Template-First Workflow
 
-```text
-planner
-explorer
-gap-analyzer
-plan-reviewer
-executor
-tester
-reviewer
-```
+Create instruction assets from templates. Do not start from a blank Markdown
+file.
 
-## Markdown Style
+Use this process:
 
-- Use `#` for the title.
-- Use `##` for main sections.
-- Use `###` only when needed.
-- Prefer short lists over long paragraphs.
-- Use fenced code blocks for examples.
-- Use tables only for compact reference data.
-- Keep headings stable so tools can parse them later.
-- Do not use decorative formatting.
+1. Select the matching template in `docs/templates/`.
+2. Copy it to the target location.
+3. Fill frontmatter before writing body content.
+4. Keep required sections even when the first draft is short.
+5. Mark unfinished assets as `status: draft`.
+6. Use `enforcement_status: policy-only` for guard policies until runtime code
+   exists.
+7. Run the asset validator before marking the asset `active`.
 
-## Review Checklist
-
-Before adding or changing an agent-facing Markdown file, check:
-
-- Is the audience agent-facing or human-facing?
-- Is the file in the correct directory?
-- Does it have frontmatter if needed?
-- Does it define purpose?
-- Does it define inputs?
-- Does it define constraints?
-- Does it define process?
-- Does it define output format?
-- Does it define failure handling?
-- Does it avoid duplicating policy from another file?
-- Does it avoid target-specific details unless under `targets/`?
-- Does it avoid plugin-specific behavior unless under `plugins/`?
-
-## Minimal Templates
-
-### Command Template
-
-```markdown
----
-description: <short action description>
-argument-hint: "<input>"
----
-
-# <Command Name>
-
-## Purpose
-
-<What the agent must accomplish.>
-
-## Input
-
-- `$ARGUMENTS`: <meaning>
-
-## Workflow
-
-### Phase 1: <Name>
-
-Goal:
-
-Actions:
-
-Output:
-
-## User Approval Gates
-
-- <approval gate>
-
-## Output
-
-- <artifact or response format>
-
-## Failure Handling
-
-- <failure rule>
-```
-
-### Role Template
-
-```markdown
----
-name: <role-name>
-description: <role purpose>
-role: <role-name>
----
-
-# <Role Name>
-
-## Mission
-
-## Inputs
-
-## Responsibilities
-
-## Constraints
-
-## Process
-
-## Output Format
-
-## Failure Conditions
-```
-
-### Skill Template
-
-```markdown
----
-name: <skill-name>
-description: <when and why to use this skill>
-version: 0.1.0
----
-
-# <Skill Name>
-
-## When To Use
-
-## When Not To Use
-
-## Required Inputs
-
-## Procedure
-
-## Required Output
-
-## Quality Bar
-
-## Failure Handling
-```
-
-### Rule Template
-
-```markdown
-# <Rule Name>
-
-## Purpose
-
-## Applies To
-
-## Policy
-
-## Allow
-
-## Block
-
-## Record
-
-## Examples
-```
+This keeps authoring fast while preserving a stable shape for prompt assembly
+and benchmark reproducibility.

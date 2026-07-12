@@ -26,7 +26,48 @@ The manifest should define:
 - target name
 - target kind
 - description
+- target support status for commands, plugin loading, lifecycle hooks, and other
+  host-dependent surfaces
 - provided asset directories
+
+## Target Support Reality Check
+
+Target manifests must distinguish desired Logos behavior from confirmed target
+host behavior.
+
+Use `target_support` for every host-dependent surface:
+
+```toml
+[target_support.commands]
+status = "confirmed"
+notes = "Target supports project commands."
+
+[target_support.plugin]
+status = "assumed"
+notes = "Plugin loading behavior still needs verification."
+
+[target_support.before_tool]
+status = "emulated"
+notes = "Logos adapter intercepts tool requests before forwarding."
+
+[target_support.after_tool]
+status = "assumed"
+notes = "Native lifecycle support is not confirmed."
+```
+
+Allowed status values:
+
+| Status | Meaning |
+|---|---|
+| `confirmed` | Target host natively supports the surface |
+| `emulated` | Logos can implement the surface through a wrapper, adapter, or command |
+| `assumed` | Designed but not verified against the target host |
+| `unsupported` | Target host cannot support or emulate the surface |
+
+Runtime guarantees may rely only on `confirmed` or `emulated` surfaces.
+`assumed` surfaces are design assumptions and must be recorded in benchmark
+metadata if included. `unsupported` surfaces must not be included in active
+target assembly.
 
 ## Target Directory Shape
 
@@ -125,4 +166,7 @@ Before adding or changing a target:
 - Are target-specific files isolated under `targets/<target>`?
 - Are core policies left in `core/`?
 - Are target limitations documented?
+- Are `target_support` statuses explicit for commands, plugin loading, hooks,
+  tools, and context injection?
+- Are assumed surfaces excluded from runtime guarantees?
 - Can the installer dry-run the changes?

@@ -7,8 +7,9 @@ Accepted.
 ## Decision
 
 Logos will support plugins as external harness packs. The initial structure
-includes `plugins/`, `src/logos/plugins/`, and
-`schemas/plugin-manifest.schema.json`, but runtime plugin loading is deferred.
+includes `plugins/` and plugin manifest schemas, but runtime plugin loading is
+deferred. Plugin runtime code, when introduced, should live under `packages/`
+rather than `src/logos`.
 
 ## Rationale
 

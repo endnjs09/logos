@@ -8,9 +8,15 @@ Accepted.
 
 Logos uses a complete final structure with incremental implementation.
 
-Runtime code lives under `src/logos`. Harness assets live under `harness`.
-Schemas live under `schemas`. Benchmark inputs live under `benchmarks`. Run
-artifacts live under `runs`, and comparison reports live under `reports`.
+Runtime code lives under `packages/`, split by package responsibility:
+`logos-core`, `logos-installer`, `logos-gemini`, and `logos-eval`. Core
+instruction assets live under `core/`. Target installation assets live under
+`targets/`. Schemas live under `schemas/`. Benchmark inputs live under
+`benchmarks/`. Run artifacts live under `runs/`, and comparison reports live
+under `reports/`.
+
+`src/logos/cli` is retained only as a compatibility shim for older module
+entrypoints. New runtime implementation belongs in `packages/`.
 
 ## Rationale
 

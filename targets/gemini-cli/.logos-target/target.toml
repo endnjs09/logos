@@ -10,3 +10,23 @@ hooks = "hooks"
 tools = "tools"
 templates = "templates"
 install = "install"
+
+[target_support.commands]
+status = "assumed"
+notes = "Gemini CLI project command behavior must be verified against the installed CLI."
+
+[target_support.plugin]
+status = "assumed"
+notes = "Gemini CLI plugin loading behavior is not yet confirmed."
+
+[target_support.before_tool]
+status = "assumed"
+notes = "May require Logos wrapper or adapter emulation."
+
+[target_support.after_tool]
+status = "assumed"
+notes = "May require Logos wrapper or adapter emulation."
+
+[target_support.session_state]
+status = "emulated"
+notes = "Logos stores Nous Mode state in .logos/session/nous-state.json."

@@ -1,0 +1,77 @@
+{
+  "target": "gemini-cli",
+  "installed_at": "2026-07-12T11:34:02.494790+00:00",
+  "logos_version": "0.1.0",
+  "files": [
+    {
+      "path": ".gemini/GEMINI.md",
+      "managed": true,
+      "sha256": "00a69af9eab0c85ca76534ae5d44fbe8d52249d78e808679ac3d81c27bcb10c1"
+    },
+    {
+      "path": ".gemini/settings.json",
+      "managed": true,
+      "sha256": "248c0cd88a1967fbbf7e697b04491d027bbae265923cd837526ed85c7aece503"
+    },
+    {
+      "path": ".gemini/plugin/README.md",
+      "managed": true,
+      "sha256": "145c1498520c4d3127ba720ae0ce42d9a4a8c18631257d0e4d4199fefaf8efce"
+    },
+    {
+      "path": ".gemini/commands/nous.md",
+      "managed": true,
+      "sha256": "f8f7c0b9e4daf0b89d158bb913481683395701503352260da70f1f902f0b86c1"
+    },
+    {
+      "path": ".agents/AGENTS.md",
+      "managed": true,
+      "sha256": "7988c40af2fae6268f91cb440bb2ba8571dad85a405e5d55c86c0a919094cdc0"
+    },
+    {
+      "path": ".agents/skills/nous/SKILL.md",
+      "managed": true,
+      "sha256": "7656c144d2062a6fcb9431e2b96ef79fabea4257005fe12bb1d70ff3776090ef"
+    },
+    {
+      "path": ".agents/skills/codebase-exploration/SKILL.md",
+      "managed": true,
+      "sha256": "a86d8cb2d6771d3f7480a34391cb74603f1a8872a3db789b31dee5b2a7580645"
+    },
+    {
+      "path": ".agents/skills/implementation-planning/SKILL.md",
+      "managed": true,
+      "sha256": "b2583dfcf36a42db494a0dac83786172d109298d0bcc301b42f0d43804aab2eb"
+    },
+    {
+      "path": ".agents/skills/risk-review/SKILL.md",
+      "managed": true,
+      "sha256": "26726ec58d32e9e87d97441fd2b24cd3c232bfcf6e11db469ad372ba1ad09c7f"
+    },
+    {
+      "path": ".agents/skills/verification/SKILL.md",
+      "managed": true,
+      "sha256": "3706c609a00a53bee85e33c4cc7439bd0491ce4969c6e8ea8bf32013a167d564"
+    },
+    {
+      "path": ".logos/config.toml",
+      "managed": true,
+      "sha256": "c3409aa25bd1f8537ba45c4ca7b24539eb93642288f4972aa771694c53dae658"
+    },
+    {
+      "path": ".logos/target.toml",
+      "managed": true,
+      "sha256": "27e797a8d62e6c0806b6eb8eb537420a0ba317a668333e2e3a30dfa59c3f8b39"
+    },
+    {
+      "path": ".logos/active-profile.toml",
+      "managed": true,
+      "sha256": "2d9a823b2b1322c2881c39080f4783de1e43e598cedf07fabee609e6266626e2"
+    },
+    {
+      "path": ".logos/session/nous-state.json",
+      "managed": true,
+      "sha256": "890f44c4fcea8f57e89b3421e64f3ff34cc4ac06fdb5d293f631bfafbebcb849"
+    }
+  ]
+}

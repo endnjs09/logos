@@ -1,7 +1,23 @@
+---
+id: logos.gemini.host-instructions
+kind: template
+name: gemini-host-instructions
+description: Gemini CLI host instructions for a Logos-installed project.
+status: active
+version: 0.1.0
+target: gemini-cli
+---
+
+<!-- logos-managed: true -->
+<!-- logos-target: gemini-cli -->
+<!-- logos-version: 0.1.0 -->
+
 # Gemini Host Instructions
 
-This file is reserved for Gemini baseline and Gemini + Logos host instructions.
+This project has Logos installed for Gemini CLI.
 
-Keep this file focused on Gemini-specific execution constraints. Shared Logos
-workflow policy belongs in `.logos/config.yaml`, `logos.toml`, or files under
-`.logos/`.
+When Logos Nous Mode is active, handle subsequent user requests through the
+Logos Nous workflow.
+
+Load project instructions from `.agents/AGENTS.md` and the Nous skill from
+`.agents/skills/nous/SKILL.md` when Nous Mode is active.

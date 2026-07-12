@@ -78,9 +78,11 @@ For maintainers:
 
 1. `README.md`
 2. `docs/reference/markdown-authoring.md`
-3. `docs/reference/targets.md`
-4. `docs/reference/plugins.md`
-5. `docs/reference/benchmark-format.md`
-6. `docs/reference/run-log-format.md`
-7. `docs/decisions/*.md`
-
+3. `docs/reference/frontmatter-reference.md`
+4. `docs/reference/document-types.md`
+5. `docs/reference/instruction-authoring.md`
+6. `docs/reference/targets.md`
+7. `docs/reference/plugins.md`
+8. `docs/reference/benchmark-format.md`
+9. `docs/reference/run-log-format.md`
+10. `docs/decisions/*.md`

@@ -6,7 +6,12 @@ design_version = "v12"
 architecture = "complete_structure_incremental_implementation"
 
 [paths]
-source = "src/logos"
+compat_cli = "src/logos/cli"
+packages = "packages"
+logos_core = "packages/logos-core/src/logos_core"
+logos_installer = "packages/logos-installer/src/logos_installer"
+logos_gemini = "packages/logos-gemini/src"
+logos_eval = "packages/logos-eval/src"
 core_assets = "core"
 targets = "targets"
 plugins = "plugins"
@@ -42,7 +47,11 @@ run_dir_template = "runs/{timestamp}-{task_id}-{condition}"
 comparison_report_dir = "reports/comp"
 
 [architecture_layers]
-runtime = ["core", "config", "targets", "installer", "orch", "workflow", "policies", "context", "scan", "prompts", "tools", "artifacts", "eval", "telemetry", "cli", "utils", "plugins"]
+runtime_packages = ["logos-core", "logos-installer", "logos-gemini", "logos-eval"]
+logos_core = ["assets", "config", "context", "evaluation", "guards", "manifests", "prompt_assembly", "rules", "workflow"]
+logos_installer = ["cli", "install", "uninstall", "doctor", "render", "session", "targets"]
+logos_gemini = ["mode", "injection", "hooks", "guards", "runtime", "approval", "checkpoint", "mcp"]
+logos_eval = ["baseline", "runner", "measurement", "scoring", "reports", "reproducibility"]
 core_assets = ["roles", "rules", "workflows", "prompts", "guards", "profiles"]
 target_assets = ["gemini-cli", "codex-cli"]
 extension_assets = ["plugins"]

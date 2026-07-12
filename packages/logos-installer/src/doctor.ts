@@ -1,2 +1,0 @@
-// Doctor command placeholder.
-

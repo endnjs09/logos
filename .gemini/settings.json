@@ -1,5 +1,4 @@
 {
-  "project": "logos-harness",
-  "instructionFile": ".gemini/GEMINI.md",
-  "configFile": "logos.toml"
+  "logosTarget": "gemini-cli",
+  "logosVersion": "0.1.0"
 }
