@@ -6,7 +6,6 @@ design_version = "v12"
 architecture = "complete_structure_incremental_implementation"
 
 [paths]
-compat_cli = "src/logos/cli"
 packages = "packages"
 logos_core = "packages/logos-core/src/logos_core"
 logos_installer = "packages/logos-installer/src/logos_installer"

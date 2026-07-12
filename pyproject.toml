@@ -30,8 +30,6 @@ dev = [
 
 [tool.setuptools]
 packages = [
-  "logos",
-  "logos.cli",
   "logos_core",
   "logos_core.assets",
   "logos_core.config",
@@ -47,8 +45,6 @@ packages = [
 ]
 
 [tool.setuptools.package-dir]
-logos = "src/logos"
-"logos.cli" = "src/logos/cli"
 logos_core = "packages/logos-core/src/logos_core"
 "logos_core.assets" = "packages/logos-core/src/logos_core/assets"
 "logos_core.config" = "packages/logos-core/src/logos_core/config"
@@ -65,7 +61,6 @@ logos_installer = "packages/logos-installer/src/logos_installer"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [
-  "src",
   "packages/logos-core/src",
   "packages/logos-installer/src"
 ]
@@ -80,7 +75,6 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.12"
 packages = [
-  "logos",
   "logos_core",
   "logos_installer"
 ]

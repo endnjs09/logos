@@ -15,9 +15,6 @@ instruction assets live under `core/`. Target installation assets live under
 `benchmarks/`. Run artifacts live under `runs/`, and comparison reports live
 under `reports/`.
 
-`src/logos/cli` is retained only as a compatibility shim for older module
-entrypoints. New runtime implementation belongs in `packages/`.
-
 ## Rationale
 
 The project goal is not to wrap Gemini. The goal is to compensate for Gemini's

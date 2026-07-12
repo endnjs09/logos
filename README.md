@@ -21,7 +21,6 @@ benchmark inputs    -> benchmarks
 run artifacts       -> runs
 comparison output   -> reports
 design rationale    -> docs
-compatibility shim  -> src/logos/cli
 ```
 
 ## Runtime Packages
@@ -37,10 +36,6 @@ Logos runtime code is split by package boundary:
   hooks, runtime state, evidence, approvals, checkpoints, and target guards.
 - `packages/logos-eval`: baseline comparison, benchmark runs, measurement
   logs, scoring, reports, and reproducibility records.
-
-`src/logos/cli` is kept only as a compatibility shim for older
-`python -m logos.cli.main` entrypoints. New runtime code should be added under
-`packages/`.
 
 ## Core Assets
 
