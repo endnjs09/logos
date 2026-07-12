@@ -1,2 +1,0 @@
-// Nous trigger detection placeholder.
-
