@@ -7,6 +7,7 @@ from pathlib import Path
 
 from logos_installer.doctor import doctor_gemini
 from logos_installer.install import install_gemini
+from logos_installer.models import InstallError
 from logos_installer.session import read_session_state, set_nous_mode
 from logos_installer.uninstall import uninstall_gemini
 
@@ -14,6 +15,11 @@ from logos_installer.uninstall import uninstall_gemini
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="logos")
     parser.add_argument("--root", default=".", help="Project root. Defaults to current directory.")
+    parser.add_argument(
+        "--source-root",
+        default=None,
+        help="Logos source root containing core/ and targets/. Defaults to current directory.",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     install_parser = subparsers.add_parser("install")
@@ -33,9 +39,16 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
+    source_root = Path(args.source_root).resolve() if args.source_root else Path.cwd().resolve()
 
     if args.command == "install":
-        result = install_gemini(root, force=args.force)
+        try:
+            result = install_gemini(root, source_root=source_root, force=args.force)
+        except InstallError as exc:
+            print("Install failed")
+            for message in exc.messages:
+                print(f"ERR  {message}")
+            return 1
         print_result("Install", result.created, result.updated, result.skipped, result.warnings)
         return 0
 
@@ -45,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "doctor":
-        report = doctor_gemini(root)
+        report = doctor_gemini(root, source_root=source_root)
         print("Logos doctor: gemini-cli")
         for item in report.ok:
             print(f"OK   {item}")

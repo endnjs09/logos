@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "logos_version": "0.1.0",
+  "generated_at": "2026-07-13T14:01:55.971878+00:00",
+  "selection_policy": {
+    "default_status": "active",
+    "raw_assets_selected": false,
+    "target": "gemini-cli",
+    "profile": "gemini"
+  },
+  "guard_count": 8,
+  "guards": [
+    {
+      "id": "logos.core.guards.context-budget",
+      "path": "guards/context-budget.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "6439ef3155c6bd5aa64bd91cb5a3486851628b41973d1a6c1734cce36f80512c"
+    },
+    {
+      "id": "logos.core.guards.dependency-install",
+      "path": "guards/dependency-install.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "0d831f1262ffdabb09e6223c3eb6013911d32034926178fbdabcb1edcbc663b2"
+    },
+    {
+      "id": "logos.core.guards.destructive-command",
+      "path": "guards/destructive-command.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "2b7aa2236d7ddb7af7194fd969609d99cfa54c8c51cd9313de899aeedf109d0b"
+    },
+    {
+      "id": "logos.core.guards.excluded-scope",
+      "path": "guards/excluded-scope.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "1bed1a997cb957c341f1ee5d4b6111883dbb94bb201ed8a0e492d32899a5ab1a"
+    },
+    {
+      "id": "logos.core.guards.file-write-boundary",
+      "path": "guards/file-write-boundary.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "4a35e95503bd7e0b89682a7f1d5f9e37b09662da1bb8cc5595c63d617c754e95"
+    },
+    {
+      "id": "logos.core.guards.high-risk-override",
+      "path": "guards/high-risk-override.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "49b7c4101d4a3bc060ff9c68bce7226901834a37ae4ee61eb18e76da340dc2c2"
+    },
+    {
+      "id": "logos.core.guards.required-fields",
+      "path": "guards/required-fields.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "bb7532ea3b8e9b4ddd6e6bcf7213865f8da2579bbd3fc3ccac9e60304807e6c3"
+    },
+    {
+      "id": "logos.core.guards.secrets-detection",
+      "path": "guards/secrets-detection.yaml",
+      "status": "raw",
+      "selected": false,
+      "has_frontmatter": false,
+      "enforcement": null,
+      "enforcement_status": null,
+      "decision": null,
+      "risk_level": null,
+      "severity": null,
+      "sha256": "e6b649939d1924a165d1423e58f75d615a16aded94348b15b1502accfed9d5b2"
+    }
+  ]
+}

@@ -19,3 +19,11 @@ class InstallResult:
     updated: list[Path]
     skipped: list[Path]
     warnings: list[str]
+
+
+class InstallError(RuntimeError):
+    """Raised when Logos cannot safely complete installation."""
+
+    def __init__(self, messages: list[str]) -> None:
+        super().__init__("\n".join(messages))
+        self.messages = messages

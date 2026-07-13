@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from logos_core import __version__
-from logos_installer.models import InstallResult, RenderedFile
+from logos_core.assets.scanner import scan_core_assets
+from logos_core.manifests.writer import write_core_manifests
+from logos_core.prompt_assembly.assembler import assemble_prompt_bundle
+from logos_core.prompt_assembly.manifest import write_prompt_assembly_manifest
+from logos_installer.models import InstallError, InstallResult, RenderedFile
 from logos_installer.render import MANAGED_MARKER, all_rendered_files
 
 
@@ -27,7 +31,13 @@ RUNTIME_DIRS = [
 ]
 
 
-def install_gemini(root: Path, *, force: bool = False) -> InstallResult:
+def install_gemini(
+    root: Path,
+    *,
+    source_root: Path | None = None,
+    force: bool = False,
+) -> InstallResult:
+    source = (source_root or Path.cwd()).resolve()
     created: list[Path] = []
     updated: list[Path] = []
     skipped: list[Path] = []
@@ -36,10 +46,26 @@ def install_gemini(root: Path, *, force: bool = False) -> InstallResult:
     for directory in RUNTIME_DIRS:
         (root / directory).mkdir(parents=True, exist_ok=True)
 
+    core_scan = scan_core_assets(source)
+    if core_scan.validation_issues:
+        raise InstallError(
+            [
+                f"{issue.path.as_posix()}: {issue.message}"
+                for issue in core_scan.validation_issues
+            ]
+        )
+    write_core_manifests(root, core_scan, target="gemini-cli", profile="gemini")
+    assembly_bundle = assemble_prompt_bundle(source, core_scan, target="gemini-cli", profile="gemini")
+    write_prompt_assembly_manifest(root, assembly_bundle)
+
     manifest = read_manifest(root)
     installed_files: list[dict[str, str | bool]] = []
 
-    for rendered in all_rendered_files(root):
+    for rendered in all_rendered_files(
+        root,
+        template_base=source,
+        extra_context=assembly_context(assembly_bundle),
+    ):
         outcome = write_rendered_file(root, rendered, manifest=manifest, force=force)
         if outcome == "created":
             created.append(rendered.path)
@@ -59,7 +85,7 @@ def install_gemini(root: Path, *, force: bool = False) -> InstallResult:
                 }
             )
 
-    write_manifest(root, installed_files)
+    write_manifest(root, installed_files, source_root=source)
     return InstallResult(created=created, updated=updated, skipped=skipped, warnings=warnings)
 
 
@@ -118,13 +144,14 @@ def read_manifest(root: Path) -> dict[str, object]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def write_manifest(root: Path, files: list[dict[str, str | bool]]) -> None:
+def write_manifest(root: Path, files: list[dict[str, str | bool]], *, source_root: Path) -> None:
     path = manifest_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "target": "gemini-cli",
         "installed_at": datetime.now(timezone.utc).isoformat(),
         "logos_version": __version__,
+        "source_root": str(source_root),
         "files": files,
     }
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -132,3 +159,11 @@ def write_manifest(root: Path, files: list[dict[str, str | bool]]) -> None:
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def assembly_context(bundle) -> dict[str, str]:
+    return {
+        "logos_gemini_bootstrap_context": bundle.gemini_bootstrap_context,
+        "logos_agents_operating_rules": bundle.agents_operating_rules,
+        "logos_nous_skill_directive": bundle.nous_skill_directive,
+    }

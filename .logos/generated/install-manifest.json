@@ -1,12 +1,13 @@
 {
   "target": "gemini-cli",
-  "installed_at": "2026-07-12T11:34:02.494790+00:00",
+  "installed_at": "2026-07-13T14:01:56.003453+00:00",
   "logos_version": "0.1.0",
+  "source_root": "C:\\dev\\logos",
   "files": [
     {
       "path": ".gemini/GEMINI.md",
       "managed": true,
-      "sha256": "00a69af9eab0c85ca76534ae5d44fbe8d52249d78e808679ac3d81c27bcb10c1"
+      "sha256": "abd639cac3eea2fd559e196a27a9e40e1688797b822219f5f65f7b04b1e8d590"
     },
     {
       "path": ".gemini/settings.json",
@@ -26,12 +27,12 @@
     {
       "path": ".agents/AGENTS.md",
       "managed": true,
-      "sha256": "7988c40af2fae6268f91cb440bb2ba8571dad85a405e5d55c86c0a919094cdc0"
+      "sha256": "97f4fcfedf07d5dc85780c417b735cd88fc212a64b422569fa39f42f43d9dbfe"
     },
     {
       "path": ".agents/skills/nous/SKILL.md",
       "managed": true,
-      "sha256": "7656c144d2062a6fcb9431e2b96ef79fabea4257005fe12bb1d70ff3776090ef"
+      "sha256": "7b868a7d96944f10ee1b3c1d86dac9fdec6384bdd613cbce9a587de0b3a98e2b"
     },
     {
       "path": ".agents/skills/codebase-exploration/SKILL.md",
