@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/asset-manifest.schema.json",
+  "title": "Logos Asset Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "logos_version",
+    "generated_at",
+    "selection_policy",
+    "total_assets",
+    "selected_assets",
+    "validation_issue_count",
+    "assets",
+    "validation_issues"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "logos_version": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "selection_policy": { "$ref": "#/$defs/selection_policy" },
+    "total_assets": { "type": "integer", "minimum": 0 },
+    "selected_assets": { "type": "integer", "minimum": 0 },
+    "validation_issue_count": { "type": "integer", "minimum": 0 },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "validation_issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/validation_issue" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "selection_policy": {
+      "type": "object",
+      "required": ["default_status", "raw_assets_selected", "target", "profile"],
+      "properties": {
+        "default_status": { "type": "string", "const": "active" },
+        "raw_assets_selected": { "type": "boolean", "const": false },
+        "target": { "type": "string" },
+        "profile": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "asset": {
+      "type": "object",
+      "required": [
+        "id",
+        "path",
+        "kind",
+        "status",
+        "selected",
+        "has_frontmatter",
+        "version",
+        "sha256"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "selected": { "type": "boolean" },
+        "has_frontmatter": { "type": "boolean" },
+        "version": { "type": ["string", "null"] },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "validation_issue": {
+      "type": "object",
+      "required": ["path", "message"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

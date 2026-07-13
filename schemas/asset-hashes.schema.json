@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/asset-hashes.schema.json",
+  "title": "Logos Asset Hashes Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "logos_version",
+    "generated_at",
+    "selection_policy",
+    "algorithm",
+    "files"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "logos_version": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "selection_policy": {
+      "type": "object",
+      "required": ["default_status", "raw_assets_selected", "target", "profile"],
+      "properties": {
+        "default_status": { "type": "string", "const": "active" },
+        "raw_assets_selected": { "type": "boolean", "const": false },
+        "target": { "type": "string" },
+        "profile": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "algorithm": { "type": "string", "const": "sha256" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

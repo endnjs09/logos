@@ -72,15 +72,16 @@ def validate_paths(paths: list[Path], *, default_assembly: bool = False) -> list
 
 
 def load_asset(path: Path) -> tuple[Asset | None, list[ValidationIssue]]:
-    text = path.read_text(encoding="utf-8")
-    if not text.startswith("---\n"):
+    text = path.read_text(encoding="utf-8").lstrip("\ufeff")
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
         return None, [ValidationIssue(path, "missing YAML frontmatter")]
 
-    end = text.find("\n---", 4)
-    if end == -1:
+    end = find_frontmatter_end(lines)
+    if end is None:
         return None, [ValidationIssue(path, "unterminated YAML frontmatter")]
 
-    raw = text[4:end]
+    raw = "\n".join(lines[1:end])
     try:
         frontmatter = parse_frontmatter(raw)
     except ValueError as exc:
@@ -119,6 +120,13 @@ def validate_frontmatter(asset: Asset) -> list[ValidationIssue]:
         issues.extend(validate_hook(asset))
 
     return issues
+
+
+def find_frontmatter_end(lines: list[str]) -> int | None:
+    for index, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            return index
+    return None
 
 
 def validate_guard(asset: Asset) -> list[ValidationIssue]:
