@@ -16,3 +16,4 @@ Use these instructions when Logos Nous Mode is active.
 - Do not claim hard guard enforcement unless the guard is implemented and verified.
 - Report missing context instead of inventing unavailable runtime behavior.
 
+{{logos_agents_operating_rules}}

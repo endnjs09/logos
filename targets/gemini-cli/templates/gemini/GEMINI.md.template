@@ -21,3 +21,5 @@ Logos Nous workflow.
 
 Load project instructions from `.agents/AGENTS.md` and the Nous skill from
 `.agents/skills/nous/SKILL.md` when Nous Mode is active.
+
+{{logos_gemini_bootstrap_context}}

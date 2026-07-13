@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "logos_version": "0.1.0",
+  "generated_at": "2026-07-13T14:01:55.980398+00:00",
+  "target": "gemini-cli",
+  "profile": "gemini",
+  "mode": "nous",
+  "input_count": 15,
+  "inputs": [
+    {
+      "id": "logos.prompt.base-system",
+      "path": "prompts/base-system.md",
+      "kind": "template",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "89a460032323103c3c66fe1cb1a24cb7908b91d65c057302450a94f72ceb2df5"
+    },
+    {
+      "id": "logos.prompt.response-style",
+      "path": "prompts/response-style.md",
+      "kind": "template",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "18c7cec5009c7275cf45e1187efe4878ffac47e81e9f6b23562c594452f1ea7d"
+    },
+    {
+      "id": "logos.prompt.target-adapter",
+      "path": "prompts/target-adapter.md",
+      "kind": "template",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "852b2c3bacb3bea678a37ec1109254a578afa8807e93921abef6debdd64664d3"
+    },
+    {
+      "id": "logos.rule.command-execution",
+      "path": "rules/command-execution.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "e9183bad7435016c5405a649037bc6e59a5a6d7c73e3698f2ff500c00ccfad19"
+    },
+    {
+      "id": "logos.rule.context-handoff",
+      "path": "rules/context-handoff.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "961b8d5d0857ae38df12a00983e1994639f5a463ef1d305f7411d808afaab881"
+    },
+    {
+      "id": "logos.rule.filesystem",
+      "path": "rules/filesystem.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "89bc273e108599159b036a504103e77935eaf5b9ce325a56a44f2f11b13e7aa1"
+    },
+    {
+      "id": "logos.rule.git",
+      "path": "rules/git.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "d30eb9ea6779dab2ec5296ec035a6b249641dd86e0069dca9b379fbc0c8679ee"
+    },
+    {
+      "id": "logos.rule.secrets",
+      "path": "rules/secrets.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "9e5cd5008a4e3a3036148feebbd87c0c4b7860f67c4cb315e183581e8039340b"
+    },
+    {
+      "id": "logos.rule.security",
+      "path": "rules/security.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "b78c986ffe61ff4a365eae8ddf4abd06bb14a5ea5e746109b54c09d87e968fe5"
+    },
+    {
+      "id": "logos.rule.user-approval",
+      "path": "rules/user-approval.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "33edec43542de3b94e7a4f56b5859b38eb064292da10ca97d6f1d0efe9aa7f8f"
+    },
+    {
+      "id": "logos.rule.verification",
+      "path": "rules/verification.md",
+      "kind": "rule",
+      "status": "active",
+      "version": "0.1.0",
+      "sha256": "22130db9c0107858e77457bc04b3ed1e36d5beffa6fc9d6fd732f4da55658f97"
+    },
+    {
+      "id": "logos.core.profiles.gemini",
+      "path": "profiles/gemini.yaml",
+      "kind": "profile",
+      "status": "structured",
+      "version": null,
+      "sha256": "cbf0685d2aa0e0498d31f680f2c633e4398f75f02d73cf223bc9c90b71cf1cf7"
+    },
+    {
+      "id": "logos.core.workflows.execution",
+      "path": "workflows/execution.yaml",
+      "kind": "workflow",
+      "status": "structured",
+      "version": null,
+      "sha256": "eb0d9f43908ddc0f058c5656f5e2f6eb76fdfb55909594e7e6941bf2f7cb1238"
+    },
+    {
+      "id": "logos.core.workflows.planning",
+      "path": "workflows/planning.yaml",
+      "kind": "workflow",
+      "status": "structured",
+      "version": null,
+      "sha256": "6cac4cc754f1cd1a968dfca2e0c95f3ef617a1fb622e5ced2db2c946e9b0b073"
+    },
+    {
+      "id": "logos.core.workflows.review",
+      "path": "workflows/review.yaml",
+      "kind": "workflow",
+      "status": "structured",
+      "version": null,
+      "sha256": "aa87903aa6b69f5b00a8d3ec3ce3cc502c860a2400fed8e529d5cf62097d32d7"
+    }
+  ],
+  "outputs": [
+    ".gemini/GEMINI.md",
+    ".agents/AGENTS.md",
+    ".agents/skills/nous/SKILL.md"
+  ],
+  "markers": [
+    "logos-assembly: gemini-bootstrap",
+    "logos-assembly: agents-operating-rules",
+    "logos-assembly: nous-skill-directive"
+  ]
+}

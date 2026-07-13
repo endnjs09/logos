@@ -29,12 +29,18 @@ TEMPLATE_MAP = {
 }
 
 
-def all_rendered_files(root: Path, template_base: Path | None = None) -> list[RenderedFile]:
+def all_rendered_files(
+    root: Path,
+    template_base: Path | None = None,
+    extra_context: dict[str, str] | None = None,
+) -> list[RenderedFile]:
     source_root = template_base or Path.cwd()
     context = {
         "logos_version": __version__,
         "project_name": root.name,
     }
+    if extra_context:
+        context.update(extra_context)
     return [
         RenderedFile(Path(destination), render_template(source_root / TEMPLATE_ROOT / template, context))
         for template, destination in TEMPLATE_MAP.items()

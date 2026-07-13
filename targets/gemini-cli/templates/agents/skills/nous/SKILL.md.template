@@ -45,6 +45,8 @@ Guide Gemini CLI through Logos Nous Mode after the project session is activated.
 4. Prefer scoped edits and explicit verification.
 5. Report limitations when V1 runtime guards, hooks, or evidence capture are not yet available.
 
+{{logos_nous_skill_directive}}
+
 ## Outputs
 
 - A clear response to the user.
@@ -58,4 +60,3 @@ Stop and report missing installation, missing session state, or unavailable targ
 
 - `docs/reference/markdown-authoring.md`
 - `docs/reference/frontmatter-reference.md`
-

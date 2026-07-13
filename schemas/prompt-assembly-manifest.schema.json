@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/prompt-assembly-manifest.schema.json",
+  "title": "Logos Prompt Assembly Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "logos_version",
+    "generated_at",
+    "target",
+    "profile",
+    "mode",
+    "input_count",
+    "inputs",
+    "outputs",
+    "markers"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "logos_version": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "target": { "type": "string" },
+    "profile": { "type": "string" },
+    "mode": { "type": "string" },
+    "input_count": { "type": "integer", "minimum": 0 },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "kind", "status", "version", "sha256"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "minLength": 1 },
+          "version": { "type": ["string", "null"] },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "markers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}
