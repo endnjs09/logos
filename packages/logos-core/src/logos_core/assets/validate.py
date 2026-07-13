@@ -106,6 +106,18 @@ def validate_frontmatter(asset: Asset) -> list[ValidationIssue]:
     if kind is not None and kind not in ALLOWED_KINDS:
         issues.append(ValidationIssue(asset.path, f"unknown kind: {kind}"))
 
+    asset_id = fm.get("id")
+    name = fm.get("name")
+    if isinstance(asset_id, str) and isinstance(kind, str) and isinstance(name, str):
+        expected_id = f"logos.{kind}.{name}"
+        if asset_id != expected_id:
+            issues.append(
+                ValidationIssue(
+                    asset.path,
+                    f"id must match logos.<kind>.<name>: expected {expected_id}",
+                )
+            )
+
     status = fm.get("status")
     if status is not None and status not in ALLOWED_STATUS:
         issues.append(ValidationIssue(asset.path, f"unknown status: {status}"))

@@ -1,5 +1,5 @@
 ---
-id: logos.prompt.target-adapter
+id: logos.template.target-adapter
 kind: template
 name: target-adapter
 description: Gemini CLI target adaptation material for assembled host instructions.

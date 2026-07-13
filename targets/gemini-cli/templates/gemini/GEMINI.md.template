@@ -1,5 +1,5 @@
 ---
-id: logos.gemini.host-instructions
+id: logos.template.gemini-host-instructions
 kind: template
 name: gemini-host-instructions
 description: Gemini CLI host instructions for a Logos-installed project.

@@ -1,5 +1,5 @@
 ---
-id: logos.gemini.host-instructions
+id: logos.template.gemini-host-instructions
 kind: template
 name: gemini-host-instructions
 description: Gemini CLI host instructions for a Logos-installed project.
@@ -30,9 +30,7 @@ When Logos Nous Mode is active, use the assembled Logos instructions below as th
 
 ## Prompt Material
 
-### prompts/base-system.md
-
-# Base System Prompt
+### Base System
 
 Logos is a coding-agent harness layered onto an existing AI coding host. When
 Nous Mode is active, the host should treat Logos instructions as the operating
@@ -42,17 +40,13 @@ The host should favor deliberate planning, codebase exploration, scoped edits,
 explicit verification, and honest reporting of missing context or unavailable
 runtime support.
 
-### prompts/response-style.md
-
-# Response Style Prompt
+### Response Style
 
 Responses should be concise, evidence-backed, and explicit about what changed,
 what was verified, and what risk remains. Do not claim tests, guards, hooks, or
 runtime enforcement ran unless there is concrete evidence.
 
-### prompts/target-adapter.md
-
-# Target Adapter Prompt
+### Target Adapter
 
 Gemini CLI is the primary research target. Logos should compensate for weak
 planning, scope drift, premature implementation, and overconfident verification
@@ -60,7 +54,7 @@ by making workflow steps and evidence requirements explicit.
 
 ## Gemini Profile
 
-### profiles/gemini.yaml
+### Gemini
 
 ```yaml
 

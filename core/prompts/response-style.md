@@ -1,5 +1,5 @@
 ---
-id: logos.prompt.response-style
+id: logos.template.response-style
 kind: template
 name: response-style
 description: Response style material used when assembling Logos host instructions.

@@ -1,5 +1,5 @@
 ---
-id: logos.prompt.base-system
+id: logos.template.base-system
 kind: template
 name: base-system
 description: Base Logos instruction material used for Gemini CLI prompt assembly.

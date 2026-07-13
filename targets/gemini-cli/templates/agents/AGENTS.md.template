@@ -1,5 +1,5 @@
 ---
-id: logos.agents.project
+id: logos.template.project-agents
 kind: template
 name: project-agents
 description: Project-level Logos agent and skill loading instructions.

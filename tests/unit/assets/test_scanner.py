@@ -43,3 +43,27 @@ def test_validates_markdown_with_frontmatter(tmp_path: Path) -> None:
     assert [issue.message for issue in scan.validation_issues] == [
         "rule assets must not use enforcement: hard"
     ]
+
+
+def test_validates_id_kind_name_pattern(tmp_path: Path) -> None:
+    core = tmp_path / "core" / "rules"
+    core.mkdir(parents=True)
+    (core / "bad-id.md").write_text(
+        "---\n"
+        "id: logos.rules.bad-id\n"
+        "kind: rule\n"
+        "name: bad-id\n"
+        "description: Bad id rule.\n"
+        "status: active\n"
+        "version: 0.1.0\n"
+        "---\n"
+        "\n"
+        "# Bad Id\n",
+        encoding="utf-8",
+    )
+
+    scan = scan_core_assets(tmp_path)
+
+    assert [issue.message for issue in scan.validation_issues] == [
+        "id must match logos.<kind>.<name>: expected logos.rule.bad-id"
+    ]

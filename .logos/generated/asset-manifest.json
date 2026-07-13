@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logos_version": "0.1.0",
-  "generated_at": "2026-07-13T14:01:55.967352+00:00",
+  "generated_at": "2026-07-13T15:13:09.787032+00:00",
   "selection_policy": {
     "default_status": "active",
     "raw_assets_selected": false,
@@ -233,14 +233,14 @@
       "sha256": "60bd446c1f5b9602cf4a687e607f8e84e0411a28daf00a8dfb33a43ee0e4b17f"
     },
     {
-      "id": "logos.prompt.base-system",
+      "id": "logos.template.base-system",
       "path": "prompts/base-system.md",
       "kind": "template",
       "status": "active",
       "selected": true,
       "has_frontmatter": true,
       "version": "0.1.0",
-      "sha256": "89a460032323103c3c66fe1cb1a24cb7908b91d65c057302450a94f72ceb2df5"
+      "sha256": "8bfce3a11fcdf9c6ebf3ec62a51983d5aafa7f463d79d55ae0d544b9c8213937"
     },
     {
       "id": "logos.core.prompts.README",
@@ -253,24 +253,24 @@
       "sha256": "b3af00244b4a4791cc91f647717e7a8c85c75cd094c337b3bf262baca93b02a3"
     },
     {
-      "id": "logos.prompt.response-style",
+      "id": "logos.template.response-style",
       "path": "prompts/response-style.md",
       "kind": "template",
       "status": "active",
       "selected": true,
       "has_frontmatter": true,
       "version": "0.1.0",
-      "sha256": "18c7cec5009c7275cf45e1187efe4878ffac47e81e9f6b23562c594452f1ea7d"
+      "sha256": "6ba2dc3fb282ad7afde0bfc0a7b11930edc3a409cee06ad63182dabd415be1ad"
     },
     {
-      "id": "logos.prompt.target-adapter",
+      "id": "logos.template.target-adapter",
       "path": "prompts/target-adapter.md",
       "kind": "template",
       "status": "active",
       "selected": true,
       "has_frontmatter": true,
       "version": "0.1.0",
-      "sha256": "852b2c3bacb3bea678a37ec1109254a578afa8807e93921abef6debdd64664d3"
+      "sha256": "6d589c6b0397f75731ffd5fa6369a7f3a304cf6243b521a05e7dd4b827ac4ff6"
     },
     {
       "id": "logos.core.README",
@@ -620,7 +620,7 @@
       "selected": true,
       "has_frontmatter": true,
       "version": "0.1.0",
-      "sha256": "e9183bad7435016c5405a649037bc6e59a5a6d7c73e3698f2ff500c00ccfad19"
+      "sha256": "5b00182b54c777662ed819d72345f89fc7c06aa1721c186a84fa41f155fed5a0"
     },
     {
       "id": "logos.rule.context-handoff",

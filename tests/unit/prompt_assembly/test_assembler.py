@@ -7,7 +7,7 @@ from logos_core.prompt_assembly.assembler import assemble_prompt_bundle
 def test_assembles_minimal_active_assets(tmp_path: Path) -> None:
     write_asset(
         tmp_path / "core" / "prompts" / "base-system.md",
-        "logos.prompt.base-system",
+        "logos.template.base-system",
         "template",
         "# Base\n\nUse Logos.",
     )
@@ -27,6 +27,8 @@ def test_assembles_minimal_active_assets(tmp_path: Path) -> None:
     assert "logos-assembly: gemini-bootstrap" in bundle.gemini_bootstrap_context
     assert "Use Logos." in bundle.gemini_bootstrap_context
     assert "logos-assembly: agents-operating-rules" in bundle.agents_operating_rules
+    assert "### Verification" in bundle.agents_operating_rules
+    assert "# Verification" not in bundle.agents_operating_rules.splitlines()
     assert "Verify." in bundle.agents_operating_rules
     assert all(item.path != "rules/raw.md" for item in bundle.inputs)
 

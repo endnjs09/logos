@@ -18,5 +18,5 @@ depends_on:
 # Command Execution Rule
 
 Use commands to inspect, build, test, and verify. Prefer narrow commands with a
-clear purpose. Avoid destructive, network, credential, or production-affecting
-commands unless the user has approved the risk.
+clear purpose. For destructive, network, credential, or production-affecting
+commands, follow the user approval rule instead of deciding approval locally.
