@@ -3,8 +3,8 @@ name = "gemini-cli"
 kind = "primary"
 
 [target_support.commands]
-status = "assumed"
-notes = "Gemini CLI project command behavior must be verified."
+status = "confirmed"
+notes = "Official Gemini CLI docs define project commands in <project>/.gemini/commands/*.toml. Local smoke test still requires an installed Gemini CLI binary."
 
 [target_support.plugin]
 status = "assumed"
@@ -20,5 +20,4 @@ notes = "May require Logos wrapper or adapter emulation."
 
 [target_support.session_state]
 status = "emulated"
-notes = "Logos stores session state under .logos/session."
-
+notes = "Logos stores Nous Mode state in .logos/session/nous-state.json."

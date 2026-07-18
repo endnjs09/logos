@@ -1,6 +1,6 @@
 {
   "target": "gemini-cli",
-  "installed_at": "2026-07-13T15:13:09.806205+00:00",
+  "installed_at": "2026-07-16T08:27:49.504195+00:00",
   "logos_version": "0.1.0",
   "source_root": "C:\\dev\\logos",
   "files": [
@@ -20,9 +20,9 @@
       "sha256": "145c1498520c4d3127ba720ae0ce42d9a4a8c18631257d0e4d4199fefaf8efce"
     },
     {
-      "path": ".gemini/commands/nous.md",
+      "path": ".gemini/commands/nous.toml",
       "managed": true,
-      "sha256": "f8f7c0b9e4daf0b89d158bb913481683395701503352260da70f1f902f0b86c1"
+      "sha256": "4d88c9cef267fab42eadc93ae73ef9d8e5df4a90ea528d625c3ca77337a711a2"
     },
     {
       "path": ".agents/AGENTS.md",
@@ -62,7 +62,7 @@
     {
       "path": ".logos/target.toml",
       "managed": true,
-      "sha256": "27e797a8d62e6c0806b6eb8eb537420a0ba317a668333e2e3a30dfa59c3f8b39"
+      "sha256": "e673ca2708737a196423aacd64cd026b98b899af552d182afaa8bad6b1993400"
     },
     {
       "path": ".logos/active-profile.toml",
@@ -72,7 +72,7 @@
     {
       "path": ".logos/session/nous-state.json",
       "managed": true,
-      "sha256": "890f44c4fcea8f57e89b3421e64f3ff34cc4ac06fdb5d293f631bfafbebcb849"
+      "sha256": "51f7f8802416361d2485dc97344f85b2da0862189e8a8044b0798d142e28382c"
     }
   ]
 }
