@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "nous_mode": true,
+  "activated_at": "{{generated_at}}",
+  "activated_by": "logos install --target codex-cli",
+  "last_updated_at": "{{generated_at}}",
+  "target": "codex-cli",
+  "profile": "codex"
+}

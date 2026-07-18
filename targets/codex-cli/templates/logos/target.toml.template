@@ -1,15 +1,12 @@
 [target]
 name = "codex-cli"
 kind = "primary"
-description = "Codex CLI target for Logos harness installation."
 
 [provides]
 instructions = "AGENTS.md"
 skills = ".agents/skills"
 procedures = ".agents/logos/procedures"
 config = ".codex/config.toml"
-templates = "templates"
-install = "install"
 
 [target_support.agents_md]
 status = "confirmed"

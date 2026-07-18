@@ -1,0 +1,7 @@
+[project]
+name = "{{project_name}}"
+
+[logos]
+version = "{{logos_version}}"
+target = "codex-cli"
+profile = "codex"

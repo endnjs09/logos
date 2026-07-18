@@ -30,10 +30,59 @@ RUNTIME_DIRS = [
     ".logos/generated",
 ]
 
+CODEX_RUNTIME_DIRS = [
+    ".codex",
+    ".agents/skills",
+    ".agents/logos/procedures",
+    ".logos/session",
+    ".logos/plans",
+    ".logos/runs",
+    ".logos/evidence",
+    ".logos/approvals",
+    ".logos/checkpoints",
+    ".logos/cache",
+    ".logos/generated",
+]
+
 
 def install_gemini(
     root: Path,
     *,
+    source_root: Path | None = None,
+    force: bool = False,
+) -> InstallResult:
+    return install_target(
+        root,
+        target="gemini-cli",
+        profile="gemini",
+        runtime_dirs=RUNTIME_DIRS,
+        source_root=source_root,
+        force=force,
+    )
+
+
+def install_codex(
+    root: Path,
+    *,
+    source_root: Path | None = None,
+    force: bool = False,
+) -> InstallResult:
+    return install_target(
+        root,
+        target="codex-cli",
+        profile="codex",
+        runtime_dirs=CODEX_RUNTIME_DIRS,
+        source_root=source_root,
+        force=force,
+    )
+
+
+def install_target(
+    root: Path,
+    *,
+    target: str,
+    profile: str,
+    runtime_dirs: list[str],
     source_root: Path | None = None,
     force: bool = False,
 ) -> InstallResult:
@@ -43,7 +92,7 @@ def install_gemini(
     skipped: list[Path] = []
     warnings: list[str] = []
 
-    for directory in RUNTIME_DIRS:
+    for directory in runtime_dirs:
         (root / directory).mkdir(parents=True, exist_ok=True)
 
     core_scan = scan_core_assets(source)
@@ -54,18 +103,24 @@ def install_gemini(
                 for issue in core_scan.validation_issues
             ]
         )
-    write_core_manifests(root, core_scan, target="gemini-cli", profile="gemini")
-    assembly_bundle = assemble_prompt_bundle(source, core_scan, target="gemini-cli", profile="gemini")
+    write_core_manifests(root, core_scan, target=target, profile=profile)
+    assembly_bundle = assemble_prompt_bundle(source, core_scan, target=target, profile=profile)
     write_prompt_assembly_manifest(root, assembly_bundle)
 
     manifest = read_manifest(root)
     installed_files: list[dict[str, str | bool]] = []
-
-    for rendered in all_rendered_files(
+    rendered_files = all_rendered_files(
         root,
         template_base=source,
+        target=target,
         extra_context=assembly_context(assembly_bundle),
-    ):
+    )
+    rendered_paths = {rendered.path.as_posix() for rendered in rendered_files}
+
+    for obsolete in remove_obsolete_managed_files(root, manifest, rendered_paths):
+        warnings.append(f"Removed obsolete managed file: {obsolete.as_posix()}")
+
+    for rendered in rendered_files:
         outcome = write_rendered_file(root, rendered, manifest=manifest, force=force)
         if outcome == "created":
             created.append(rendered.path)
@@ -85,8 +140,44 @@ def install_gemini(
                 }
             )
 
-    write_manifest(root, installed_files, source_root=source)
+    write_manifest(root, installed_files, source_root=source, target=target)
     return InstallResult(created=created, updated=updated, skipped=skipped, warnings=warnings)
+
+
+def remove_obsolete_managed_files(
+    root: Path,
+    manifest: dict[str, object],
+    rendered_paths: set[str],
+) -> list[Path]:
+    files = manifest.get("files")
+    if not isinstance(files, list):
+        return []
+
+    removed: list[Path] = []
+    for item in files:
+        if not isinstance(item, dict) or item.get("managed") is not True:
+            continue
+        value = item.get("path")
+        if not isinstance(value, str) or value in rendered_paths:
+            continue
+        path = root / value
+        if not path.exists() or not is_managed(path, Path(value), manifest):
+            continue
+        path.unlink()
+        removed.append(Path(value))
+        remove_empty_parents(root, path.parent)
+    return removed
+
+
+def remove_empty_parents(root: Path, directory: Path) -> None:
+    protected = {root, root / ".agents", root / ".agents/skills", root / ".agents/logos"}
+    current = directory
+    while current not in protected and root in [current, *current.parents]:
+        try:
+            current.rmdir()
+        except OSError:
+            break
+        current = current.parent
 
 
 def write_rendered_file(
@@ -144,11 +235,17 @@ def read_manifest(root: Path) -> dict[str, object]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def write_manifest(root: Path, files: list[dict[str, str | bool]], *, source_root: Path) -> None:
+def write_manifest(
+    root: Path,
+    files: list[dict[str, str | bool]],
+    *,
+    source_root: Path,
+    target: str,
+) -> None:
     path = manifest_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "target": "gemini-cli",
+        "target": target,
         "installed_at": datetime.now(timezone.utc).isoformat(),
         "logos_version": __version__,
         "source_root": str(source_root),
@@ -166,4 +263,10 @@ def assembly_context(bundle) -> dict[str, str]:
         "logos_gemini_bootstrap_context": bundle.gemini_bootstrap_context,
         "logos_agents_operating_rules": bundle.agents_operating_rules,
         "logos_nous_skill_directive": bundle.nous_skill_directive,
+        "logos_codex_operating_context": bundle.codex_operating_context,
+        "logos_codex_nous_skill": bundle.codex_nous_skill,
+        "logos_codex_codebase_exploration_skill": bundle.codex_codebase_exploration_skill,
+        "logos_codex_implementation_planning_skill": bundle.codex_implementation_planning_skill,
+        "logos_codex_risk_review_skill": bundle.codex_risk_review_skill,
+        "logos_codex_verification_skill": bundle.codex_verification_skill,
     }

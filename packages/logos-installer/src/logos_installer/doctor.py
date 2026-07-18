@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
 from logos_core.assets.scanner import scan_core_assets
 from logos_core.assets.validate import validate_paths
+from logos_core.session.state import validate_session_state_payload
 
 
-REQUIRED_PATHS = [
+GEMINI_REQUIRED_PATHS = [
     ".gemini/GEMINI.md",
-    ".gemini/commands/nous.md",
+    ".gemini/commands/nous.toml",
     ".gemini/settings.json",
     ".agents/AGENTS.md",
     ".agents/skills/nous/SKILL.md",
@@ -20,6 +22,25 @@ REQUIRED_PATHS = [
     ".agents/skills/implementation-planning/SKILL.md",
     ".agents/skills/risk-review/SKILL.md",
     ".agents/skills/verification/SKILL.md",
+    ".logos/config.toml",
+    ".logos/target.toml",
+    ".logos/active-profile.toml",
+    ".logos/session/nous-state.json",
+    ".logos/generated/install-manifest.json",
+    ".logos/generated/asset-manifest.json",
+    ".logos/generated/asset-hashes.json",
+    ".logos/generated/guards-manifest.json",
+    ".logos/generated/prompt-assembly-manifest.json",
+]
+
+CODEX_REQUIRED_PATHS = [
+    "AGENTS.md",
+    ".agents/skills/nous/SKILL.md",
+    ".agents/logos/procedures/codebase-exploration.md",
+    ".agents/logos/procedures/implementation-planning.md",
+    ".agents/logos/procedures/risk-review.md",
+    ".agents/logos/procedures/verification.md",
+    ".codex/config.toml",
     ".logos/config.toml",
     ".logos/target.toml",
     ".logos/active-profile.toml",
@@ -44,12 +65,46 @@ class DoctorReport:
 
 
 def doctor_gemini(root: Path, *, source_root: Path | None = None) -> DoctorReport:
+    return doctor_target(
+        root,
+        target="gemini-cli",
+        required_paths=GEMINI_REQUIRED_PATHS,
+        marker_checks={
+            ".gemini/GEMINI.md": "logos-assembly: gemini-bootstrap",
+            ".agents/AGENTS.md": "logos-assembly: agents-operating-rules",
+            ".agents/skills/nous/SKILL.md": "logos-assembly: nous-skill-directive",
+        },
+        source_root=source_root,
+    )
+
+
+def doctor_codex(root: Path, *, source_root: Path | None = None) -> DoctorReport:
+    return doctor_target(
+        root,
+        target="codex-cli",
+        required_paths=CODEX_REQUIRED_PATHS,
+        marker_checks={
+            "AGENTS.md": "logos-assembly: codex-operating-context",
+            ".agents/skills/nous/SKILL.md": "logos-assembly: codex-nous-skill",
+        },
+        source_root=source_root,
+    )
+
+
+def doctor_target(
+    root: Path,
+    *,
+    target: str,
+    required_paths: list[str],
+    marker_checks: dict[str, str],
+    source_root: Path | None = None,
+) -> DoctorReport:
     source = (source_root or Path.cwd()).resolve()
     ok: list[str] = []
     warnings: list[str] = []
     errors: list[str] = []
 
-    for relative in REQUIRED_PATHS:
+    for relative in required_paths:
         if (root / relative).exists():
             ok.append(relative)
         else:
@@ -60,23 +115,161 @@ def doctor_gemini(root: Path, *, source_root: Path | None = None) -> DoctorRepor
         text = target_toml.read_text(encoding="utf-8")
         if 'status = "assumed"' in text:
             warnings.append("Target support contains assumed surfaces.")
+        if 'status = "reported"' in text:
+            warnings.append("Target support contains reported surfaces.")
         if 'status = "unsupported"' in text:
             errors.append("Target support contains unsupported active surfaces.")
+
+    if target == "codex-cli":
+        validate_target_provides(root, target, ok, errors)
+        validate_codex_config(root, ok, warnings, errors)
 
     validate_session_state(root, ok, errors)
     validate_manifest(root, ok, errors)
     validate_core_manifests(root, source, ok, warnings, errors)
-    validate_prompt_assembly(root, ok, errors)
+    validate_prompt_assembly(root, marker_checks, ok, errors)
 
-    markdown_paths = collect_markdown_assets(root)
+    markdown_paths = collect_markdown_assets(root, required_paths)
     for issue in validate_paths([path for path in markdown_paths if path.exists()]):
         errors.append(f"{issue.path}: {issue.message}")
 
     return DoctorReport(ok=ok, warnings=warnings, errors=errors)
 
 
-def collect_markdown_assets(root: Path) -> list[Path]:
-    paths = {root / relative for relative in REQUIRED_PATHS if relative.endswith(".md")}
+def validate_target_provides(
+    root: Path,
+    target: str,
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    path = root / ".logos/target.toml"
+    if not path.exists():
+        return
+
+    try:
+        loaded = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        errors.append(f"Invalid target TOML: {exc}")
+        return
+    if not isinstance(loaded, dict):
+        errors.append("Target metadata must be a TOML table.")
+        return
+
+    if target == "codex-cli":
+        validate_expected_provides(
+            loaded.get("provides"),
+            {
+                "instructions": "AGENTS.md",
+                "skills": ".agents/skills",
+                "procedures": ".agents/logos/procedures",
+                "config": ".codex/config.toml",
+            },
+            ok,
+            errors,
+        )
+
+
+def validate_expected_provides(
+    provides: object,
+    expected: dict[str, str],
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    if not isinstance(provides, dict):
+        errors.append("Target metadata requires provides table.")
+        return
+
+    for key, value in expected.items():
+        actual = provides.get(key)
+        if actual == value:
+            ok.append(f"target provides {key if key != 'config' else 'codex config'}")
+            continue
+        errors.append(f"Target provides.{key} must be {value}.")
+
+
+def validate_codex_config(
+    root: Path,
+    ok: list[str],
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    path = root / ".codex/config.toml"
+    if not path.exists():
+        return
+
+    try:
+        loaded = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        errors.append(f"Invalid Codex config TOML: {exc}")
+        return
+    if not isinstance(loaded, dict):
+        errors.append("Codex config must be a TOML table.")
+        return
+
+    validate_codex_approval_policy(loaded, ok, warnings)
+    validate_codex_sandbox_mode(loaded, ok, warnings, errors)
+    validate_codex_network_access(loaded, ok, warnings)
+
+
+def validate_codex_approval_policy(
+    config: dict[str, object],
+    ok: list[str],
+    warnings: list[str],
+) -> None:
+    value = config.get("approval_policy")
+    if value == "on-request":
+        ok.append("codex config approval_policy")
+        return
+    if value == "never":
+        warnings.append("Codex approval_policy is never; risky commands may run without prompts.")
+        return
+    if value is None:
+        warnings.append("Codex config is missing approval_policy.")
+        return
+    warnings.append(f"Codex approval_policy differs from Logos default: {value}")
+
+
+def validate_codex_sandbox_mode(
+    config: dict[str, object],
+    ok: list[str],
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    value = config.get("sandbox_mode")
+    if value == "workspace-write":
+        ok.append("codex config sandbox_mode")
+        return
+    if value == "danger-full-access":
+        errors.append("Codex sandbox_mode must not be danger-full-access for default Logos target.")
+        return
+    if value is None:
+        warnings.append("Codex config is missing sandbox_mode.")
+        return
+    warnings.append(f"Codex sandbox_mode differs from Logos default: {value}")
+
+
+def validate_codex_network_access(
+    config: dict[str, object],
+    ok: list[str],
+    warnings: list[str],
+) -> None:
+    workspace_write = config.get("sandbox_workspace_write")
+    if not isinstance(workspace_write, dict):
+        warnings.append("Codex config is missing sandbox_workspace_write table.")
+        return
+
+    value = workspace_write.get("network_access")
+    if value is False:
+        ok.append("codex config network_access")
+        return
+    if value is True:
+        warnings.append("Codex workspace network_access is true.")
+        return
+    warnings.append("Codex config is missing sandbox_workspace_write.network_access.")
+
+
+def collect_markdown_assets(root: Path, required_paths: list[str]) -> list[Path]:
+    paths = {root / relative for relative in required_paths if relative.endswith(".md")}
 
     manifest_path = root / ".logos/generated/install-manifest.json"
     if manifest_path.exists():
@@ -108,8 +301,10 @@ def validate_session_state(root: Path, ok: list[str], errors: list[str]) -> None
     if not isinstance(loaded, dict):
         errors.append("Session state must be a JSON object.")
         return
-    if not isinstance(loaded.get("nous_mode"), bool):
-        errors.append("Session state requires boolean nous_mode.")
+    issues = validate_session_state_payload(loaded)
+    for issue in issues:
+        errors.append(issue.message)
+    if issues:
         return
     ok.append("session state shape")
 
@@ -154,7 +349,12 @@ def validate_core_manifests(
         validate_guards_manifest(guards_manifest, ok, errors)
 
 
-def validate_prompt_assembly(root: Path, ok: list[str], errors: list[str]) -> None:
+def validate_prompt_assembly(
+    root: Path,
+    marker_checks: dict[str, str],
+    ok: list[str],
+    errors: list[str],
+) -> None:
     manifest = load_json_manifest(root / ".logos/generated/prompt-assembly-manifest.json", errors)
     if not isinstance(manifest, dict):
         return
@@ -178,11 +378,6 @@ def validate_prompt_assembly(root: Path, ok: list[str], errors: list[str]) -> No
     if not isinstance(markers, list) or not all(isinstance(item, str) for item in markers):
         errors.append("Prompt assembly manifest must contain string markers list.")
 
-    marker_checks = {
-        ".gemini/GEMINI.md": "logos-assembly: gemini-bootstrap",
-        ".agents/AGENTS.md": "logos-assembly: agents-operating-rules",
-        ".agents/skills/nous/SKILL.md": "logos-assembly: nous-skill-directive",
-    }
     for relative, marker in marker_checks.items():
         path = root / relative
         if not path.exists():

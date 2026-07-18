@@ -23,15 +23,19 @@ MINIMAL_ASSEMBLY_PATHS = {
     "rules/security.md",
 }
 
-STRUCTURED_SUPPORT_PATHS = {
-    "profiles/gemini.yaml",
+WORKFLOW_SUPPORT_PATHS = {
     "workflows/planning.yaml",
     "workflows/execution.yaml",
     "workflows/review.yaml",
 }
 
 
-def select_prompt_assembly_sources(root: Path, scan: CoreAssetScan) -> list[AssemblySource]:
+def select_prompt_assembly_sources(
+    root: Path,
+    scan: CoreAssetScan,
+    *,
+    profile: str = "gemini",
+) -> list[AssemblySource]:
     core_root = root / "core"
     by_path = {asset.relative_path.as_posix(): asset for asset in scan.assets}
     sources: list[AssemblySource] = []
@@ -55,7 +59,8 @@ def select_prompt_assembly_sources(root: Path, scan: CoreAssetScan) -> list[Asse
             )
         )
 
-    for relative in sorted(STRUCTURED_SUPPORT_PATHS):
+    structured_paths = {f"profiles/{profile}.yaml", *WORKFLOW_SUPPORT_PATHS}
+    for relative in sorted(structured_paths):
         path = core_root / relative
         if not path.exists():
             continue

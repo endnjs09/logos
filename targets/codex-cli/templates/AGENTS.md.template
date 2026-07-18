@@ -1,0 +1,50 @@
+---
+id: logos.template.codex-agents
+kind: template
+name: codex-agents
+description: Repo-level Codex AGENTS.md for Logos Nous workflow.
+status: active
+version: 0.2.0
+---
+
+<!-- logos-managed: true -->
+<!-- logos-target: codex-cli -->
+<!-- logos-version: {{logos_version}} -->
+<!-- logos-asset-version: 0.2.0 -->
+<!-- logos-manifest: .logos/generated/prompt-assembly-manifest.json -->
+
+# Logos Codex Instructions
+
+This repository has Logos installed for Codex CLI.
+
+## Default Workflow
+
+This installed project uses Logos Nous Mode by default for coding tasks.
+Apply the Logos Nous workflow to implementation, debugging, refactoring,
+testing, review, and repository-maintenance requests.
+
+## Skill Routing
+
+Use `.agents/skills/nous/SKILL.md` as the primary Logos workflow for coding
+tasks. This target intentionally installs only one auto-discoverable Codex
+skill so Logos work is routed through the Nous director first.
+
+Detailed step procedures live under `.agents/logos/procedures/` and are loaded
+through `nous/SKILL.md`.
+
+## Operating Principles
+
+- Inspect before non-trivial edits.
+- Keep changes scoped to the user request.
+- Plan before broad, ambiguous, or multi-file work.
+- Review risk before sensitive or irreversible actions.
+- Verify with concrete evidence before final response.
+- Report skipped or unavailable checks plainly.
+
+## Enforcement Boundary
+
+Use `.agents/logos/procedures/risk-review.md` as the source of truth for guard
+enforcement status. Keep this file as routing guidance and put detailed
+procedures in `.agents/logos/procedures/`.
+
+{{logos_codex_operating_context}}

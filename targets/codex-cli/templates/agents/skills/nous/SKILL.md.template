@@ -1,0 +1,91 @@
+---
+id: logos.skill.nous
+kind: skill
+name: nous
+description: Use for Codex coding tasks in a Logos-installed repository when implementation, debugging, refactoring, testing, or review work is requested.
+status: active
+version: 0.2.0
+triggers:
+  - Logos-installed Codex project
+  - implementation request
+  - debugging request
+  - refactoring request
+  - testing request
+  - code review request
+do_not_trigger_when:
+  - user asks for conceptual explanation only
+outputs:
+  - final-response
+  - verification-summary
+depends_on:
+  - logos.procedure.codebase-exploration
+  - logos.procedure.implementation-planning
+  - logos.procedure.risk-review
+  - logos.procedure.verification
+related_rules:
+  - logos.rule.command-execution
+  - logos.rule.context-handoff
+  - logos.rule.filesystem
+  - logos.rule.git
+  - logos.rule.secrets
+  - logos.rule.security
+  - logos.rule.user-approval
+  - logos.rule.verification
+---
+
+<!-- logos-managed: true -->
+<!-- logos-target: codex-cli -->
+<!-- logos-version: {{logos_version}} -->
+<!-- logos-asset-version: 0.2.0 -->
+
+# Nous
+
+## Purpose
+
+Run the default Logos coding workflow for Codex in this repository.
+
+## Use When
+
+- The user asks Codex to implement, debug, refactor, test, review, or maintain repository work.
+- The task benefits from scoped exploration, planning, risk review, implementation, and verification.
+
+## Do Not Use When
+
+- The user asks only for conceptual explanation and no project work is needed.
+
+## Required Context
+
+- `AGENTS.md`
+- `.logos/session/nous-state.json`
+- `.agents/logos/procedures/codebase-exploration.md`
+- `.agents/logos/procedures/implementation-planning.md`
+- `.agents/logos/procedures/risk-review.md`
+- `.agents/logos/procedures/verification.md`
+
+## Procedure
+
+1. Read the user request and identify the task type.
+2. Inspect the codebase before non-trivial edits.
+3. Make a scoped plan when the change is not tiny or obvious.
+4. Check risk before risky commands, sensitive files, secrets, auth, data, billing, or broad scope changes.
+5. Implement the smallest sufficient change.
+6. Verify with concrete evidence before the final response.
+7. State changes, verification status, and remaining uncertainty.
+
+## Skill Handoff
+
+- Use `.agents/logos/procedures/codebase-exploration.md` to find files, entry points, checks, and existing patterns.
+- Use `.agents/logos/procedures/implementation-planning.md` to define target files, excluded scope, steps, and verification plan.
+- Use `.agents/logos/procedures/risk-review.md` to classify risk and decide whether approval is needed.
+- Use `.agents/logos/procedures/verification.md` to check the completed work before final response.
+
+{{logos_codex_nous_skill}}
+
+## Current Limits
+
+- Use `.agents/logos/procedures/risk-review.md` as the source of truth for guard enforcement status.
+- Evidence capture, run logging, hooks, and evaluator behavior are only available when implemented in Logos runtime code.
+
+## Outputs
+
+- A clear final response with change summary, verification status, and remaining risk.

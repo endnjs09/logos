@@ -16,7 +16,7 @@ def assemble_prompt_bundle(
     profile: str = "gemini",
     mode: str = "nous",
 ) -> AssemblyBundle:
-    sources = select_prompt_assembly_sources(root, scan)
+    sources = select_prompt_assembly_sources(root, scan, profile=profile)
     prompt_sources = [source for source in sources if source.kind == "template"]
     rule_sources = [source for source in sources if source.kind == "rule"]
     workflow_sources = [source for source in sources if source.kind == "workflow"]
@@ -30,6 +30,24 @@ def assemble_prompt_bundle(
         gemini_bootstrap_context=build_gemini_bootstrap(prompt_sources, profile_sources),
         agents_operating_rules=build_agents_rules(rule_sources),
         nous_skill_directive=build_nous_directive(rule_sources, workflow_sources, profile_sources),
+        codex_operating_context=build_codex_context(
+            prompt_sources,
+            rule_sources,
+            workflow_sources,
+            profile_sources,
+        ),
+        codex_nous_skill=build_codex_nous_skill(
+            rule_sources,
+            workflow_sources,
+            profile_sources,
+        ),
+        codex_codebase_exploration_skill=build_codex_codebase_exploration_skill(rule_sources),
+        codex_implementation_planning_skill=build_codex_implementation_planning_skill(
+            rule_sources,
+            workflow_sources,
+        ),
+        codex_risk_review_skill=build_codex_risk_review_skill(rule_sources),
+        codex_verification_skill=build_codex_verification_skill(rule_sources),
     )
 
 
@@ -95,3 +113,66 @@ def build_nous_directive(
     if profile_sources:
         parts.append(source_section("Target Profile", profile_sources))
     return "\n\n".join(part for part in parts if part.strip())
+
+
+def build_codex_context(
+    prompt_sources: list[AssemblySource],
+    rule_sources: list[AssemblySource],
+    workflow_sources: list[AssemblySource],
+    profile_sources: list[AssemblySource],
+) -> str:
+    parts = [
+        "<!-- logos-assembly: codex-operating-context -->",
+        "## Logos Codex Operating Context",
+        "Use this repository-level context for Codex CLI. Keep detailed procedures in .agents/logos/procedures/.",
+        source_section("Prompt Material", prompt_sources),
+    ]
+    if profile_sources:
+        parts.append(source_section("Target Profile", profile_sources))
+    return "\n\n".join(part for part in parts if part.strip())
+
+
+def build_codex_nous_skill(
+    rule_sources: list[AssemblySource],
+    workflow_sources: list[AssemblySource],
+    profile_sources: list[AssemblySource],
+) -> str:
+    parts = [
+        "<!-- logos-assembly: codex-nous-skill -->",
+        "## Assembled Codex Nous Skill",
+        "Use this material as the default Logos workflow for Codex coding tasks.",
+        "### Required Operating Loop",
+        bullet_list(
+            [
+                "Understand the request and ask only blocking clarification questions.",
+                "Inspect the codebase before non-trivial edits.",
+                "Plan the smallest sufficient change.",
+                "Implement within the agreed scope.",
+                "Verify with concrete evidence before final response.",
+            ]
+        ),
+        source_section("Workflow Material", workflow_sources),
+        source_section("Rule Material", rule_sources),
+    ]
+    if profile_sources:
+        parts.append(source_section("Target Profile", profile_sources))
+    return "\n\n".join(part for part in parts if part.strip())
+
+
+def build_codex_codebase_exploration_skill(rule_sources: list[AssemblySource]) -> str:
+    return ""
+
+
+def build_codex_implementation_planning_skill(
+    rule_sources: list[AssemblySource],
+    workflow_sources: list[AssemblySource],
+) -> str:
+    return ""
+
+
+def build_codex_risk_review_skill(rule_sources: list[AssemblySource]) -> str:
+    return ""
+
+
+def build_codex_verification_skill(rule_sources: list[AssemblySource]) -> str:
+    return ""

@@ -31,11 +31,7 @@ def build_prompt_assembly_manifest(bundle: AssemblyBundle) -> dict[str, object]:
             for item in bundle.inputs
         ],
         "outputs": bundle.outputs,
-        "markers": [
-            "logos-assembly: gemini-bootstrap",
-            "logos-assembly: agents-operating-rules",
-            "logos-assembly: nous-skill-directive",
-        ],
+        "markers": markers_for_target(bundle.target),
     }
 
 
@@ -44,3 +40,16 @@ def write_prompt_assembly_manifest(root: Path, bundle: AssemblyBundle) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_prompt_assembly_manifest(bundle)
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def markers_for_target(target: str) -> list[str]:
+    if target == "codex-cli":
+        return [
+            "logos-assembly: codex-operating-context",
+            "logos-assembly: codex-nous-skill",
+        ]
+    return [
+        "logos-assembly: gemini-bootstrap",
+        "logos-assembly: agents-operating-rules",
+        "logos-assembly: nous-skill-directive",
+    ]
