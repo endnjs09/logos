@@ -1,0 +1,19 @@
+description = "Activate Logos Nous Mode for the current project session."
+
+prompt = """
+# Nous Activation
+
+Activate Logos Nous Mode for this project session.
+
+Session state update:
+
+```text
+!{logos nous on}
+```
+
+After the command result is available:
+
+1. Treat Logos Nous Mode as active for subsequent user requests in this session.
+2. Load `.agents/AGENTS.md` and `.agents/skills/nous/SKILL.md` as the active operating instructions.
+3. If the shell command failed or `logos` is not available, tell the user to run `logos nous on` from the project root.
+"""

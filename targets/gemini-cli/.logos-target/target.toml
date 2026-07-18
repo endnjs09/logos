@@ -12,8 +12,8 @@ templates = "templates"
 install = "install"
 
 [target_support.commands]
-status = "assumed"
-notes = "Gemini CLI project command behavior must be verified against the installed CLI."
+status = "confirmed"
+notes = "Official Gemini CLI docs define project commands in <project>/.gemini/commands/*.toml. Local smoke test still requires an installed Gemini CLI binary."
 
 [target_support.plugin]
 status = "assumed"

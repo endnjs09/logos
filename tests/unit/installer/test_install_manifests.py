@@ -70,7 +70,7 @@ def create_templates(root: Path) -> None:
         "gemini/GEMINI.md.template": "---\nid: test.gemini\nkind: template\nname: gemini\ndescription: Gemini.\nstatus: active\nversion: 0.1.0\n---\n",
         "gemini/settings.json.template": "{}\n",
         "gemini/plugin/README.md.template": "# Plugin\n",
-        "gemini/commands/nous.md.template": "---\nid: test.command\nkind: command\nname: nous\ndescription: Nous.\nstatus: active\nversion: 0.1.0\n---\n",
+        "gemini/commands/nous.toml.template": 'description = "Nous."\nprompt = "Activate nous."\n',
         "agents/AGENTS.md.template": "---\nid: test.agents\nkind: template\nname: agents\ndescription: Agents.\nstatus: active\nversion: 0.1.0\n---\n",
         "agents/skills/nous/SKILL.md.template": "---\nid: test.skill.nous\nkind: skill\nname: nous\ndescription: Nous.\nstatus: active\nversion: 0.1.0\n---\n",
         "agents/skills/codebase-exploration/SKILL.md.template": "---\nid: test.skill.explore\nkind: skill\nname: explore\ndescription: Explore.\nstatus: active\nversion: 0.1.0\n---\n",
@@ -80,7 +80,12 @@ def create_templates(root: Path) -> None:
         "logos/config.toml.template": "name = \"test\"\n",
         "logos/target.toml.template": "target = \"gemini-cli\"\n",
         "logos/active-profile.toml.template": "profile = \"default\"\n",
-        "logos/session/nous-state.json.template": "{\"nous_mode\": false}\n",
+        "logos/session/nous-state.json.template": (
+            "{\"schema_version\": 1, \"nous_mode\": false, "
+            "\"activated_at\": null, \"activated_by\": null, "
+            "\"last_updated_at\": \"{{generated_at}}\", "
+            "\"target\": \"gemini-cli\", \"profile\": \"gemini\"}\n"
+        ),
     }
     for relative, content in files.items():
         path = templates / relative
