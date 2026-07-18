@@ -20,6 +20,7 @@ ALLOWED_KINDS = {
     "rule",
     "guard",
     "workflow",
+    "procedure",
     "rubric",
     "template",
     "hook",

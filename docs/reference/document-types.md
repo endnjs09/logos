@@ -14,6 +14,7 @@ required structure.
 | `rule` | `core/rules/` | Soft model instruction |
 | `guard` | `core/guards/` | Hard runtime policy |
 | `workflow` | `core/workflows/` | State transition and task lifecycle |
+| `procedure` | `.agents/logos/procedures/`, `docs/procedures/` | Installed step-level operating procedure |
 | `rubric` | `core/evaluation/` | Evaluation criteria |
 | `template` | `core/prompts/`, `docs/templates/` | Output shape |
 | `hook` | `targets/*/hooks/` | Host lifecycle intervention |
@@ -168,6 +169,23 @@ Required sections:
 - `Failure Handling`
 
 When a workflow waits for user input, define the waiting state explicitly.
+
+## Procedure
+
+Use for installed step-level instructions that are referenced by a primary
+skill but should not be auto-selected as standalone skills.
+
+Required sections:
+
+- `Purpose`
+- `Use When`
+- `Procedure`
+- `Outputs`
+- `Output Contract`
+- `Failure Handling`
+
+Procedures are useful when a host discovers every `SKILL.md` as an independent
+candidate but the project needs one central skill to route the workflow.
 
 ## Rubric
 

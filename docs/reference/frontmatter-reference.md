@@ -31,6 +31,7 @@ version: 0.1.0
 | `owner` | no | Owning package or domain |
 | `applies_to` | no | Target hosts or modes |
 | `depends_on` | no | Other Logos asset ids |
+| `related_rules` | no | Rule ids that inform this asset or are centrally embedded for traceability |
 | `outputs` | no | Output artifacts produced |
 | `schemas` | no | Schemas used by outputs |
 | `tags` | no | Search and grouping tags |
@@ -94,6 +95,7 @@ command
 rule
 guard
 workflow
+procedure
 rubric
 template
 hook
@@ -171,28 +173,51 @@ wins.
 id: logos.skill.nous
 kind: skill
 name: nous
-description: Use when Logos nous mode is active for Gemini CLI coding tasks.
+description: Use when Logos nous mode is active for coding tasks in a Logos-installed project.
 status: draft
 version: 0.1.0
 triggers:
-  - nous mode active
-  - Gemini CLI task request after /nous
+  - Logos-installed coding project
+  - implementation request
+do_not_trigger_when:
+  - user asks for conceptual explanation only
 references:
   - references/workflow.md
 outputs:
   - task-plan
   - final-response
+depends_on:
+  - logos.skill.codebase-exploration
+related_rules:
+  - logos.rule.context-handoff
+  - logos.rule.verification
 ---
 ```
 
 Recommended fields:
 
 - `triggers`
+- `do_not_trigger_when`
 - `references`
 - `scripts`
 - `assets`
 - `outputs`
 - `depends_on`
+- `related_rules`
+
+`do_not_trigger_when` lists conditions that should prevent automatic or
+suggested skill selection. Use it to avoid over-triggering on conceptual,
+read-only, or unrelated requests.
+
+`depends_on` lists Logos asset ids that the skill actually delegates to,
+requires, or explicitly routes through. Do not leave it empty when the body
+requires another skill, workflow, guard, rule, or role.
+
+`related_rules` lists rule ids that inform the skill. For a central workflow
+skill, these may be the rules embedded once into that skill. For specialty
+skills, prefer listing related rules without embedding their full text again.
+Use this field to preserve traceability without duplicating rule text across
+multiple skills.
 
 ## Role Fields
 

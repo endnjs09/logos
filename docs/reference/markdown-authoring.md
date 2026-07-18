@@ -249,6 +249,7 @@ what the task is.
 Every `SKILL.md` must include:
 
 - trigger conditions
+- negative trigger conditions
 - activation conditions
 - required context
 - procedure
@@ -258,6 +259,12 @@ Every `SKILL.md` must include:
 
 The frontmatter `description` is critical. It should include concrete phrases or
 task patterns that should trigger the skill.
+
+Use `do_not_trigger_when` to prevent a skill from matching broad or conceptual
+requests. Use `depends_on` when the skill body delegates to or requires another
+Logos asset; the dependency list must match the procedure, not just optional
+background reading. Use `related_rules` for rules that guide the skill without
+being duplicated across generated files.
 
 ## Role Design
 
