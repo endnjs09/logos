@@ -5,14 +5,6 @@ name: verification
 description: Step procedure for verifying completed or proposed changes with tests, builds, lint, diff review, doctor checks, and skipped-check reporting.
 status: active
 version: 0.2.0
-triggers:
-  - change completed
-  - verification needed
-  - tests or checks needed
-  - final response needs evidence
-  - verification uncertainty exists
-do_not_trigger_when:
-  - no change or claim needs verification
 outputs:
   - verification-summary
 depends_on: []
