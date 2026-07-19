@@ -2,13 +2,15 @@
 id: logos.template.base-system
 kind: template
 name: base-system
-description: Base Logos instruction material used for Gemini CLI prompt assembly.
+description: Base Logos instruction material used for host prompt assembly.
 status: active
 version: 0.1.0
 targets:
   - gemini-cli
+  - codex-cli
 profiles:
   - gemini
+  - codex
 outputs:
   - gemini-bootstrap-context
 depends_on: []
