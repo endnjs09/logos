@@ -219,6 +219,37 @@ skills, prefer listing related rules without embedding their full text again.
 Use this field to preserve traceability without duplicating rule text across
 multiple skills.
 
+## Procedure Fields
+
+```yaml
+---
+id: logos.procedure.codebase-exploration
+kind: procedure
+name: codebase-exploration
+description: Step procedure for inspecting repository structure and existing implementation patterns.
+status: active
+version: 0.2.0
+outputs:
+  - exploration-summary
+depends_on: []
+related_rules:
+  - logos.rule.context-handoff
+  - logos.rule.filesystem
+---
+```
+
+Recommended fields:
+
+- `outputs`
+- `depends_on`
+- `related_rules`
+
+Procedure files are not independent trigger targets. They are installed as
+step-level operating documents and are referenced by a primary skill, such as
+`logos.skill.nous`. Do not use `triggers` or `do_not_trigger_when` in procedure
+frontmatter; use the body section `Use When` to describe when the primary skill
+should apply that procedure.
+
 ## Role Fields
 
 ```yaml
