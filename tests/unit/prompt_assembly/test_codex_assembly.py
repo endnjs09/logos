@@ -17,6 +17,14 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
         "rule",
         "# Verification\n\nVerify.",
     )
+    write_targeted_asset(
+        tmp_path / "core" / "prompts" / "gemini-only.md",
+        "logos.template.gemini-only",
+        "template",
+        "# Gemini Only\n\nGemini-specific text.",
+        targets=["gemini-cli"],
+        profiles=["gemini"],
+    )
 
     scan = scan_core_assets(tmp_path)
     bundle = assemble_prompt_bundle(tmp_path, scan, target="codex-cli", profile="codex")
@@ -38,10 +46,26 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     assert "### Verification" not in bundle.codex_operating_context
     assert "### Verification" in bundle.codex_nous_skill
     assert "Verify." in bundle.codex_nous_skill
+    assert "Gemini-specific text." not in bundle.codex_operating_context
+    assert all(item.id != "logos.template.gemini-only" for item in bundle.inputs)
 
 
 def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:
+    write_targeted_asset(path, asset_id, kind, body, targets=["codex-cli"], profiles=["codex"])
+
+
+def write_targeted_asset(
+    path: Path,
+    asset_id: str,
+    kind: str,
+    body: str,
+    *,
+    targets: list[str],
+    profiles: list[str],
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    target_lines = "".join(f"  - {target}\n" for target in targets)
+    profile_lines = "".join(f"  - {profile}\n" for profile in profiles)
     path.write_text(
         "---\n"
         f"id: {asset_id}\n"
@@ -51,9 +75,9 @@ def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:
         "status: active\n"
         "version: 0.1.0\n"
         "targets:\n"
-        "  - codex-cli\n"
+        f"{target_lines}"
         "profiles:\n"
-        "  - codex\n"
+        f"{profile_lines}"
         "depends_on: []\n"
         "---\n\n"
         f"{body}\n",
