@@ -34,6 +34,7 @@ def select_prompt_assembly_sources(
     root: Path,
     scan: CoreAssetScan,
     *,
+    target: str = "gemini-cli",
     profile: str = "gemini",
 ) -> list[AssemblySource]:
     core_root = root / "core"
@@ -43,6 +44,8 @@ def select_prompt_assembly_sources(
     for relative in sorted(MINIMAL_ASSEMBLY_PATHS):
         asset = by_path.get(relative)
         if asset is None or asset.status != "active" or not asset.has_frontmatter:
+            continue
+        if not matches_target_and_profile(asset.frontmatter, target=target, profile=profile):
             continue
         sources.append(
             AssemblySource(
@@ -79,6 +82,25 @@ def select_prompt_assembly_sources(
         )
 
     return sources
+
+
+def matches_target_and_profile(
+    frontmatter: dict[str, object],
+    *,
+    target: str,
+    profile: str,
+) -> bool:
+    return matches_string_list(frontmatter.get("targets"), target) and matches_string_list(
+        frontmatter.get("profiles"), profile
+    )
+
+
+def matches_string_list(value: object, expected: str) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, list):
+        return False
+    return expected in [item for item in value if isinstance(item, str)]
 
 
 def read_markdown_body(path: Path) -> str:
