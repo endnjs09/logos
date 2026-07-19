@@ -7,8 +7,10 @@ status: active
 version: 0.1.0
 targets:
   - gemini-cli
+  - codex-cli
 profiles:
   - gemini
+  - codex
 applies_to:
   - nous
 depends_on:
