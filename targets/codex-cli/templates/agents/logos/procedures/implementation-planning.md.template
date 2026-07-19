@@ -5,13 +5,6 @@ name: implementation-planning
 description: Step procedure for producing scoped implementation plans, target files, excluded scope, assumptions, and verification plans.
 status: active
 version: 0.2.0
-triggers:
-  - multi-file change
-  - ambiguous implementation
-  - task plan needed
-  - target files need confirmation
-do_not_trigger_when:
-  - trivial single-file change
 outputs:
   - task-plan
   - verification-plan
