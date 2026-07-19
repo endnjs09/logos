@@ -5,16 +5,6 @@ name: risk-review
 description: Step procedure for reviewing security, data, auth, dependency, git, command, approval, and scope risks.
 status: active
 version: 0.2.0
-triggers:
-  - security-sensitive change
-  - auth or permission change
-  - secrets or environment file touched
-  - destructive command
-  - dependency install
-  - git history operation
-  - production-facing change
-do_not_trigger_when:
-  - no meaningful risk is present
 outputs:
   - risk-summary
   - approval-needed
