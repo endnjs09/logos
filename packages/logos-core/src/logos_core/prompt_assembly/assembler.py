@@ -16,7 +16,7 @@ def assemble_prompt_bundle(
     profile: str = "gemini",
     mode: str = "nous",
 ) -> AssemblyBundle:
-    sources = select_prompt_assembly_sources(root, scan, profile=profile)
+    sources = select_prompt_assembly_sources(root, scan, target=target, profile=profile)
     prompt_sources = [source for source in sources if source.kind == "template"]
     rule_sources = [source for source in sources if source.kind == "rule"]
     workflow_sources = [source for source in sources if source.kind == "workflow"]
