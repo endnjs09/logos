@@ -127,9 +127,9 @@ def test_validate_codex_config_warns_on_never_approval_and_network(tmp_path: Pat
 
     validate_codex_config(tmp_path, ok, warnings, errors)
 
-    assert errors == []
-    assert "Codex approval_policy is never; risky commands may run without prompts." in warnings
-    assert "Codex workspace network_access is true." in warnings
+    assert "Codex approval_policy must not be never for default Logos target." in errors
+    assert "Codex sandbox_workspace_write.network_access must be false." in errors
+    assert warnings == []
 
 
 def test_validate_codex_config_reports_invalid_toml(tmp_path: Path) -> None:

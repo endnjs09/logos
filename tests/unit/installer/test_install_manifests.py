@@ -3,7 +3,9 @@ from pathlib import Path
 import pytest
 
 from logos_installer.install import install_gemini
+from logos_installer.install import validate_rendered_paths
 from logos_installer.models import InstallError
+from logos_installer.models import RenderedFile
 
 
 def test_install_generates_core_manifests(tmp_path: Path, monkeypatch) -> None:
@@ -62,6 +64,19 @@ def test_install_rejects_invalid_frontmatter_asset(tmp_path: Path, monkeypatch) 
 
     with pytest.raises(InstallError):
         install_gemini(project_root)
+
+
+def test_validate_rendered_paths_rejects_paths_outside_root() -> None:
+    rendered_files = [
+        RenderedFile(Path("../outside.md"), "outside"),
+        RenderedFile(Path("C:/absolute.md"), "absolute"),
+    ]
+
+    with pytest.raises(InstallError) as exc:
+        validate_rendered_paths(rendered_files)
+
+    assert "Rendered path must stay inside install root: ../outside.md" in exc.value.messages
+    assert "Rendered path must stay inside install root: C:/absolute.md" in exc.value.messages
 
 
 def create_templates(root: Path) -> None:

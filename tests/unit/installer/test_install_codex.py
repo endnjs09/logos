@@ -27,6 +27,11 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert (project_root / ".agents/logos/procedures/risk-review.md").exists()
     assert (project_root / ".agents/logos/procedures/verification.md").exists()
     assert (project_root / ".codex/config.toml").exists()
+    assert (project_root / ".codex/hooks.json").exists()
+    assert (project_root / ".codex/hooks/pre_tool_use.py").exists()
+    assert (project_root / ".codex/hooks/permission_request.py").exists()
+    assert (project_root / ".codex/hooks/post_tool_use.py").exists()
+    assert (project_root / ".codex/hooks/post_compact.py").exists()
     assert (project_root / ".logos/session/nous-state.json").exists()
     assert (project_root / ".logos/generated/prompt-assembly-manifest.json").exists()
     assert "logos-assembly: codex-operating-context" in (
@@ -36,17 +41,30 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     report = doctor_codex(project_root, source_root=source_root)
 
     assert report.errors == []
+    assert "Target support contains experimental surfaces." in report.warnings
+    assert "Project-local Codex hooks may require trust review before they run." in report.warnings
     assert "AGENTS.md" in report.ok
     assert ".agents/skills/nous/SKILL.md" in report.ok
     assert ".agents/logos/procedures/codebase-exploration.md" in report.ok
     assert ".codex/config.toml" in report.ok
+    assert ".codex/hooks.json" in report.ok
+    assert ".codex/hooks/pre_tool_use.py" in report.ok
+    assert ".codex/hooks/permission_request.py" in report.ok
+    assert ".codex/hooks/post_tool_use.py" in report.ok
+    assert ".codex/hooks/post_compact.py" in report.ok
     assert "target provides instructions" in report.ok
     assert "target provides skills" in report.ok
     assert "target provides procedures" in report.ok
     assert "target provides codex config" in report.ok
+    assert "target provides hooks" in report.ok
     assert "codex config approval_policy" in report.ok
     assert "codex config sandbox_mode" in report.ok
     assert "codex config network_access" in report.ok
+    assert "Codex hooks config shape" in report.ok
+    assert ".logos/session" in report.ok
+    assert ".logos/evidence" in report.ok
+    assert ".logos/checkpoints" in report.ok
+    assert ".logos/runs" in report.ok
     agents_text = (project_root / "AGENTS.md").read_text(encoding="utf-8")
     assert "Default Workflow" in agents_text
     assert "Skill Routing" in agents_text
@@ -103,6 +121,118 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     )
     assert session_state["nous_mode"] is True
     assert session_state["activated_by"] == "logos install --target codex-cli"
+
+
+def test_doctor_codex_rejects_unsafe_config(tmp_path: Path, monkeypatch) -> None:
+    source_root, project_root = install_sample_codex_project(tmp_path, monkeypatch)
+    (project_root / ".codex/config.toml").write_text(
+        'approval_policy = "never"\n'
+        'sandbox_mode = "danger-full-access"\n'
+        "\n"
+        "[sandbox_workspace_write]\n"
+        "network_access = true\n",
+        encoding="utf-8",
+    )
+
+    report = doctor_codex(project_root, source_root=source_root)
+
+    assert "Codex approval_policy must not be never for default Logos target." in report.errors
+    assert "Codex sandbox_mode must not be danger-full-access for default Logos target." in report.errors
+    assert "Codex sandbox_workspace_write.network_access must be false." in report.errors
+
+
+def test_doctor_codex_rejects_obsolete_standalone_skills(tmp_path: Path, monkeypatch) -> None:
+    source_root, project_root = install_sample_codex_project(tmp_path, monkeypatch)
+    obsolete = project_root / ".agents/skills/codebase-exploration/SKILL.md"
+    obsolete.parent.mkdir(parents=True)
+    obsolete.write_text("# obsolete\n", encoding="utf-8")
+
+    report = doctor_codex(project_root, source_root=source_root)
+
+    assert (
+        "Obsolete standalone Codex skill must not be installed: "
+        ".agents/skills/codebase-exploration/SKILL.md"
+    ) in report.errors
+    assert "Unexpected auto-discoverable Codex skill: .agents/skills/codebase-exploration" in report.errors
+
+
+def test_doctor_codex_rejects_missing_instruction_links(tmp_path: Path, monkeypatch) -> None:
+    source_root, project_root = install_sample_codex_project(tmp_path, monkeypatch)
+    (project_root / "AGENTS.md").write_text("# Missing link\n", encoding="utf-8")
+    (project_root / ".agents/skills/nous/SKILL.md").write_text(
+        "---\nid: logos.skill.nous\nkind: skill\nname: nous\n"
+        "description: Nous.\nstatus: active\nversion: 0.2.0\n---\n",
+        encoding="utf-8",
+    )
+
+    report = doctor_codex(project_root, source_root=source_root)
+
+    assert "AGENTS.md must reference .agents/skills/nous/SKILL.md." in report.errors
+    assert (
+        ".agents/skills/nous/SKILL.md must reference "
+        ".agents/logos/procedures/codebase-exploration.md."
+    ) in report.errors
+
+
+def test_doctor_codex_rejects_procedure_trigger_fields(tmp_path: Path, monkeypatch) -> None:
+    source_root, project_root = install_sample_codex_project(tmp_path, monkeypatch)
+    procedure = project_root / ".agents/logos/procedures/codebase-exploration.md"
+    procedure.write_text(
+        "---\n"
+        "id: logos.procedure.codebase-exploration\n"
+        "kind: procedure\n"
+        "name: codebase-exploration\n"
+        "description: Explore.\n"
+        "status: active\n"
+        "version: 0.2.0\n"
+        "triggers:\n"
+        "  - explore\n"
+        "do_not_trigger_when:\n"
+        "  - never\n"
+        "---\n"
+        "Explore.\n",
+        encoding="utf-8",
+    )
+
+    report = doctor_codex(project_root, source_root=source_root)
+
+    assert (
+        ".agents/logos/procedures/codebase-exploration.md: procedure must not use triggers."
+        in report.errors
+    )
+    assert (
+        ".agents/logos/procedures/codebase-exploration.md: "
+        "procedure must not use do_not_trigger_when."
+    ) in report.errors
+
+
+def test_doctor_codex_rejects_manifest_mismatch(tmp_path: Path, monkeypatch) -> None:
+    source_root, project_root = install_sample_codex_project(tmp_path, monkeypatch)
+    manifest_path = project_root / ".logos/generated/install-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"] = [
+        item for item in manifest["files"] if item["path"] != ".agents/skills/nous/SKILL.md"
+    ]
+    manifest["files"].append({"path": ".gemini/GEMINI.md", "managed": True, "sha256": "0" * 64})
+    manifest["files"].append({"path": "../outside.md", "managed": True, "sha256": "0" * 64})
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+    report = doctor_codex(project_root, source_root=source_root)
+
+    assert "Required Codex file missing from install manifest: .agents/skills/nous/SKILL.md" in report.errors
+    assert "Gemini artifact listed in Codex install manifest: .gemini/GEMINI.md" in report.errors
+    assert "Install manifest path must stay inside root: ../outside.md" in report.errors
+
+
+def install_sample_codex_project(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
+    source_root = tmp_path / "source"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    create_codex_templates(source_root)
+    create_core_assets(source_root)
+    monkeypatch.chdir(source_root)
+    install_codex(project_root)
+    return source_root, project_root
 
 
 def create_codex_templates(root: Path) -> None:
@@ -187,6 +317,16 @@ def create_codex_templates(root: Path) -> None:
             "[sandbox_workspace_write]\n"
             "network_access = false\n"
         ),
+        "codex/hooks.json.template": (
+            '{"hooks":{"PreToolUse":[{"hooks":[{"command":"python .codex/hooks/pre_tool_use.py"}]}],'
+            '"PermissionRequest":[{"hooks":[{"command":"python .codex/hooks/permission_request.py"}]}],'
+            '"PostToolUse":[{"hooks":[{"command":"python .codex/hooks/post_tool_use.py"}]}],'
+            '"PostCompact":[{"hooks":[{"command":"python .codex/hooks/post_compact.py"}]}]}}\n'
+        ),
+        "codex/hooks/pre_tool_use.py.template": "# logos-managed: true\n",
+        "codex/hooks/permission_request.py.template": "# logos-managed: true\n",
+        "codex/hooks/post_tool_use.py.template": "# logos-managed: true\n",
+        "codex/hooks/post_compact.py.template": "# logos-managed: true\n",
         "logos/config.toml.template": 'target = "codex-cli"\n',
         "logos/target.toml.template": (
             "[target]\n"
@@ -197,13 +337,16 @@ def create_codex_templates(root: Path) -> None:
             'skills = ".agents/skills"\n'
             'procedures = ".agents/logos/procedures"\n'
             'config = ".codex/config.toml"\n'
+            'hooks = ".codex/hooks.json"\n'
             "\n"
             "[target_support.agents_md]\n"
             'status = "confirmed"\n'
             "[target_support.commands]\n"
             'status = "not_used"\n'
+            "[target_support.execpolicy]\n"
+            'status = "experimental"\n'
         ),
-        "logos/active-profile.toml.template": 'profile = "codex"\n',
+        "logos/active-profile.toml.template": "[profile]\nname = \"codex\"\n",
         "logos/session/nous-state.json.template": (
             "{\"schema_version\": 1, \"nous_mode\": true, "
             "\"activated_at\": \"{{generated_at}}\", "
