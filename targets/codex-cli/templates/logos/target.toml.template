@@ -7,6 +7,7 @@ instructions = "AGENTS.md"
 skills = ".agents/skills"
 procedures = ".agents/logos/procedures"
 config = ".codex/config.toml"
+hooks = ".codex/hooks.json"
 
 [target_support.agents_md]
 status = "confirmed"
@@ -37,8 +38,40 @@ status = "not_used"
 notes = "Codex target uses AGENTS.md and repo skills instead of project-local commands."
 
 [target_support.hooks]
-status = "reported"
-notes = "Hook integration should be verified before hard guard wiring."
+status = "confirmed"
+notes = "Codex supports lifecycle hooks through hooks.json or inline config.toml hooks."
+
+[target_support.pre_tool_use]
+status = "confirmed"
+notes = "Codex PreToolUse hooks can observe local tool calls before execution, including Bash, apply_patch, MCP tools, and most local function tools."
+
+[target_support.post_tool_use]
+status = "confirmed"
+notes = "Codex PostToolUse hooks can observe local tool results after execution and support evidence or validation feedback."
+
+[target_support.permission_request]
+status = "confirmed"
+notes = "Codex PermissionRequest hooks can inspect approval requests for Bash, apply_patch/Edit/Write, and MCP tools."
+
+[target_support.user_prompt_submit]
+status = "confirmed"
+notes = "Codex UserPromptSubmit hooks can inspect submitted user prompts before the turn proceeds."
+
+[target_support.stop]
+status = "confirmed"
+notes = "Codex Stop hooks can run final turn validation or continuation checks."
+
+[target_support.mcp_tool_approval]
+status = "confirmed"
+notes = "Codex supports MCP server and per-tool approval modes in config.toml."
+
+[target_support.plugin_hooks]
+status = "confirmed"
+notes = "Codex plugins can bundle lifecycle hooks that load alongside other hook sources after trust review."
+
+[target_support.execpolicy]
+status = "experimental"
+notes = "Codex documents execpolicy rules for command prefix allow, prompt, and forbidden decisions, but marks rules as experimental."
 
 [target_support.session_state]
 status = "emulated"

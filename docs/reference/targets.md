@@ -10,8 +10,8 @@ steps.
 
 Current targets:
 
-- `gemini-cli`: primary calibration target.
-- `codex-cli`: compatibility and baseline target.
+- `codex-cli`: primary implementation target.
+- `gemini-cli`: fallback and experimental target.
 
 ## Target Manifest
 
@@ -61,13 +61,18 @@ Allowed status values:
 |---|---|
 | `confirmed` | Target host natively supports the surface |
 | `emulated` | Logos can implement the surface through a wrapper, adapter, or command |
+| `experimental` | Target host documents the surface, but marks it as subject to change |
+| `reported` | A non-official source reports the surface, but Logos has not verified it |
 | `assumed` | Designed but not verified against the target host |
+| `unknown` | Verification has not been attempted or was inconclusive |
 | `unsupported` | Target host cannot support or emulate the surface |
+| `not_used` | Logos intentionally does not use the surface for this target |
 
 Runtime guarantees may rely only on `confirmed` or `emulated` surfaces.
-`assumed` surfaces are design assumptions and must be recorded in benchmark
-metadata if included. `unsupported` surfaces must not be included in active
-target assembly.
+`experimental` surfaces may be used only with warning and explicit fallback
+planning. `reported`, `assumed`, and `unknown` surfaces are not runtime
+guarantees and must be recorded in benchmark metadata if included.
+`unsupported` surfaces must not be included in active target assembly.
 
 ## Target Directory Shape
 
@@ -87,10 +92,10 @@ targets/<target>/
 ## Target Kinds
 
 `primary`  
-The main calibration target. Currently `gemini-cli`.
+The main implementation target. Currently `codex-cli`.
 
 `baseline`  
-A comparison target used to measure performance gaps. Currently `codex-cli`.
+A comparison target used to measure performance gaps.
 
 `compatibility`  
 A target supported to prove portability, but not the primary focus.
@@ -119,11 +124,15 @@ Gemini-specific prompts should compensate for:
 The Codex CLI target should emphasize:
 
 - preserving Codex's native coding strengths
-- consistent benchmark comparison
-- minimal unnecessary prompt interference
-- compatibility with Logos artifacts
+- using Codex's confirmed config, sandbox, approval, hook, skill, MCP, and
+  subagent surfaces
+- routing durable behavior through `AGENTS.md`, `nous/SKILL.md`, and
+  `.agents/logos/procedures/`
+- mapping Logos guards to Codex hooks and approval boundaries before claiming
+  hard enforcement
 
-Codex is a baseline and compatibility target, not the main calibration subject.
+Codex is the current primary implementation target. Gemini CLI remains a
+fallback and experimental target.
 
 ## Target Assets
 
