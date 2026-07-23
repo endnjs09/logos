@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+# logos-managed: true
+# logos-target: codex-cli
+# logos-version: {{logos_version}}
+"""Logos Codex PermissionRequest hook."""
+
+from __future__ import annotations
+
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+RISK_REVIEW_POINTER = ".agents/logos/procedures/risk-review.md"
+
+
+def main() -> int:
+    raw = sys.stdin.read()
+    if not raw.strip():
+        return 0
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(json.dumps({"systemMessage": f"Logos PermissionRequest input could not be parsed: {exc}"}))
+        return 0
+    if not isinstance(payload, dict):
+        return 0
+
+    result = evaluate_permission_request(payload)
+    if result["decision"] == "allow":
+        return 0
+    cwd = extract_cwd(payload)
+    if not should_suppress_message(cwd, result):
+        print(json.dumps(to_codex_output(result), ensure_ascii=False))
+    return 0
+
+
+def evaluate_permission_request(payload: dict[str, object]) -> dict[str, object]:
+    raw_text = str(payload).lower()
+    if "danger-full-access" in raw_text:
+        return guard_result("block", "danger-full-access permission request", payload)
+    if "network" in raw_text:
+        return guard_result("ask", "network permission request", payload)
+    if "outside" in raw_text and "workspace" in raw_text:
+        return guard_result("ask", "workspace boundary permission request", payload)
+    if "mcp" in raw_text:
+        return guard_result("ask", "MCP permission request", payload)
+    return guard_result("allow", "unknown permission request", payload)
+
+
+def guard_result(decision: str, reason: str, payload: dict[str, object]) -> dict[str, object]:
+    severity = 3 if decision == "block" else 2
+    return {
+        "schema_version": 1,
+        "guard": "logos.guard.approval-gate",
+        "decision": decision,
+        "severity": severity,
+        "reason": reason,
+        "matched": [],
+        "evidence": {"request": payload},
+    }
+
+
+def to_codex_output(result: dict[str, object]) -> dict[str, object]:
+    reason = str(result["reason"])
+    if result["decision"] == "block":
+        message = (
+            f"Logos strong approval note: {reason}. "
+            "Codex permission handling remains authoritative; approve only when the request is intentional. "
+            f"For Logos risk procedure, read `{RISK_REVIEW_POINTER}` if needed."
+        )
+    else:
+        message = (
+            f"Logos approval note: {reason}. "
+            "Codex permission handling remains authoritative. "
+            f"For Logos risk procedure, read `{RISK_REVIEW_POINTER}` if needed."
+        )
+    return {"systemMessage": message}
+
+
+def extract_cwd(payload: dict[str, object]) -> str:
+    for key in ("cwd", "working_directory", "workdir"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def should_suppress_message(cwd: str, result: dict[str, object]) -> bool:
+    if not cwd:
+        return False
+    root = Path(cwd)
+    if not root.exists():
+        return False
+    category = f"{result['guard']}:{result['decision']}:{result['reason']}"
+    state_path = root / ".logos" / "session" / "hook-state.json"
+    state = read_hook_state(state_path)
+    seen = state.setdefault("seen_warnings", [])
+    if category in seen:
+        return True
+    if isinstance(seen, list):
+        seen.append(category)
+    state["updated_at"] = datetime.now(timezone.utc).isoformat()
+    write_hook_state(state_path, state)
+    return False
+
+
+def read_hook_state(path: Path) -> dict[str, object]:
+    try:
+        if not path.exists():
+            return {"schema_version": 1, "seen_warnings": []}
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"schema_version": 1, "seen_warnings": []}
+    if not isinstance(parsed, dict):
+        return {"schema_version": 1, "seen_warnings": []}
+    if not isinstance(parsed.get("seen_warnings"), list):
+        parsed["seen_warnings"] = []
+    parsed.setdefault("schema_version", 1)
+    return parsed
+
+
+def write_hook_state(path: Path, state: dict[str, object]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

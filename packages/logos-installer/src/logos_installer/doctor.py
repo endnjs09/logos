@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from logos_core.assets.scanner import scan_core_assets
-from logos_core.assets.validate import validate_paths
+from logos_core.assets.validate import load_asset, validate_paths
 from logos_core.session.state import validate_session_state_payload
 
 
@@ -41,6 +41,11 @@ CODEX_REQUIRED_PATHS = [
     ".agents/logos/procedures/risk-review.md",
     ".agents/logos/procedures/verification.md",
     ".codex/config.toml",
+    ".codex/hooks.json",
+    ".codex/hooks/pre_tool_use.py",
+    ".codex/hooks/permission_request.py",
+    ".codex/hooks/post_tool_use.py",
+    ".codex/hooks/post_compact.py",
     ".logos/config.toml",
     ".logos/target.toml",
     ".logos/active-profile.toml",
@@ -50,6 +55,38 @@ CODEX_REQUIRED_PATHS = [
     ".logos/generated/asset-hashes.json",
     ".logos/generated/guards-manifest.json",
     ".logos/generated/prompt-assembly-manifest.json",
+]
+
+CODEX_MANIFEST_TRACKED_REQUIRED_PATHS = [
+    relative for relative in CODEX_REQUIRED_PATHS if not relative.startswith(".logos/generated/")
+]
+
+CODEX_OBSOLETE_PATHS = [
+    ".agents/skills/codebase-exploration/SKILL.md",
+    ".agents/skills/implementation-planning/SKILL.md",
+    ".agents/skills/risk-review/SKILL.md",
+    ".agents/skills/verification/SKILL.md",
+]
+
+CODEX_PROCEDURE_PATHS = [
+    ".agents/logos/procedures/codebase-exploration.md",
+    ".agents/logos/procedures/implementation-planning.md",
+    ".agents/logos/procedures/risk-review.md",
+    ".agents/logos/procedures/verification.md",
+]
+
+CODEX_PROCEDURE_IDS = {
+    ".agents/logos/procedures/codebase-exploration.md": "logos.procedure.codebase-exploration",
+    ".agents/logos/procedures/implementation-planning.md": "logos.procedure.implementation-planning",
+    ".agents/logos/procedures/risk-review.md": "logos.procedure.risk-review",
+    ".agents/logos/procedures/verification.md": "logos.procedure.verification",
+}
+
+CODEX_RUNTIME_REQUIRED_DIRS = [
+    ".logos/session",
+    ".logos/evidence",
+    ".logos/checkpoints",
+    ".logos/runs",
 ]
 
 
@@ -117,17 +154,29 @@ def doctor_target(
             warnings.append("Target support contains assumed surfaces.")
         if 'status = "reported"' in text:
             warnings.append("Target support contains reported surfaces.")
+        if 'status = "experimental"' in text:
+            warnings.append("Target support contains experimental surfaces.")
+        if 'status = "unknown"' in text:
+            warnings.append("Target support contains unknown surfaces.")
         if 'status = "unsupported"' in text:
             errors.append("Target support contains unsupported active surfaces.")
 
     if target == "codex-cli":
         validate_target_provides(root, target, ok, errors)
         validate_codex_config(root, ok, warnings, errors)
+        validate_codex_hooks(root, ok, warnings, errors)
+        validate_codex_install_shape(root, ok, errors)
+        validate_codex_links(root, ok, errors)
+        validate_codex_procedures(root, ok, errors)
+        validate_codex_target_profile(root, ok, errors)
+        validate_codex_runtime_dirs(root, ok, errors)
 
     validate_session_state(root, ok, errors)
-    validate_manifest(root, ok, errors)
+    install_manifest = validate_manifest(root, ok, errors)
     validate_core_manifests(root, source, ok, warnings, errors)
     validate_prompt_assembly(root, marker_checks, ok, errors)
+    if target == "codex-cli":
+        validate_codex_manifest_files(root, install_manifest, ok, errors)
 
     markdown_paths = collect_markdown_assets(root, required_paths)
     for issue in validate_paths([path for path in markdown_paths if path.exists()]):
@@ -147,7 +196,7 @@ def validate_target_provides(
         return
 
     try:
-        loaded = tomllib.loads(path.read_text(encoding="utf-8"))
+        loaded = tomllib.loads(path.read_text(encoding="utf-8").lstrip("\ufeff"))
     except tomllib.TOMLDecodeError as exc:
         errors.append(f"Invalid target TOML: {exc}")
         return
@@ -163,6 +212,7 @@ def validate_target_provides(
                 "skills": ".agents/skills",
                 "procedures": ".agents/logos/procedures",
                 "config": ".codex/config.toml",
+                "hooks": ".codex/hooks.json",
             },
             ok,
             errors,
@@ -198,7 +248,7 @@ def validate_codex_config(
         return
 
     try:
-        loaded = tomllib.loads(path.read_text(encoding="utf-8"))
+        loaded = tomllib.loads(path.read_text(encoding="utf-8").lstrip("\ufeff"))
     except tomllib.TOMLDecodeError as exc:
         errors.append(f"Invalid Codex config TOML: {exc}")
         return
@@ -206,22 +256,23 @@ def validate_codex_config(
         errors.append("Codex config must be a TOML table.")
         return
 
-    validate_codex_approval_policy(loaded, ok, warnings)
+    validate_codex_approval_policy(loaded, ok, warnings, errors)
     validate_codex_sandbox_mode(loaded, ok, warnings, errors)
-    validate_codex_network_access(loaded, ok, warnings)
+    validate_codex_network_access(loaded, ok, warnings, errors)
 
 
 def validate_codex_approval_policy(
     config: dict[str, object],
     ok: list[str],
     warnings: list[str],
+    errors: list[str],
 ) -> None:
     value = config.get("approval_policy")
     if value == "on-request":
         ok.append("codex config approval_policy")
         return
     if value == "never":
-        warnings.append("Codex approval_policy is never; risky commands may run without prompts.")
+        errors.append("Codex approval_policy must not be never for default Logos target.")
         return
     if value is None:
         warnings.append("Codex config is missing approval_policy.")
@@ -252,6 +303,7 @@ def validate_codex_network_access(
     config: dict[str, object],
     ok: list[str],
     warnings: list[str],
+    errors: list[str],
 ) -> None:
     workspace_write = config.get("sandbox_workspace_write")
     if not isinstance(workspace_write, dict):
@@ -263,9 +315,216 @@ def validate_codex_network_access(
         ok.append("codex config network_access")
         return
     if value is True:
-        warnings.append("Codex workspace network_access is true.")
+        errors.append("Codex sandbox_workspace_write.network_access must be false.")
         return
     warnings.append("Codex config is missing sandbox_workspace_write.network_access.")
+
+
+def validate_codex_hooks(
+    root: Path,
+    ok: list[str],
+    warnings: list[str],
+    errors: list[str],
+) -> None:
+    path = root / ".codex/hooks.json"
+    if not path.exists():
+        return
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        errors.append(f"Invalid Codex hooks JSON: {exc}")
+        return
+    if not isinstance(loaded, dict):
+        errors.append("Codex hooks config must be a JSON object.")
+        return
+
+    hooks = loaded.get("hooks")
+    if not isinstance(hooks, dict):
+        errors.append("Codex hooks config must contain hooks table.")
+        return
+
+    required_hooks = {
+        "PreToolUse": ".codex/hooks/pre_tool_use.py",
+        "PermissionRequest": ".codex/hooks/permission_request.py",
+        "PostToolUse": ".codex/hooks/post_tool_use.py",
+        "PostCompact": ".codex/hooks/post_compact.py",
+    }
+    error_count = len(errors)
+    for hook_name, script_path in required_hooks.items():
+        entries = hooks.get(hook_name)
+        if not isinstance(entries, list) or not entries:
+            errors.append(f"Codex hooks config must define {hook_name}.")
+            continue
+        if not hook_entries_reference(entries, script_path):
+            errors.append(f"Codex {hook_name} hook must reference {script_path}.")
+
+    if len(errors) == error_count:
+        ok.append("Codex hooks config shape")
+        warnings.append("Project-local Codex hooks may require trust review before they run.")
+
+
+def hook_entries_reference(entries: list[object], script_path: str) -> bool:
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        commands = entry.get("hooks")
+        if not isinstance(commands, list):
+            continue
+        for command_hook in commands:
+            if not isinstance(command_hook, dict):
+                continue
+            command = command_hook.get("command")
+            if isinstance(command, str) and script_path in command:
+                return True
+    return False
+
+
+def validate_codex_install_shape(root: Path, ok: list[str], errors: list[str]) -> None:
+    for relative in CODEX_OBSOLETE_PATHS:
+        if (root / relative).exists():
+            errors.append(f"Obsolete standalone Codex skill must not be installed: {relative}")
+
+    if (root / ".gemini").exists():
+        errors.append("Gemini target artifacts must not be present in Codex install: .gemini")
+    else:
+        ok.append("no Gemini target artifacts")
+
+
+def validate_codex_runtime_dirs(root: Path, ok: list[str], errors: list[str]) -> None:
+    for relative in CODEX_RUNTIME_REQUIRED_DIRS:
+        path = root / relative
+        if path.is_dir():
+            ok.append(relative)
+        else:
+            errors.append(f"Missing required runtime directory: {relative}")
+
+    skills_dir = root / ".agents/skills"
+    if skills_dir.exists():
+        unexpected = [
+            path.relative_to(root).as_posix()
+            for path in skills_dir.iterdir()
+            if path.is_dir() and path.name != "nous"
+        ]
+        for relative in sorted(unexpected):
+            errors.append(f"Unexpected auto-discoverable Codex skill: {relative}")
+        if not unexpected:
+            ok.append("Codex installs only nous as auto-discoverable skill")
+
+
+def validate_codex_links(root: Path, ok: list[str], errors: list[str]) -> None:
+    agents = root / "AGENTS.md"
+    if agents.exists():
+        text = agents.read_text(encoding="utf-8")
+        require_text(
+            text,
+            ".agents/skills/nous/SKILL.md",
+            "AGENTS.md references nous skill",
+            "AGENTS.md",
+            ok,
+            errors,
+        )
+        if "Gemini CLI is the primary research target" in text:
+            errors.append("AGENTS.md contains Gemini-only primary target wording.")
+
+    nous = root / ".agents/skills/nous/SKILL.md"
+    if nous.exists():
+        text = nous.read_text(encoding="utf-8")
+        for relative in CODEX_PROCEDURE_PATHS:
+            require_text(
+                text,
+                relative,
+                f"nous references {Path(relative).name}",
+                ".agents/skills/nous/SKILL.md",
+                ok,
+                errors,
+            )
+
+
+def require_text(
+    text: str,
+    needle: str,
+    ok_message: str,
+    source: str,
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    if needle in text:
+        ok.append(ok_message)
+    else:
+        errors.append(f"{source} must reference {needle}.")
+
+
+def validate_codex_procedures(root: Path, ok: list[str], errors: list[str]) -> None:
+    error_count = len(errors)
+    for relative, expected_id in CODEX_PROCEDURE_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != "procedure":
+            errors.append(f"{relative}: kind must be procedure.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+        if "triggers" in frontmatter:
+            errors.append(f"{relative}: procedure must not use triggers.")
+        if "do_not_trigger_when" in frontmatter:
+            errors.append(f"{relative}: procedure must not use do_not_trigger_when.")
+    if len(errors) == error_count:
+        ok.append("Codex procedure frontmatter shape")
+
+
+def validate_codex_target_profile(root: Path, ok: list[str], errors: list[str]) -> None:
+    validate_toml_value(
+        root / ".logos/target.toml",
+        ["target", "name"],
+        "codex-cli",
+        "target is codex-cli",
+        ok,
+        errors,
+    )
+    validate_toml_value(
+        root / ".logos/active-profile.toml",
+        ["profile", "name"],
+        "codex",
+        "active profile is codex",
+        ok,
+        errors,
+    )
+
+
+def validate_toml_value(
+    path: Path,
+    keys: list[str],
+    expected: str,
+    ok_message: str,
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    if not path.exists():
+        return
+    try:
+        loaded = tomllib.loads(path.read_text(encoding="utf-8").lstrip("\ufeff"))
+    except tomllib.TOMLDecodeError as exc:
+        errors.append(f"Invalid TOML {path}: {exc}")
+        return
+    value: object = loaded
+    for key in keys:
+        if not isinstance(value, dict):
+            value = None
+            break
+        value = value.get(key)
+    if value == expected:
+        ok.append(ok_message)
+    else:
+        relative = path.relative_to(path.parents[1]).as_posix()
+        errors.append(f"{relative} must set {'.'.join(keys)} = {expected}.")
 
 
 def collect_markdown_assets(root: Path, required_paths: list[str]) -> list[Path]:
@@ -309,23 +568,65 @@ def validate_session_state(root: Path, ok: list[str], errors: list[str]) -> None
     ok.append("session state shape")
 
 
-def validate_manifest(root: Path, ok: list[str], errors: list[str]) -> None:
+def validate_manifest(root: Path, ok: list[str], errors: list[str]) -> dict[str, object] | None:
     path = root / ".logos/generated/install-manifest.json"
     if not path.exists():
-        return
+        return None
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         errors.append(f"Invalid install manifest JSON: {exc}")
-        return
+        return None
     if not isinstance(loaded, dict):
         errors.append("Install manifest must be a JSON object.")
-        return
+        return None
     files = loaded.get("files")
     if not isinstance(files, list) or not files:
         errors.append("Install manifest must contain managed files.")
-        return
+        return loaded
     ok.append("install manifest shape")
+    return loaded
+
+
+def validate_codex_manifest_files(
+    root: Path,
+    manifest: dict[str, object] | None,
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    if manifest is None:
+        return
+    files = manifest.get("files")
+    if not isinstance(files, list):
+        return
+
+    error_count = len(errors)
+    manifest_paths: set[str] = set()
+    for item in files:
+        if not isinstance(item, dict):
+            errors.append("Install manifest file entries must be JSON objects.")
+            continue
+        value = item.get("path")
+        if not isinstance(value, str):
+            errors.append("Install manifest file entries require path.")
+            continue
+        relative = Path(value)
+        if relative.is_absolute() or ".." in relative.parts:
+            errors.append(f"Install manifest path must stay inside root: {value}")
+            continue
+        manifest_paths.add(value)
+        if value.startswith(".gemini/"):
+            errors.append(f"Gemini artifact listed in Codex install manifest: {value}")
+        if value in CODEX_OBSOLETE_PATHS:
+            errors.append(f"Obsolete standalone skill listed in Codex install manifest: {value}")
+        if not (root / relative).exists():
+            errors.append(f"Install manifest file is missing on disk: {value}")
+
+    for relative in CODEX_MANIFEST_TRACKED_REQUIRED_PATHS:
+        if relative not in manifest_paths:
+            errors.append(f"Required Codex file missing from install manifest: {relative}")
+    if len(errors) == error_count:
+        ok.append("Codex install manifest files match disk")
 
 
 def validate_core_manifests(

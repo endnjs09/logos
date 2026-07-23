@@ -32,6 +32,7 @@ RUNTIME_DIRS = [
 
 CODEX_RUNTIME_DIRS = [
     ".codex",
+    ".codex/hooks",
     ".agents/skills",
     ".agents/logos/procedures",
     ".logos/session",
@@ -115,6 +116,7 @@ def install_target(
         target=target,
         extra_context=assembly_context(assembly_bundle),
     )
+    validate_rendered_paths(rendered_files)
     rendered_paths = {rendered.path.as_posix() for rendered in rendered_files}
 
     for obsolete in remove_obsolete_managed_files(root, manifest, rendered_paths):
@@ -199,6 +201,15 @@ def write_rendered_file(
         return "updated"
 
     return "skipped"
+
+
+def validate_rendered_paths(rendered_files: list[RenderedFile]) -> None:
+    messages: list[str] = []
+    for rendered in rendered_files:
+        if rendered.path.is_absolute() or ".." in rendered.path.parts:
+            messages.append(f"Rendered path must stay inside install root: {rendered.path.as_posix()}")
+    if messages:
+        raise InstallError(messages)
 
 
 def is_managed(path: Path, relative_path: Path, manifest: dict[str, object]) -> bool:

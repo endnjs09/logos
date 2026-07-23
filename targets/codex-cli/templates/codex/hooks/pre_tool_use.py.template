@@ -1,0 +1,580 @@
+#!/usr/bin/env python3
+# logos-managed: true
+# logos-target: codex-cli
+# logos-version: {{logos_version}}
+"""Logos Codex PreToolUse hook."""
+
+from __future__ import annotations
+
+import fnmatch
+import json
+import re
+import shlex
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+DECISION_RANK = {"allow": 0, "record_only": 1, "ask": 2, "block": 3}
+PROTECTED_BRANCHES = ("main", "master", "production", "release/*")
+RISK_REVIEW_POINTER = ".agents/logos/procedures/risk-review.md"
+
+READ_ONLY_PATTERNS = [
+    re.compile(r"^git\s+(?:status|diff|log|show|rev-parse)\b"),
+    re.compile(r"^git\s+branch\s+--show-current\b"),
+    re.compile(r"^(?:pwd|ls|dir|rg)\b"),
+]
+
+SEGMENT_SPLIT_PATTERN = re.compile(r"\s*(?:&&|\|\||[;|])\s*")
+
+BLOCK_PATTERNS = [
+    (re.compile(r"\brm\s+-[A-Za-z]*r[A-Za-z]*f\b"), "recursive forced delete"),
+    (re.compile(r"\brm\s+-rf\s+(?:/|\.git|\.)(?:\s|$)"), "dangerous rm target"),
+    (re.compile(r"\brmdir\s+/s\b", re.IGNORECASE), "recursive directory delete"),
+    (re.compile(r"\brd\s+/s\b", re.IGNORECASE), "recursive directory delete"),
+    (re.compile(r"\bdel\s+/[fqsa]+\b", re.IGNORECASE), "forced Windows delete"),
+    (
+        re.compile(r"\bRemove-Item\b(?=.*\b-Recurse\b)(?=.*\b-Force\b)", re.IGNORECASE),
+        "forced recursive PowerShell delete",
+    ),
+    (re.compile(r"\bgit\s+push\b.*\s(?:--force|-f|--force-with-lease)\b"), "force push"),
+    (re.compile(r"\bgit\s+reset\s+--hard\b"), "hard git reset"),
+    (re.compile(r"\bgit\s+clean\s+-[A-Za-z]*[fxd][A-Za-z]*\b"), "destructive git clean"),
+    (re.compile(r"\bgit\s+(?:checkout|restore)\s+--?\s+\.\b"), "bulk checkout or restore"),
+    (re.compile(r"\bgit\s+branch\s+-D\b"), "forced branch deletion"),
+    (
+        re.compile(
+            r"\b(?:curl|wget)\b.+\|\s*(?:sh|bash|pwsh|powershell|python|python3)\b",
+            re.IGNORECASE,
+        ),
+        "remote script execution",
+    ),
+    (re.compile(r"\bInvoke-WebRequest\b.+\|\s*iex\b", re.IGNORECASE), "remote PowerShell execution"),
+    (re.compile(r"\bterraform\s+destroy\b"), "terraform destroy"),
+    (re.compile(r"\bkubectl\s+delete\b"), "kubernetes delete"),
+    (re.compile(r"\bdocker\s+system\s+prune\b.*\s-a\b"), "docker system prune all"),
+]
+
+ASK_PATTERNS = [
+    (re.compile(r"\bgit\s+(?:add|commit|push|merge|rebase|tag)\b"), "git state change"),
+    (re.compile(r"\bgit\s+(?:checkout|switch|branch)\b"), "git branch or checkout change"),
+]
+
+DEPENDENCY_ACTIONS = {
+    "npm": {
+        "install": "JavaScript dependency install",
+        "i": "JavaScript dependency install",
+        "add": "JavaScript dependency add",
+        "remove": "JavaScript dependency remove",
+        "uninstall": "JavaScript dependency remove",
+        "update": "JavaScript dependency update",
+        "upgrade": "JavaScript dependency upgrade",
+        "ci": "JavaScript lockfile install",
+    },
+    "pnpm": {
+        "install": "JavaScript dependency install",
+        "i": "JavaScript dependency install",
+        "add": "JavaScript dependency add",
+        "remove": "JavaScript dependency remove",
+        "update": "JavaScript dependency update",
+        "upgrade": "JavaScript dependency upgrade",
+    },
+    "yarn": {
+        "install": "JavaScript dependency install",
+        "add": "JavaScript dependency add",
+        "remove": "JavaScript dependency remove",
+        "upgrade": "JavaScript dependency upgrade",
+    },
+    "bun": {
+        "install": "JavaScript dependency install",
+        "add": "JavaScript dependency add",
+        "remove": "JavaScript dependency remove",
+        "update": "JavaScript dependency update",
+    },
+    "pip": {"install": "Python dependency install", "uninstall": "Python dependency remove"},
+    "pip3": {"install": "Python dependency install", "uninstall": "Python dependency remove"},
+    "uv": {"add": "Python dependency add", "remove": "Python dependency remove", "sync": "Python dependency sync", "pip": "Python dependency operation"},
+    "poetry": {"add": "Python dependency add", "remove": "Python dependency remove", "update": "Python dependency update", "install": "Python dependency install"},
+    "cargo": {"add": "Rust dependency add", "remove": "Rust dependency remove", "update": "Rust dependency update"},
+    "go": {"get": "Go dependency change", "install": "Go tool install"},
+    "composer": {"require": "PHP dependency add", "remove": "PHP dependency remove", "update": "PHP dependency update", "install": "PHP dependency install"},
+    "dotnet": {"add": "dotnet dependency add", "remove": "dotnet dependency remove", "restore": "dotnet dependency restore"},
+}
+
+READ_ONLY_GIT = re.compile(r"^git\s+(?:status|diff|log|show|rev-parse|branch\s+--show-current)\b")
+BLOCK_GIT = re.compile(
+    r"\bgit\s+(?:push\b.*\s(?:--force|-f|--force-with-lease)|reset\s+--hard|clean\s+-[A-Za-z]*[fxd][A-Za-z]*|branch\s+-D)\b"
+)
+ASK_GIT = re.compile(r"\bgit\s+(?:add|commit|push|merge|rebase|tag|checkout|switch|branch)\b")
+SECRET_PATTERNS = [
+    ("private key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
+    ("aws access key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("github token", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{30,}\b")),
+    ("google api key", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
+    ("slack token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b")),
+    (
+        "assigned long secret",
+        re.compile(
+            r"(?i)\b(?:api[_-]?key|secret|token|password|client[_-]?secret)\b"
+            r"\s*[:=]\s*['\"]?([A-Za-z0-9_./+=-]{24,})['\"]?"
+        ),
+    ),
+]
+PLACEHOLDER_PATTERN = re.compile(
+    r"(?i)^(?:YOUR_[A-Z0-9_]+|[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|URL)[A-Z0-9_]*|"
+    r"<[^>]+>|\$\{[A-Z0-9_]+\}|REPLACE_ME|CHANGE_ME|TODO)$"
+)
+
+
+def main() -> int:
+    raw = sys.stdin.read()
+    if not raw.strip():
+        return 0
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(json.dumps({"systemMessage": f"Logos PreToolUse input could not be parsed: {exc}"}))
+        return 0
+    if not isinstance(payload, dict):
+        return 0
+
+    command = extract_command(payload)
+    if not command:
+        return 0
+
+    decisions = [
+        evaluate_dangerous_command(command),
+        evaluate_protected_branch(command, extract_cwd(payload)),
+        evaluate_secret_scan(payload, command),
+    ]
+    result = merge_most_restrictive(decisions)
+    if result["decision"] != "allow":
+        cwd = extract_cwd(payload)
+        record_checkpoint(cwd, result)
+        if not should_suppress_message(cwd, result):
+            print(json.dumps(to_codex_output(result), ensure_ascii=False))
+    return 0
+
+
+def extract_command(payload: object) -> str:
+    for key in ("command", "cmd", "script", "shell_command"):
+        found = find_key(payload, key)
+        if isinstance(found, str) and found.strip():
+            return found.strip()
+    for value in iter_strings(payload):
+        if looks_like_shell_command(value):
+            return value.strip()
+    return ""
+
+
+def extract_cwd(payload: object) -> str:
+    for key in ("cwd", "working_directory", "workdir"):
+        found = find_key(payload, key)
+        if isinstance(found, str) and found.strip():
+            return found.strip()
+    return ""
+
+
+def evaluate_dangerous_command(command: str) -> dict[str, object]:
+    decisions = [evaluate_dangerous_segment(segment, command) for segment in split_command_segments(command)]
+    return merge_most_restrictive(decisions)
+
+
+def evaluate_dangerous_segment(segment: str, original_command: str) -> dict[str, object]:
+    normalized = normalize_command(segment)
+    normalized_for_git = strip_git_global_options(normalized)
+    for pattern in READ_ONLY_PATTERNS:
+        if pattern.search(normalized_for_git):
+            return guard_result("logos.guard.dangerous-command-denylist", "allow", segment, "read-only command")
+    for pattern, reason in BLOCK_PATTERNS:
+        if pattern.search(normalized_for_git):
+            return guard_result(
+                "logos.guard.dangerous-command-denylist",
+                "block",
+                segment,
+                reason,
+                {"command": original_command, "segment": segment},
+            )
+    dependency_reason = classify_dependency_operation(normalized)
+    if dependency_reason is not None:
+        return guard_result(
+            "logos.guard.dangerous-command-denylist",
+            "ask",
+            segment,
+            dependency_reason,
+            {"command": original_command, "segment": segment},
+        )
+    for pattern, reason in ASK_PATTERNS:
+        if pattern.search(normalized_for_git):
+            return guard_result(
+                "logos.guard.dangerous-command-denylist",
+                "ask",
+                segment,
+                reason,
+                {"command": original_command, "segment": segment},
+            )
+    return guard_result(
+        "logos.guard.dangerous-command-denylist",
+        "allow",
+        segment,
+        "no dangerous command pattern matched",
+    )
+
+
+def split_command_segments(command: str) -> list[str]:
+    return [segment.strip() for segment in SEGMENT_SPLIT_PATTERN.split(command) if segment.strip()]
+
+
+def classify_dependency_operation(command: str) -> str | None:
+    parts = command.split()
+    if not parts:
+        return None
+    manager = parts[0].lower()
+    actions = DEPENDENCY_ACTIONS.get(manager)
+    if actions is None:
+        return None
+    if manager == "dotnet" and len(parts) >= 3 and parts[1].lower() in {"add", "remove"}:
+        action = f"{parts[1].lower()} {parts[2].lower()}"
+        if action in {"add package", "remove package"}:
+            return actions[parts[1].lower()]
+    if manager == "uv" and len(parts) >= 3 and parts[1].lower() == "pip":
+        pip_action = parts[2].lower()
+        if pip_action in {"install", "uninstall"}:
+            return "Python dependency install" if pip_action == "install" else "Python dependency remove"
+    action = parts[1].lower() if len(parts) > 1 else "install"
+    return actions.get(action)
+
+
+def evaluate_protected_branch(command: str, cwd: str) -> dict[str, object]:
+    normalized = strip_git_global_options(normalize_command(command))
+    if not normalized.startswith("git "):
+        return guard_result("logos.guard.protected-branch-guard", "allow", command, "not a git command")
+    if READ_ONLY_GIT.search(normalized):
+        return guard_result("logos.guard.protected-branch-guard", "allow", command, "read-only git command")
+
+    branch = detect_branch(cwd)
+    if branch is None:
+        if BLOCK_GIT.search(normalized):
+            return guard_result(
+                "logos.guard.protected-branch-guard",
+                "block",
+                command,
+                "dangerous git command with unknown branch",
+                {"branch": "unknown"},
+            )
+        if ASK_GIT.search(normalized):
+            return guard_result(
+                "logos.guard.protected-branch-guard",
+                "ask",
+                command,
+                "git state change with unknown branch",
+                {"branch": "unknown"},
+            )
+        return guard_result("logos.guard.protected-branch-guard", "allow", command, "git command allowed")
+
+    if not is_protected_branch(branch):
+        return guard_result(
+            "logos.guard.protected-branch-guard",
+            "allow",
+            command,
+            "current branch is not protected",
+            {"branch": branch},
+        )
+    if BLOCK_GIT.search(normalized):
+        return guard_result(
+            "logos.guard.protected-branch-guard",
+            "block",
+            command,
+            "dangerous git command on protected branch",
+            {"branch": branch},
+        )
+    if ASK_GIT.search(normalized):
+        return guard_result(
+            "logos.guard.protected-branch-guard",
+            "ask",
+            command,
+            "git state change on protected branch",
+            {"branch": branch},
+        )
+    return guard_result("logos.guard.protected-branch-guard", "allow", command, "git command allowed")
+
+
+def evaluate_secret_scan(payload: dict[str, object], command: str) -> dict[str, object]:
+    text = command + "\n" + collect_text(payload)
+    findings = []
+    for kind, pattern in SECRET_PATTERNS:
+        for match in pattern.finditer(text):
+            sample = match.group(1) if match.lastindex else match.group(0)
+            if is_placeholder(sample):
+                continue
+            findings.append({"kind": kind, "sample": redact(sample)})
+    if not findings:
+        return guard_result("logos.guard.secret-scan", "allow", command, "no secret-like values found")
+    return guard_result(
+        "logos.guard.secret-scan",
+        "ask",
+        command,
+        "secret-like value detected",
+        {"findings": findings},
+    )
+
+
+def detect_branch(cwd: str) -> str | None:
+    if not cwd:
+        return None
+    path = Path(cwd)
+    if not path.exists():
+        return None
+    try:
+        completed = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=path,
+            text=True,
+            capture_output=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    branch = completed.stdout.strip()
+    return branch or None
+
+
+def is_protected_branch(branch: str) -> bool:
+    return any(fnmatch.fnmatch(branch, pattern) for pattern in PROTECTED_BRANCHES)
+
+
+def merge_most_restrictive(decisions: list[dict[str, object]]) -> dict[str, object]:
+    return max(decisions, key=lambda item: DECISION_RANK[str(item["decision"])])
+
+
+def to_codex_output(result: dict[str, object]) -> dict[str, object]:
+    decision = str(result["decision"])
+    reason = str(result["reason"])
+    if decision == "ask":
+        message = (
+            f"Logos approval note: {reason}. "
+            "Codex approval and sandbox policy remain authoritative. "
+            f"For Logos risk procedure, read `{RISK_REVIEW_POINTER}` if needed."
+        )
+    elif decision == "block":
+        message = (
+            f"Logos guard warning: {reason}. "
+            "Codex approval and sandbox policy remain authoritative; "
+            "this hook output is advisory unless Codex hard-deny support is confirmed. "
+            f"For Logos risk procedure, read `{RISK_REVIEW_POINTER}` if needed."
+        )
+    else:
+        message = f"Logos note: {reason}."
+    return {"systemMessage": message}
+
+
+def should_suppress_message(cwd: str, result: dict[str, object]) -> bool:
+    if not cwd:
+        return False
+    root = Path(cwd)
+    if not root.exists():
+        return False
+    category = f"{result['guard']}:{result['decision']}:{result['reason']}"
+    state_path = root / ".logos" / "session" / "hook-state.json"
+    state = read_hook_state(state_path)
+    seen = state.setdefault("seen_warnings", [])
+    if category in seen:
+        return True
+    if isinstance(seen, list):
+        seen.append(category)
+    state["updated_at"] = datetime.now(timezone.utc).isoformat()
+    write_hook_state(state_path, state)
+    return False
+
+
+def read_hook_state(path: Path) -> dict[str, object]:
+    try:
+        if not path.exists():
+            return {"schema_version": 1, "seen_warnings": []}
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"schema_version": 1, "seen_warnings": []}
+    if not isinstance(parsed, dict):
+        return {"schema_version": 1, "seen_warnings": []}
+    if not isinstance(parsed.get("seen_warnings"), list):
+        parsed["seen_warnings"] = []
+    parsed.setdefault("schema_version", 1)
+    return parsed
+
+
+def write_hook_state(path: Path, state: dict[str, object]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+def record_checkpoint(cwd: str, result: dict[str, object]) -> None:
+    if not cwd:
+        return
+    root = Path(cwd)
+    if not root.exists():
+        return
+    checkpoint = {
+        "schema_version": 1,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "cwd": str(root),
+        "reason": str(result["reason"]),
+        "guard": str(result["guard"]),
+        "decision": str(result["decision"]),
+        "head": git_output(root, ["rev-parse", "HEAD"]),
+        "branch": git_output(root, ["branch", "--show-current"]),
+        "status_short": git_output(root, ["status", "--short"]) or "",
+    }
+    checkpoint["dirty"] = bool(str(checkpoint["status_short"]).strip())
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    path = root / ".logos" / "checkpoints" / f"{stamp}.json"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(checkpoint, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+def git_output(cwd: Path, args: list[str]) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            text=True,
+            capture_output=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout.strip()
+
+
+def iter_strings(value: object):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for nested in value.values():
+            yield from iter_strings(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from iter_strings(nested)
+
+
+def find_key(value: object, key: str) -> object:
+    if isinstance(value, dict):
+        if key in value:
+            return value[key]
+        for nested in value.values():
+            found = find_key(nested, key)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for nested in value:
+            found = find_key(nested, key)
+            if found is not None:
+                return found
+    return None
+
+
+def collect_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return "\n".join(collect_text(item) for item in value.values())
+    if isinstance(value, list):
+        return "\n".join(collect_text(item) for item in value)
+    return ""
+
+
+def is_placeholder(value: str) -> bool:
+    return bool(PLACEHOLDER_PATTERN.match(value.strip().strip("'\"")))
+
+
+def redact(value: str) -> str:
+    if len(value) <= 8:
+        return "***"
+    return f"{value[:4]}...{value[-4:]}"
+
+
+def looks_like_shell_command(value: str) -> bool:
+    lowered = value.strip().lower()
+    return lowered.startswith(
+        (
+            "rm ",
+            "rmdir ",
+            "rd ",
+            "del ",
+            "remove-item ",
+            "git ",
+            "curl ",
+            "wget ",
+            "npm ",
+            "pnpm ",
+            "yarn ",
+            "bun ",
+            "pip ",
+            "pip3 ",
+            "uv ",
+            "poetry ",
+            "cargo ",
+            "go ",
+            "terraform ",
+            "kubectl ",
+            "docker ",
+        )
+    )
+
+
+def normalize_command(command: str) -> str:
+    try:
+        tokens = shlex.split(command, posix=False)
+    except ValueError:
+        tokens = command.split()
+    return " ".join(tokens)
+
+
+def strip_git_global_options(command: str) -> str:
+    parts = command.split()
+    if not parts or parts[0] != "git":
+        return command
+    output = ["git"]
+    index = 1
+    while index < len(parts):
+        token = parts[index]
+        if token in {"-C", "-c"} and index + 1 < len(parts):
+            index += 2
+            continue
+        if token.startswith("--git-dir=") or token.startswith("--work-tree="):
+            index += 1
+            continue
+        output.extend(parts[index:])
+        break
+    return " ".join(output)
+
+
+def guard_result(
+    guard: str,
+    decision: str,
+    command: str,
+    reason: str,
+    evidence: dict[str, object] | None = None,
+) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "guard": guard,
+        "decision": decision,
+        "severity": DECISION_RANK[decision],
+        "reason": reason,
+        "matched": [command] if decision != "allow" else [],
+        "evidence": {"command": command, **(evidence or {})},
+    }
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

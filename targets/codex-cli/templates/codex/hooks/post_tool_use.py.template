@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+# logos-managed: true
+# logos-target: codex-cli
+# logos-version: {{logos_version}}
+"""Logos Codex PostToolUse hook skeleton."""
+
+from __future__ import annotations
+
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+def main() -> int:
+    raw = sys.stdin.read()
+    if not raw.strip():
+        return 0
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(json.dumps({"systemMessage": f"Logos PostToolUse input could not be parsed: {exc}"}))
+        return 0
+    if isinstance(payload, dict):
+        record_evidence(payload)
+    return 0
+
+
+def record_evidence(payload: dict[str, object]) -> None:
+    cwd = extract_cwd(payload)
+    if not cwd:
+        return
+    root = Path(cwd)
+    if not root.exists():
+        return
+    event = {
+        "schema_version": 1,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "hook_event_name": payload.get("hook_event_name", "PostToolUse"),
+        "tool_name": payload.get("tool_name", "unknown"),
+        "tool_use_id": payload.get("tool_use_id", "unknown"),
+        "summary": summarize_payload(payload),
+    }
+    path = root / ".logos" / "evidence" / "hook-events.jsonl"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except OSError:
+        return
+
+
+def extract_cwd(payload: dict[str, object]) -> str:
+    for key in ("cwd", "working_directory", "workdir"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def summarize_payload(payload: dict[str, object]) -> str:
+    tool_name = payload.get("tool_name", "unknown")
+    tool_input = payload.get("tool_input")
+    if isinstance(tool_input, dict):
+        for key in ("command", "cmd", "script", "path", "file_path"):
+            value = tool_input.get(key)
+            if isinstance(value, str) and value.strip():
+                return f"{tool_name}: {value[:240]}"
+    return str(tool_name)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
