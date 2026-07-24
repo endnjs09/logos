@@ -17,7 +17,7 @@ from pathlib import Path
 
 DECISION_RANK = {"allow": 0, "record_only": 1, "ask": 2, "block": 3}
 PROTECTED_BRANCHES = ("main", "master", "production", "release/*")
-RISK_REVIEW_POINTER = ".agents/logos/procedures/risk-review.md"
+RISK_REVIEW_POINTER = ".agents/logos/procedures/review.md"
 
 READ_ONLY_PATTERNS = [
     re.compile(r"^git\s+(?:status|diff|log|show|rev-parse)\b"),
@@ -150,6 +150,7 @@ def main() -> int:
     result = merge_most_restrictive(decisions)
     if result["decision"] != "allow":
         cwd = extract_cwd(payload)
+        record_guard_decision(cwd, result, command)
         record_checkpoint(cwd, result)
         if not should_suppress_message(cwd, result):
             print(json.dumps(to_codex_output(result), ensure_ascii=False))
@@ -411,6 +412,28 @@ def write_hook_state(path: Path, state: dict[str, object]) -> None:
         return
 
 
+def record_guard_decision(cwd: str, result: dict[str, object], command: str) -> None:
+    if not cwd:
+        return
+    root = Path(cwd)
+    if not root.exists():
+        return
+    run = ensure_current_run(root)
+    record = {
+        "schema_version": 1,
+        "run_id": run["run_id"],
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "guard_id": result["guard"],
+        "decision": result["decision"],
+        "reason": result["reason"],
+        "target": command[:500],
+    }
+    append_jsonl(root / ".logos" / "runs" / str(run["run_id"]) / "guards.jsonl", record)
+    append_jsonl(root / ".logos" / "evidence" / "guard-decisions.jsonl", record)
+    run["guard_decision_count"] = int(run.get("guard_decision_count", 0)) + 1
+    write_json(root / ".logos" / "runs" / str(run["run_id"]) / "run.json", run)
+
+
 def record_checkpoint(cwd: str, result: dict[str, object]) -> None:
     if not cwd:
         return
@@ -434,6 +457,125 @@ def record_checkpoint(cwd: str, result: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(checkpoint, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+def ensure_current_run(root: Path) -> dict[str, object]:
+    initialize_memory_state(root)
+    active_path = root / ".logos" / "memory" / "active-work.json"
+    active = read_json(active_path) or {}
+    active_run_id = active.get("active_run_id")
+    if isinstance(active_run_id, str):
+        existing = read_json(root / ".logos" / "runs" / active_run_id / "run.json")
+        if existing is not None:
+            return existing
+    run_id = datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S%fZ")
+    run = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "plan_id": active.get("active_plan_id"),
+        "selected_mode": "nous",
+        "status": "active",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "ended_at": None,
+        "user_request": None,
+        "summary": "",
+        "touched_files": [],
+        "command_count": 0,
+        "guard_decision_count": 0,
+    }
+    write_json(root / ".logos" / "runs" / run_id / "run.json", run)
+    active.update(
+        {
+            "schema_version": 1,
+            "status": "active",
+            "active_run_id": run_id,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    write_json(active_path, active)
+    update_run_index(root, run)
+    return run
+
+
+def initialize_memory_state(root: Path) -> None:
+    memory = root / ".logos" / "memory"
+    memory.mkdir(parents=True, exist_ok=True)
+    write_json_if_missing(
+        memory / "active-work.json",
+        {
+            "schema_version": 1,
+            "status": "idle",
+            "active_plan_id": None,
+            "active_run_id": None,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    write_json_if_missing(
+        memory / "run-index.json",
+        {"schema_version": 1, "runs": [], "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    write_json_if_missing(
+        memory / "open-items.json",
+        {"schema_version": 1, "items": [], "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    snapshot = memory / "resume-snapshot.md"
+    if not snapshot.exists():
+        snapshot.write_text(
+            "# Logos Resume Snapshot\n\nStatus: idle\n\nNo active Logos work has been recorded yet.\n",
+            encoding="utf-8",
+        )
+
+
+def update_run_index(root: Path, run: dict[str, object]) -> None:
+    index_path = root / ".logos" / "memory" / "run-index.json"
+    index = read_json(index_path) or {"schema_version": 1, "runs": []}
+    runs = index.setdefault("runs", [])
+    if isinstance(runs, list):
+        runs[:] = [item for item in runs if not isinstance(item, dict) or item.get("run_id") != run["run_id"]]
+        runs.append(
+            {
+                "run_id": run["run_id"],
+                "plan_id": run.get("plan_id"),
+                "status": run.get("status"),
+                "started_at": run.get("started_at"),
+                "summary": run.get("summary", ""),
+                "touched_files": run.get("touched_files", []),
+            }
+        )
+        del runs[:-25]
+    index["updated_at"] = datetime.now(timezone.utc).isoformat()
+    write_json(index_path, index)
+
+
+def read_json(path: Path) -> dict[str, object] | None:
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def write_json(path: Path, payload: dict[str, object]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+def write_json_if_missing(path: Path, payload: dict[str, object]) -> None:
+    if path.exists():
+        return
+    write_json(path, payload)
+
+
+def append_jsonl(path: Path, payload: dict[str, object]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
     except OSError:
         return
 
@@ -577,4 +719,11 @@ def guard_result(
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        try:
+            print(json.dumps({"systemMessage": f"Logos PreToolUse hook skipped after internal error: {exc}"}))
+        except Exception:
+            pass
+        raise SystemExit(0)

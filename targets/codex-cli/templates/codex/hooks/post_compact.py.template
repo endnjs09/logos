@@ -29,6 +29,7 @@ def main() -> int:
         return 0
 
     cwd = extract_cwd(payload)
+    record_post_compact(cwd)
     if should_suppress_pointer(cwd):
         return 0
 
@@ -42,9 +43,10 @@ def to_codex_output() -> dict[str, object]:
             "hookEventName": "PostCompact",
             "additionalContext": (
                 "Logos Nous Mode remains active after compaction. "
-                f"Before continuing Logos workflow, read `{NOUS_SKILL}` if the active "
-                f"workflow context is missing. Step procedures live under `{PROCEDURE_DIR}`. "
-                "Do not re-inject full procedure bodies unless needed."
+                "If workflow context is missing, read `.logos/memory/resume-snapshot.md` first. "
+                "If that is insufficient, read `.logos/memory/active-work.json` and "
+                "`.logos/memory/run-index.json`. "
+                f"Then read `{NOUS_SKILL}` or procedures under `{PROCEDURE_DIR}` only as needed."
             ),
         }
     }
@@ -95,6 +97,27 @@ def write_hook_state(path: Path, state: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+def record_post_compact(cwd: str) -> None:
+    if not cwd:
+        return
+    root = Path(cwd)
+    if not root.exists():
+        return
+    event = {
+        "schema_version": 1,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "hook_event_name": "PostCompact",
+        "summary": "context compacted; resume snapshot should be read before raw logs if context is unclear",
+    }
+    path = root / ".logos" / "evidence" / "hook-events.jsonl"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
     except OSError:
         return
 

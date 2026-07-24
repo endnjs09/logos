@@ -2,6 +2,7 @@ from pathlib import Path
 
 from logos_installer.doctor import (
     validate_codex_config,
+    validate_codex_work_state,
     validate_core_hashes,
     validate_guards_manifest,
     validate_session_state,
@@ -167,7 +168,9 @@ def test_validate_target_provides_accepts_codex_paths(tmp_path: Path) -> None:
         'instructions = "AGENTS.md"\n'
         'skills = ".agents/skills"\n'
         'procedures = ".agents/logos/procedures"\n'
-        'config = ".codex/config.toml"\n',
+        'roles = ".agents/logos/roles"\n'
+        'config = ".codex/config.toml"\n'
+        'hooks = ".codex/hooks.json"\n',
     )
     ok: list[str] = []
     errors: list[str] = []
@@ -178,7 +181,9 @@ def test_validate_target_provides_accepts_codex_paths(tmp_path: Path) -> None:
     assert "target provides instructions" in ok
     assert "target provides skills" in ok
     assert "target provides procedures" in ok
+    assert "target provides roles" in ok
     assert "target provides codex config" in ok
+    assert "target provides hooks" in ok
 
 
 def test_validate_target_provides_rejects_missing_table(tmp_path: Path) -> None:
@@ -201,7 +206,9 @@ def test_validate_target_provides_rejects_wrong_codex_paths(tmp_path: Path) -> N
         'instructions = ".agents/AGENTS.md"\n'
         'skills = "skills"\n'
         'procedures = ".agents/procedures"\n'
-        'config = ".codex/settings.json"\n',
+        'roles = ".agents/roles"\n'
+        'config = ".codex/settings.json"\n'
+        'hooks = ".codex/hooks.yml"\n',
     )
     ok: list[str] = []
     errors: list[str] = []
@@ -211,7 +218,9 @@ def test_validate_target_provides_rejects_wrong_codex_paths(tmp_path: Path) -> N
     assert "Target provides.instructions must be AGENTS.md." in errors
     assert "Target provides.skills must be .agents/skills." in errors
     assert "Target provides.procedures must be .agents/logos/procedures." in errors
+    assert "Target provides.roles must be .agents/logos/roles." in errors
     assert "Target provides.config must be .codex/config.toml." in errors
+    assert "Target provides.hooks must be .codex/hooks.json." in errors
 
 
 def test_validate_target_provides_reports_invalid_toml(tmp_path: Path) -> None:
@@ -222,6 +231,37 @@ def test_validate_target_provides_reports_invalid_toml(tmp_path: Path) -> None:
     validate_target_provides(tmp_path, "codex-cli", ok, errors)
 
     assert any(error.startswith("Invalid target TOML:") for error in errors)
+
+
+def test_validate_codex_work_state_rejects_bad_jsonl(tmp_path: Path) -> None:
+    memory = tmp_path / ".logos" / "memory"
+    memory.mkdir(parents=True)
+    (memory / "active-work.json").write_text(
+        '{"schema_version":1,"status":"idle","active_plan_id":null,'
+        '"active_run_id":null,"updated_at":"now"}\n',
+        encoding="utf-8",
+    )
+    (memory / "run-index.json").write_text(
+        '{"schema_version":1,"runs":[],"updated_at":"now"}\n',
+        encoding="utf-8",
+    )
+    (memory / "open-items.json").write_text(
+        '{"schema_version":1,"items":[],"updated_at":"now"}\n',
+        encoding="utf-8",
+    )
+    (memory / "resume-snapshot.md").write_text("# Snapshot\n", encoding="utf-8")
+    evidence = tmp_path / ".logos" / "evidence"
+    evidence.mkdir(parents=True)
+    (evidence / "hook-events.jsonl").write_text("{bad\n", encoding="utf-8")
+    (tmp_path / ".logos" / "runs").mkdir(parents=True)
+
+    ok: list[str] = []
+    errors: list[str] = []
+
+    validate_codex_work_state(tmp_path, ok, errors)
+
+    assert "active-work shape" in ok
+    assert any("invalid JSONL" in error for error in errors)
 
 
 def write_codex_config(root: Path, content: str) -> None:

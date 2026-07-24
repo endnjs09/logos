@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/work-memory.schema.json",
+  "title": "Logos Work Memory",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["schema_version", "status", "active_plan_id", "active_run_id", "updated_at"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "status": { "enum": ["idle", "active", "paused", "blocked"] },
+        "active_plan_id": { "type": ["string", "null"] },
+        "active_run_id": { "type": ["string", "null"] },
+        "updated_at": { "type": "string" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["schema_version", "runs", "updated_at"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "runs": { "type": "array", "items": { "type": "object" } },
+        "updated_at": { "type": "string" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["schema_version", "items", "updated_at"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "items": { "type": "array" },
+        "updated_at": { "type": "string" }
+      }
+    }
+  ]
+}

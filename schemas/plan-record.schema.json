@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/plan-record.schema.json",
+  "title": "Logos Plan Record",
+  "type": "object",
+  "required": ["schema_version", "plan_id", "title", "user_request", "status", "steps"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "user_request": { "type": "string" },
+    "status": { "enum": ["active", "completed", "blocked", "abandoned"] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "steps": { "type": "array", "items": { "type": "object" } },
+    "open_items": { "type": "array" },
+    "blockers": { "type": "array" },
+    "target_files": { "type": "array", "items": { "type": "string" } }
+  }
+}

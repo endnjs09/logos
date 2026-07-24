@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,6 +49,7 @@ def record_evidence(payload: dict[str, object]) -> None:
             stream.write(json.dumps(event, ensure_ascii=False) + "\n")
     except OSError:
         return
+    record_run_observations(root, payload)
 
 
 def extract_cwd(payload: dict[str, object]) -> str:
@@ -67,6 +69,271 @@ def summarize_payload(payload: dict[str, object]) -> str:
             if isinstance(value, str) and value.strip():
                 return f"{tool_name}: {value[:240]}"
     return str(tool_name)
+
+
+def record_run_observations(root: Path, payload: dict[str, object]) -> None:
+    run = ensure_current_run(root)
+    command = extract_command(payload)
+    if command:
+        append_jsonl(
+            root / ".logos" / "runs" / str(run["run_id"]) / "commands.jsonl",
+            {
+                "schema_version": 1,
+                "run_id": run["run_id"],
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "command": command,
+                "cwd": extract_cwd(payload),
+                "tool_name": payload.get("tool_name", "unknown"),
+                "exit_code": extract_exit_code(payload),
+                "summary": summarize_payload(payload),
+            },
+        )
+        append_jsonl(
+            root / ".logos" / "evidence" / "command-results.jsonl",
+            {
+                "schema_version": 1,
+                "run_id": run["run_id"],
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "command": command,
+                "summary": summarize_payload(payload),
+            },
+        )
+        run["command_count"] = int(run.get("command_count", 0)) + 1
+
+    for changed in detect_changed_files(root):
+        append_jsonl(
+            root / ".logos" / "runs" / str(run["run_id"]) / "files.jsonl",
+            {
+                "schema_version": 1,
+                "run_id": run["run_id"],
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "path": changed["path"],
+                "change_type": changed["change_type"],
+                "detected_by": "git-status",
+            },
+        )
+        touched = run.setdefault("touched_files", [])
+        if isinstance(touched, list) and changed["path"] not in touched:
+            touched.append(changed["path"])
+
+    write_json(root / ".logos" / "runs" / str(run["run_id"]) / "run.json", run)
+    update_run_index(root, run)
+    update_resume_snapshot(root, run)
+
+
+def extract_command(payload: dict[str, object]) -> str:
+    tool_input = payload.get("tool_input")
+    if isinstance(tool_input, dict):
+        for key in ("command", "cmd", "script", "shell_command"):
+            value = tool_input.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    for key in ("command", "cmd", "script", "shell_command"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def extract_exit_code(payload: dict[str, object]) -> int | None:
+    for key in ("exit_code", "exitCode", "status"):
+        value = find_key(payload, key)
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def detect_changed_files(root: Path) -> list[dict[str, str]]:
+    try:
+        completed = subprocess.run(
+            ["git", "status", "--short"],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if completed.returncode != 0:
+        return []
+    changed = []
+    for line in completed.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        status = line[:2]
+        path = line[3:].strip()
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        changed.append({"path": path, "change_type": classify_git_status(status)})
+    return changed[:200]
+
+
+def classify_git_status(status: str) -> str:
+    if "D" in status:
+        return "deleted"
+    if "A" in status or "?" in status:
+        return "added"
+    if "R" in status:
+        return "renamed"
+    return "modified"
+
+
+def ensure_current_run(root: Path) -> dict[str, object]:
+    initialize_memory_state(root)
+    active_path = root / ".logos" / "memory" / "active-work.json"
+    active = read_json(active_path) or {}
+    active_run_id = active.get("active_run_id")
+    if isinstance(active_run_id, str):
+        existing = read_json(root / ".logos" / "runs" / active_run_id / "run.json")
+        if existing is not None:
+            return existing
+    run_id = datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S%fZ")
+    run = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "plan_id": active.get("active_plan_id"),
+        "selected_mode": "nous",
+        "status": "active",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "ended_at": None,
+        "user_request": None,
+        "summary": "",
+        "touched_files": [],
+        "command_count": 0,
+        "guard_decision_count": 0,
+    }
+    write_json(root / ".logos" / "runs" / run_id / "run.json", run)
+    active.update(
+        {
+            "schema_version": 1,
+            "status": "active",
+            "active_run_id": run_id,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    write_json(active_path, active)
+    update_run_index(root, run)
+    return run
+
+
+def initialize_memory_state(root: Path) -> None:
+    memory = root / ".logos" / "memory"
+    memory.mkdir(parents=True, exist_ok=True)
+    write_json_if_missing(
+        memory / "active-work.json",
+        {
+            "schema_version": 1,
+            "status": "idle",
+            "active_plan_id": None,
+            "active_run_id": None,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    write_json_if_missing(
+        memory / "run-index.json",
+        {"schema_version": 1, "runs": [], "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    write_json_if_missing(
+        memory / "open-items.json",
+        {"schema_version": 1, "items": [], "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    snapshot = memory / "resume-snapshot.md"
+    if not snapshot.exists():
+        snapshot.write_text(
+            "# Logos Resume Snapshot\n\nStatus: idle\n\nNo active Logos work has been recorded yet.\n",
+            encoding="utf-8",
+        )
+
+
+def update_run_index(root: Path, run: dict[str, object]) -> None:
+    index_path = root / ".logos" / "memory" / "run-index.json"
+    index = read_json(index_path) or {"schema_version": 1, "runs": []}
+    runs = index.setdefault("runs", [])
+    if isinstance(runs, list):
+        runs[:] = [item for item in runs if not isinstance(item, dict) or item.get("run_id") != run["run_id"]]
+        runs.append(
+            {
+                "run_id": run["run_id"],
+                "plan_id": run.get("plan_id"),
+                "status": run.get("status"),
+                "started_at": run.get("started_at"),
+                "summary": run.get("summary", ""),
+                "touched_files": run.get("touched_files", []),
+            }
+        )
+        del runs[:-25]
+    index["updated_at"] = datetime.now(timezone.utc).isoformat()
+    write_json(index_path, index)
+
+
+def update_resume_snapshot(root: Path, run: dict[str, object]) -> None:
+    touched = run.get("touched_files") if isinstance(run.get("touched_files"), list) else []
+    lines = [
+        "# Logos Resume Snapshot",
+        "",
+        "Read this file only when continuing after context loss, compaction, or an unclear work state.",
+        "Do not scan raw `.logos/runs` or `.logos/evidence` first.",
+        "",
+        f"Updated: {datetime.now(timezone.utc).isoformat()}",
+        f"Current task: {run.get('summary') or 'Active Logos work'}",
+        f"Last run id: {run.get('run_id')}",
+        "",
+        "## Touched Files",
+    ]
+    lines.extend([f"- {item}" for item in touched[:20]] or ["- None"])
+    lines.extend(["", "## Where To Look Next", "- .logos/memory/active-work.json", "- .logos/memory/run-index.json"])
+    (root / ".logos" / "memory" / "resume-snapshot.md").write_text(
+        "\n".join(lines).rstrip() + "\n",
+        encoding="utf-8",
+    )
+
+
+def read_json(path: Path) -> dict[str, object] | None:
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def write_json(path: Path, payload: dict[str, object]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
+def write_json_if_missing(path: Path, payload: dict[str, object]) -> None:
+    if path.exists():
+        return
+    write_json(path, payload)
+
+
+def append_jsonl(path: Path, payload: dict[str, object]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        return
+
+
+def find_key(value: object, key: str) -> object:
+    if isinstance(value, dict):
+        if key in value:
+            return value[key]
+        for nested in value.values():
+            found = find_key(nested, key)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for nested in value:
+            found = find_key(nested, key)
+            if found is not None:
+                return found
+    return None
 
 
 if __name__ == "__main__":

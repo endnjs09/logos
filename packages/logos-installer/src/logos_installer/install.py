@@ -12,6 +12,7 @@ from logos_core.assets.scanner import scan_core_assets
 from logos_core.manifests.writer import write_core_manifests
 from logos_core.prompt_assembly.assembler import assemble_prompt_bundle
 from logos_core.prompt_assembly.manifest import write_prompt_assembly_manifest
+from logos_core.work_state.memory import initialize_memory_state
 from logos_installer.models import InstallError, InstallResult, RenderedFile
 from logos_installer.render import MANAGED_MARKER, all_rendered_files
 
@@ -24,6 +25,8 @@ RUNTIME_DIRS = [
     ".logos/plans",
     ".logos/runs",
     ".logos/evidence",
+    ".logos/evidence/artifacts",
+    ".logos/memory",
     ".logos/approvals",
     ".logos/checkpoints",
     ".logos/cache",
@@ -35,10 +38,13 @@ CODEX_RUNTIME_DIRS = [
     ".codex/hooks",
     ".agents/skills",
     ".agents/logos/procedures",
+    ".agents/logos/roles",
     ".logos/session",
     ".logos/plans",
     ".logos/runs",
     ".logos/evidence",
+    ".logos/evidence/artifacts",
+    ".logos/memory",
     ".logos/approvals",
     ".logos/checkpoints",
     ".logos/cache",
@@ -95,6 +101,7 @@ def install_target(
 
     for directory in runtime_dirs:
         (root / directory).mkdir(parents=True, exist_ok=True)
+    initialize_memory_state(root)
 
     core_scan = scan_core_assets(source)
     if core_scan.validation_issues:

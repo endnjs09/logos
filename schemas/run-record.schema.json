@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/run-record.schema.json",
+  "title": "Logos Run Record",
+  "type": "object",
+  "required": ["schema_version", "run_id", "selected_mode", "status", "started_at"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "plan_id": { "type": ["string", "null"] },
+    "selected_mode": { "type": "string" },
+    "status": { "enum": ["active", "completed", "blocked", "failed"] },
+    "started_at": { "type": "string" },
+    "ended_at": { "type": ["string", "null"] },
+    "user_request": { "type": ["string", "null"] },
+    "summary": { "type": "string" },
+    "touched_files": { "type": "array", "items": { "type": "string" } },
+    "command_count": { "type": "integer", "minimum": 0 },
+    "guard_decision_count": { "type": "integer", "minimum": 0 }
+  }
+}
