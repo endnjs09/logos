@@ -2,6 +2,7 @@
 id: logos.implementation-role.<name>
 kind: implementation-role
 name: <name>
+role_code: <bd|fd|db|sys|test>
 description: <when this implementation specialist should be used>
 status: draft
 version: 0.1.0

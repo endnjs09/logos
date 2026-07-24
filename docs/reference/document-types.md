@@ -7,8 +7,8 @@ required structure.
 
 | Kind | Primary Location | Runtime Role |
 |---|---|---|
-| `role` | `core/roles/` | Orchestration persona and procedure |
-| `implementation-role` | `core/roles/implementation/` | Domain specialist behavior |
+| `role` | `core/roles/`, `.agents/logos/roles/` | Orchestration persona and procedure |
+| `implementation-role` | `core/roles/exe/`, `.agents/logos/roles/` | Domain specialist behavior |
 | `skill` | `.agents/skills/`, `plugins/*/skills/` | Reusable workflow package |
 | `command` | `.gemini/commands/`, `targets/*/commands/` | User or host entrypoint |
 | `rule` | `core/rules/` | Soft model instruction |
@@ -21,8 +21,21 @@ required structure.
 
 ## Role
 
-Use for orchestration roles such as planner, explorer, gap-analyzer,
-plan-reviewer, executor, tester, and reviewer.
+Use for orchestration roles such as `orch`, `intk`, `exp`, `sp`, `pln`, `exe`,
+`sec`, `rv`, `vf`, and `mem`.
+
+Role codes:
+
+- `orch`: overall workflow coordinator
+- `intk`: intake and bounded clarification
+- `exp`: codebase exploration
+- `sp`: specification writing
+- `pln`: planning and task-plan shaping
+- `exe`: implementation coordinator
+- `sec`: security and sensitive-change review
+- `rv`: general review
+- `vf`: verification
+- `mem`: resume and work-state recovery
 
 Required sections:
 
@@ -42,8 +55,15 @@ Do not put implementation-domain details here unless they apply to every domain.
 
 ## Implementation Role
 
-Use for domain specialists such as frontend, backend, database, system-infra,
-security, test, and docs-dx.
+Use for implementation specialists selected by `exe`.
+
+Implementation role codes:
+
+- `bd`: backend, API, service, and server-side logic
+- `fd`: frontend, UI, client state, and accessibility
+- `db`: database, schema, migration, and persistence work
+- `sys`: system, infrastructure, runtime, build, and deployment surfaces
+- `test`: test implementation and automated verification support
 
 Required sections:
 
@@ -58,8 +78,8 @@ Required sections:
 - `Verification Requirements`
 - `Failure Modes`
 
-Implementation roles are selected by the executor or planner when a task touches
-their domain.
+Implementation roles are selected by `exe` or planned by `pln` when a task
+touches their domain.
 
 ## Skill
 
@@ -186,6 +206,22 @@ Required sections:
 
 Procedures are useful when a host discovers every `SKILL.md` as an independent
 candidate but the project needs one central skill to route the workflow.
+
+The `intake` procedure is the first gate for coding work. It decides whether
+essential information is sufficient before exploration, sets internal
+complexity, and asks blocking questions only when necessary.
+
+The `exploration` procedure is a read-only evidence pass. It gathers code
+evidence, project intent, likely target files, and remaining question candidates
+before Spec and Task Plan creation.
+
+The `spec` procedure converts intake and exploration evidence into the lightest
+adequate specification: Low Fast Path, Mini Spec, or Structured Spec.
+
+The `planning` procedure converts Spec into an execution-ready Task Plan. It
+defines target files, role routing, ordered implementation steps, verification
+plan, rollback criteria, excluded scope, Context Handoff decision, and
+Review-Lite result before execution starts.
 
 ## Rubric
 

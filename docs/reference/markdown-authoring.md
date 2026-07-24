@@ -143,8 +143,8 @@ Use one file type per responsibility.
 
 | Kind | Purpose |
 |---|---|
-| `role` | Orchestration role such as planner, explorer, executor, tester |
-| `implementation-role` | Specialist role such as frontend, backend, database, security |
+| `role` | Orchestration role such as `orch`, `intk`, `exp`, `sp`, `pln`, `exe`, `rv`, `vf` |
+| `implementation-role` | Specialist role such as `bd`, `fd`, `db`, `sys`, `test` |
 | `skill` | Reusable procedural package loaded when a task pattern matches |
 | `command` | User or host entrypoint, usually a thin wrapper around a skill |
 | `rule` | Soft instruction that guides model behavior |

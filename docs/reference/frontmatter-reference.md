@@ -74,8 +74,8 @@ logos.<kind>.<name>
 Examples:
 
 ```text
-logos.role.planner
-logos.implementation-role.frontend
+logos.role.pln
+logos.implementation-role.fd
 logos.skill.nous
 logos.command.nous
 logos.rule.test-discipline
@@ -187,7 +187,7 @@ outputs:
   - task-plan
   - final-response
 depends_on:
-  - logos.skill.codebase-exploration
+  - logos.procedure.exploration
 related_rules:
   - logos.rule.context-handoff
   - logos.rule.verification
@@ -223,24 +223,27 @@ multiple skills.
 
 ```yaml
 ---
-id: logos.procedure.codebase-exploration
+id: logos.procedure.intake
 kind: procedure
-name: codebase-exploration
-description: Step procedure for inspecting repository structure and existing implementation patterns.
+name: intake
+description: Step procedure for deciding whether essential information is sufficient before exploration.
 status: active
 version: 0.2.0
 outputs:
-  - exploration-summary
-depends_on: []
+  - intake-result
+schemas:
+  - schemas/intake-result.schema.json
+depends_on:
+  - logos.role.intk
 related_rules:
   - logos.rule.context-handoff
-  - logos.rule.filesystem
 ---
 ```
 
 Recommended fields:
 
 - `outputs`
+- `schemas`
 - `depends_on`
 - `related_rules`
 
@@ -250,16 +253,43 @@ step-level operating documents and are referenced by a primary skill, such as
 frontmatter; use the body section `Use When` to describe when the primary skill
 should apply that procedure.
 
+When a procedure output has a schema, include it in `schemas`. For intake,
+`intake-result` records essential information status, internal complexity,
+blocking questions, safe assumptions, Interview Draft updates, and whether the
+next step is `ask_user` or `exploration`.
+
+For exploration, `exploration-result` records read-only project evidence,
+feature scan findings, project intent, likely target files, read-only context,
+remaining question candidates, Interview Draft updates, and whether the next
+step is `clarification` or `spec`.
+
+For spec, `spec-result` records Low Fast Path, Mini Spec, or Structured Spec
+output. It keeps "what to build" separate from the Task Plan's "how to build."
+
+For planning, `task-plan-result` records the execution-ready Task Plan after
+Spec. It must include target files, role routing, ordered steps, verification
+plan, rollback criteria, excluded scope, blocking questions, Review-Lite result,
+and the next step.
+
+Planning may also produce `context-handoff`. Context Handoff is a compact,
+role-specific payload for execution or specialist roles. It is not a transcript
+dump. Use it to pass only the fields needed by the next role: goal, success
+criteria, target files, excluded scope, verification plan, and risk notes. High
+complexity work should use Context Handoff by default; middle complexity work
+should use it only when multiple files, multiple roles, meaningful risk, or
+context-loss risk exists.
+
 ## Role Fields
 
 ```yaml
 ---
-id: logos.role.planner
+id: logos.role.pln
 kind: role
-name: planner
+name: pln
 description: Converts user requests into scoped specs and task plans.
 status: draft
 version: 0.1.0
+role_code: pln
 layer: orchestration
 outputs:
   - spec
@@ -276,6 +306,7 @@ do_not_trigger_when:
 
 Recommended fields:
 
+- `role_code`
 - `layer`
 - `inputs`
 - `outputs`
@@ -284,16 +315,36 @@ Recommended fields:
 - `triggers`
 - `do_not_trigger_when`
 
+Allowed orchestration role codes:
+
+```text
+orch
+intk
+exp
+sp
+pln
+exe
+sec
+rv
+vf
+mem
+```
+
+Use `role_code` to keep installed role cards, doctor checks, and future role
+routing aligned. The file name under `.agents/logos/roles/` should match
+`role_code`.
+
 ## Implementation Role Fields
 
 ```yaml
 ---
-id: logos.implementation-role.backend
+id: logos.implementation-role.bd
 kind: implementation-role
-name: backend
+name: bd
 description: Handles API, service, authentication, and server-side business logic implementation.
 status: draft
 version: 0.1.0
+role_code: bd
 layer: implementation
 domains:
   - backend
@@ -309,12 +360,26 @@ do_not_trigger_when:
 
 Recommended fields:
 
+- `role_code`
 - `domains`
 - `inputs`
 - `outputs`
 - `risk_areas`
 - `triggers`
 - `do_not_trigger_when`
+
+Allowed implementation role codes:
+
+```text
+bd
+fd
+db
+sys
+test
+```
+
+Implementation roles are selected by `logos.role.exe`; they are not standalone
+Codex skills.
 
 ## Rule Fields
 
