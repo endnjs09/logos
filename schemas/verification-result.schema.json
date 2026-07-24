@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/verification-result.schema.json",
+  "title": "Logos Verification Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "passed",
+    "checked_files",
+    "commands_run",
+    "tests_run",
+    "success_criteria_status",
+    "quality_gate_status",
+    "modified_files_review",
+    "remaining_risk",
+    "findings",
+    "next_step"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "passed": { "type": "boolean" },
+    "checked_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "purpose", "result"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "tests_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "result"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "success_criteria_status": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterion", "status", "evidence"],
+        "properties": {
+          "criterion": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["passed", "failed", "skipped", "unknown"] },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "quality_gate_status": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gate", "status", "evidence"],
+        "properties": {
+          "gate": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["passed", "failed", "skipped", "unknown"] },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "modified_files_review": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "status", "evidence"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["in_scope", "out_of_scope", "not_checked"] },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "remaining_risk": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "next_step": { "enum": ["complete", "execute", "plan", "clarification"] }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "passed": { "const": true } },
+        "required": ["passed"]
+      },
+      "then": {
+        "properties": { "next_step": { "const": "complete" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "passed": { "const": false } },
+        "required": ["passed"]
+      },
+      "then": {
+        "properties": { "next_step": { "enum": ["execute", "plan", "clarification"] } }
+      }
+    }
+  ]
+}

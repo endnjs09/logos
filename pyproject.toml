@@ -20,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 logos = "logos_installer.cli:main"
+logos-runner = "logos_runner.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -39,9 +40,14 @@ packages = [
   "logos_core.manifests",
   "logos_core.prompt_assembly",
   "logos_core.rules",
+  "logos_core.work_state",
   "logos_core.workflow",
   "logos_installer",
   "logos_installer.targets",
+  "logos_runner",
+  "logos_runner.codex",
+  "logos_runner.state",
+  "logos_runner.stages",
 ]
 
 [tool.setuptools.package-dir]
@@ -54,15 +60,21 @@ logos_core = "packages/logos-core/src/logos_core"
 "logos_core.manifests" = "packages/logos-core/src/logos_core/manifests"
 "logos_core.prompt_assembly" = "packages/logos-core/src/logos_core/prompt_assembly"
 "logos_core.rules" = "packages/logos-core/src/logos_core/rules"
+"logos_core.work_state" = "packages/logos-core/src/logos_core/work_state"
 "logos_core.workflow" = "packages/logos-core/src/logos_core/workflow"
 logos_installer = "packages/logos-installer/src/logos_installer"
 "logos_installer.targets" = "packages/logos-installer/src/logos_installer/targets"
+logos_runner = "packages/logos-runner/src/logos_runner"
+"logos_runner.codex" = "packages/logos-runner/src/logos_runner/codex"
+"logos_runner.state" = "packages/logos-runner/src/logos_runner/state"
+"logos_runner.stages" = "packages/logos-runner/src/logos_runner/stages"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [
   "packages/logos-core/src",
-  "packages/logos-installer/src"
+  "packages/logos-installer/src",
+  "packages/logos-runner/src"
 ]
 
 [tool.ruff]
@@ -76,6 +88,7 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.12"
 packages = [
   "logos_core",
-  "logos_installer"
+  "logos_installer",
+  "logos_runner"
 ]
 strict = true

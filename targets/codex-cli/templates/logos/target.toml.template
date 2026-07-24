@@ -6,8 +6,16 @@ kind = "primary"
 instructions = "AGENTS.md"
 skills = ".agents/skills"
 procedures = ".agents/logos/procedures"
+roles = ".agents/logos/roles"
 config = ".codex/config.toml"
 hooks = ".codex/hooks.json"
+
+[runner]
+enabled = true
+package = "logos-runner"
+planning_sequence = ["scan", "intake", "spec", "plan", "review_lite"]
+execute_stage = "manual"
+verify_stage = "manual"
 
 [target_support.agents_md]
 status = "confirmed"
@@ -32,6 +40,10 @@ notes = "Codex supports repo skills through .agents/skills; Logos installs only 
 [target_support.procedures]
 status = "emulated"
 notes = "Logos stores step-level procedure documents under .agents/logos/procedures and routes to them from nous/SKILL.md."
+
+[target_support.roles]
+status = "emulated"
+notes = "Logos stores role cards under .agents/logos/roles and routes to them from nous/SKILL.md; Codex does not auto-select these as standalone skills."
 
 [target_support.commands]
 status = "not_used"

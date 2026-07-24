@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/execution-result.schema.json",
+  "title": "Logos Execution Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "status",
+    "implemented_steps",
+    "modified_files",
+    "commands_run",
+    "tests_run",
+    "verification_notes",
+    "deviations_from_plan",
+    "blocked_reason",
+    "next_step"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["completed", "blocked", "failed"] },
+    "implemented_steps": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "modified_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "purpose", "result"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "tests_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "result"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "verification_notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "deviations_from_plan": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blocked_reason": { "type": "string" },
+    "next_step": { "enum": ["verify", "plan", "clarification"] }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "completed" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": { "next_step": { "const": "verify" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "enum": ["blocked", "failed"] } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "blocked_reason": { "minLength": 1 },
+          "next_step": { "enum": ["plan", "clarification"] }
+        }
+      }
+    }
+  ]
+}
