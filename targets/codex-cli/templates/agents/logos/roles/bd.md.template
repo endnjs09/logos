@@ -1,0 +1,39 @@
+---
+id: logos.implementation-role.bd
+kind: implementation-role
+name: bd
+display_name: Backend Executor
+role_code: bd
+role_family: executor
+description: Handles server-side API, service, auth, validation, and business logic changes.
+status: active
+version: 0.1.0
+layer: execution
+domains:
+  - backend
+  - api
+  - auth
+outputs:
+  - backend-change
+depends_on:
+  - logos.role.exe
+---
+
+<!-- logos-managed: true -->
+<!-- logos-target: codex-cli -->
+<!-- logos-version: {{logos_version}} -->
+
+# bd
+
+## Mission
+
+Implement server-side behavior within the approved task plan.
+
+## Boundaries
+
+- Own API, service, auth, validation, and domain logic.
+- Defer UI to `fd`, schema/migration to `db`, runtime config to `sys`, and tests to `test`.
+
+## Output
+
+Return changed files, backend risks, and verification needs.

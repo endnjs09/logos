@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/exploration-result.schema.json",
+  "title": "Logos Exploration Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "exploration_summary",
+    "snapshot_used",
+    "snapshot_sources",
+    "files_read",
+    "feature_scan",
+    "code_evidence",
+    "project_intent",
+    "hash_diff",
+    "likely_target_files",
+    "read_only_context",
+    "existing_patterns",
+    "constraints_discovered",
+    "question_candidates",
+    "blocking_unknowns",
+    "interview_draft_update",
+    "complexity_reassessment",
+    "next_step"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "exploration_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshot_used": {
+      "type": "boolean"
+    },
+    "snapshot_sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "files_read": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path_reason"
+      }
+    },
+    "feature_scan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["area", "finding"],
+        "properties": {
+          "area": {
+            "type": "string",
+            "minLength": 1
+          },
+          "finding": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "code_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "evidence"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "project_intent": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "intent"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "intent": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "hash_diff": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "finding"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "finding": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "likely_target_files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path_reason"
+      }
+    },
+    "read_only_context": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path_reason"
+      }
+    },
+    "existing_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "constraints_discovered": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "question_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question", "reason"],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "blocking_unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "interview_draft_update": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_facts",
+        "confirmed_decisions",
+        "open_questions",
+        "excluded_scope"
+      ],
+      "properties": {
+        "known_facts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "confirmed_decisions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "excluded_scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "complexity_reassessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["previous_complexity", "recommended_complexity", "basis"],
+      "properties": {
+        "previous_complexity": {
+          "enum": ["low", "middle", "high"]
+        },
+        "recommended_complexity": {
+          "enum": ["low", "middle", "high"]
+        },
+        "basis": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "next_step": {
+      "enum": ["clarification", "intake"]
+    }
+  },
+  "$defs": {
+    "path_reason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "reason"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "next_step": {
+            "const": "clarification"
+          }
+        },
+        "required": ["next_step"]
+      },
+      "then": {
+        "properties": {
+          "blocking_unknowns": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

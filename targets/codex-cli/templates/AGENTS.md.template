@@ -23,6 +23,16 @@ This installed project uses Logos Nous Mode by default for coding tasks.
 Apply the Logos Nous workflow to implementation, debugging, refactoring,
 testing, review, and repository-maintenance requests.
 
+The default orchestration path is Logos Runner:
+
+- `logos-runner start --root <project> "<request>"`
+- `logos-runner run --root <project> <plan_id>`
+- `logos-runner execute --root <project> <plan_id>`
+- `logos-runner verify --root <project> <plan_id>`
+
+Do not manually recreate the Logos stage sequence when Runner can be used.
+Runner owns stage prompts, worker execution, plan artifacts, and handoff files.
+
 ## Skill Routing
 
 Use `.agents/skills/nous/SKILL.md` as the primary Logos workflow for coding
@@ -30,21 +40,49 @@ tasks. This target intentionally installs only one auto-discoverable Codex
 skill so Logos work is routed through the Nous director first.
 
 Detailed step procedures live under `.agents/logos/procedures/` and are loaded
-through `nous/SKILL.md`.
+by Runner stage prompts or by `nous/SKILL.md` only for recovery/fallback.
+Role cards live under `.agents/logos/roles/` and are also routed through
+`nous/SKILL.md`; Codex should not treat them as standalone auto-selected skills.
+
+When `.logos/plans/<plan_id>/` artifacts exist, treat those artifacts as the
+active work contract. Do not replace Runner-produced `task-plan.json`,
+`context-handoff.json`, `execution-result.json`, or `verification-result.json`
+with an ad hoc Codex plan.
 
 ## Operating Principles
 
-- Inspect before non-trivial edits.
+- For coding tasks, prefer Runner commands over manual procedure execution.
+- Follow the Runner stage gate: scan/exploration -> intake -> spec -> plan ->
+  execute -> verify.
+- Prefer Runner-produced artifacts for stage state and handoff.
+- Do not edit files, run build/test commands, or start implementation before
+  Runner planning has produced `next_step: executor`.
+- Read `.agents/logos/procedures/execution.md` only after the planning gate
+  returns `next_step: executor`, or when Runner explicitly builds an execution
+  prompt from it.
+- Inspect before edits.
 - Keep changes scoped to the user request.
-- Plan before broad, ambiguous, or multi-file work.
+- Plan before implementation.
 - Review risk before sensitive or irreversible actions.
 - Verify with concrete evidence before final response.
 - Report skipped or unavailable checks plainly.
 
 ## Enforcement Boundary
 
-Use `.agents/logos/procedures/risk-review.md` as the source of truth for guard
+Use `.agents/logos/procedures/review.md` as the source of truth for guard
 enforcement status. Keep this file as routing guidance and put detailed
-procedures in `.agents/logos/procedures/`.
+procedures in `.agents/logos/procedures/` and role boundaries in
+`.agents/logos/roles/`.
+
+## Work-State Recovery
+
+Logos records low-cost work state under `.logos/`. Do not read
+`.logos/runs/` or `.logos/evidence/` by default.
+
+When continuing after context loss, compaction, or an unclear work state, read
+`.logos/memory/resume-snapshot.md` first. If that is insufficient, read
+`.logos/memory/active-work.json`, `.logos/memory/run-index.json`, and only then
+the specific plan or run record needed. Raw evidence logs are for verification
+or debugging, not routine context loading.
 
 {{logos_codex_operating_context}}

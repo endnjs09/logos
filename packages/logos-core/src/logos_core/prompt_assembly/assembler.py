@@ -139,20 +139,19 @@ def build_codex_nous_skill(
 ) -> str:
     parts = [
         "<!-- logos-assembly: codex-nous-skill -->",
-        "## Assembled Codex Nous Skill",
-        "Use this material as the default Logos workflow for Codex coding tasks.",
-        "### Required Operating Loop",
+        "## Runner-Oriented Nous Material",
+        "Use Logos Runner as the default orchestration path for Codex coding tasks.",
+        "Do not manually expand every procedure when Runner can create stage prompts and artifacts.",
+        "### Runner Stage Contract",
         bullet_list(
             [
-                "Understand the request and ask only blocking clarification questions.",
-                "Inspect the codebase before non-trivial edits.",
-                "Plan the smallest sufficient change.",
-                "Implement within the agreed scope.",
-                "Verify with concrete evidence before final response.",
+                "Start or continue a Runner plan for repository work.",
+                "Use `.logos/plans/<plan_id>/plan-state.json` as the stage pointer.",
+                "Use Runner-produced task, handoff, execution, and verification artifacts as the work contract.",
+                "Load procedure and role files only for the current Runner stage or for recovery.",
+                "Keep manual procedure execution as a fallback when Runner is unavailable.",
             ]
         ),
-        source_section("Workflow Material", workflow_sources),
-        source_section("Rule Material", rule_sources),
     ]
     if profile_sources:
         parts.append(source_section("Target Profile", profile_sources))

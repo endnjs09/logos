@@ -7,7 +7,9 @@ status: active
 version: 0.2.0
 outputs:
   - verification-summary
-depends_on: []
+depends_on:
+  - logos.procedure.execution
+  - logos.role.vf
 related_rules:
   - logos.rule.command-execution
   - logos.rule.git

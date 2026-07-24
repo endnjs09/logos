@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/context-handoff.schema.json",
+  "title": "Logos Context Handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "apply",
+    "handoff_to",
+    "reason",
+    "required_fields",
+    "payload",
+    "missing_required_fields"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "apply": {
+      "type": "boolean"
+    },
+    "handoff_to": {
+      "type": "array",
+      "items": {
+        "enum": ["exe", "bd", "fd", "db", "sys", "test", "sec", "rv", "vf", "mem"]
+      }
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_fields": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "goal",
+          "success_criteria",
+          "target_files",
+          "excluded_scope",
+          "verification_plan",
+          "risk_notes"
+        ]
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "success_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "target_files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "excluded_scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verification_plan": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "risk_notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "missing_required_fields": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "apply": {
+            "const": true
+          }
+        },
+        "required": ["apply"]
+      },
+      "then": {
+        "properties": {
+          "handoff_to": {
+            "minItems": 1
+          },
+          "required_fields": {
+            "minItems": 1
+          },
+          "missing_required_fields": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

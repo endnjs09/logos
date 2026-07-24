@@ -32,10 +32,29 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     assert bundle.outputs == [
         "AGENTS.md",
         ".agents/skills/nous/SKILL.md",
-        ".agents/logos/procedures/codebase-exploration.md",
-        ".agents/logos/procedures/implementation-planning.md",
-        ".agents/logos/procedures/risk-review.md",
+        ".agents/logos/procedures/intake.md",
+        ".agents/logos/procedures/exploration.md",
+        ".agents/logos/procedures/spec.md",
+        ".agents/logos/procedures/planning.md",
+        ".agents/logos/procedures/execution.md",
         ".agents/logos/procedures/verification.md",
+        ".agents/logos/procedures/review.md",
+        ".agents/logos/procedures/resume.md",
+        ".agents/logos/roles/orch.md",
+        ".agents/logos/roles/intk.md",
+        ".agents/logos/roles/exp.md",
+        ".agents/logos/roles/sp.md",
+        ".agents/logos/roles/pln.md",
+        ".agents/logos/roles/exe.md",
+        ".agents/logos/roles/bd.md",
+        ".agents/logos/roles/fd.md",
+        ".agents/logos/roles/db.md",
+        ".agents/logos/roles/sys.md",
+        ".agents/logos/roles/test.md",
+        ".agents/logos/roles/sec.md",
+        ".agents/logos/roles/rv.md",
+        ".agents/logos/roles/vf.md",
+        ".agents/logos/roles/mem.md",
     ]
     assert "logos-assembly: codex-operating-context" in bundle.codex_operating_context
     assert "logos-assembly: codex-nous-skill" in bundle.codex_nous_skill
@@ -44,8 +63,11 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     assert bundle.codex_risk_review_skill == ""
     assert bundle.codex_verification_skill == ""
     assert "### Verification" not in bundle.codex_operating_context
-    assert "### Verification" in bundle.codex_nous_skill
-    assert "Verify." in bundle.codex_nous_skill
+    assert "### Verification" not in bundle.codex_nous_skill
+    assert "Verify." not in bundle.codex_nous_skill
+    assert "Runner-Oriented Nous Material" in bundle.codex_nous_skill
+    assert "Use Logos Runner as the default orchestration path" in bundle.codex_nous_skill
+    assert "manual procedure execution as a fallback" in bundle.codex_nous_skill
     assert "Gemini-specific text." not in bundle.codex_operating_context
     assert all(item.id != "logos.template.gemini-only" for item in bundle.inputs)
 

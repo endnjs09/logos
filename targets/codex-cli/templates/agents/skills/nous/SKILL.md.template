@@ -18,10 +18,29 @@ outputs:
   - final-response
   - verification-summary
 depends_on:
-  - logos.procedure.codebase-exploration
-  - logos.procedure.implementation-planning
-  - logos.procedure.risk-review
+  - logos.procedure.intake
+  - logos.procedure.exploration
+  - logos.procedure.spec
+  - logos.procedure.planning
+  - logos.procedure.execution
   - logos.procedure.verification
+  - logos.procedure.review
+  - logos.procedure.resume
+  - logos.role.orch
+  - logos.role.intk
+  - logos.role.exp
+  - logos.role.sp
+  - logos.role.pln
+  - logos.role.exe
+  - logos.implementation-role.bd
+  - logos.implementation-role.fd
+  - logos.implementation-role.db
+  - logos.implementation-role.sys
+  - logos.implementation-role.test
+  - logos.role.sec
+  - logos.role.rv
+  - logos.role.vf
+  - logos.role.mem
 related_rules:
   - logos.rule.command-execution
   - logos.rule.context-handoff
@@ -57,34 +76,86 @@ Run the default Logos coding workflow for Codex in this repository.
 
 - `AGENTS.md`
 - `.logos/session/nous-state.json`
-- `.agents/logos/procedures/codebase-exploration.md`
-- `.agents/logos/procedures/implementation-planning.md`
-- `.agents/logos/procedures/risk-review.md`
-- `.agents/logos/procedures/verification.md`
+- `.logos/plans/<plan_id>/plan-state.json` when a Runner plan is active.
+- `.logos/memory/resume-snapshot.md` only when context loss, compaction, or unclear work state requires resume context.
+- Stage-specific procedure and role files only when Runner references them, or
+  when recovery/fallback requires manual inspection.
 
 ## Procedure
 
-1. Read the user request and identify the task type.
-2. Inspect the codebase before non-trivial edits.
-3. Make a scoped plan when the change is not tiny or obvious.
-4. Check risk before risky commands, sensitive files, secrets, auth, data, billing, or broad scope changes.
-5. Implement the smallest sufficient change.
-6. Verify with concrete evidence before the final response.
-7. State changes, verification status, and remaining uncertainty.
+Use Logos Runner as the default orchestration path.
 
-## Skill Handoff
+When no Runner plan is active, start one for repository work:
 
-- Use `.agents/logos/procedures/codebase-exploration.md` to find files, entry points, checks, and existing patterns.
-- Use `.agents/logos/procedures/implementation-planning.md` to define target files, excluded scope, steps, and verification plan.
-- Use `.agents/logos/procedures/risk-review.md` to classify risk and decide whether approval is needed.
-- Use `.agents/logos/procedures/verification.md` to check the completed work before final response.
+```text
+logos-runner start --root <project> "<request>"
+logos-runner run --root <project> <plan_id>
+```
+
+When Logos Runner artifacts exist, use them as the active work contract:
+
+1. Read `.logos/plans/<plan_id>/plan-state.json`.
+2. Follow the current stage and result files recorded there.
+3. Do not recreate the workflow from scratch when Runner artifacts already define it.
+4. Do not replace Runner-produced `task-plan.json`, `context-handoff.json`,
+   `execution-result.json`, or `verification-result.json` with a Codex-only plan.
+
+If Runner cannot be used, use the manual recovery path only long enough to
+preserve safety: read the specific procedure needed for the current stage,
+avoid broad context loading, and state that Runner was unavailable.
+
+## Runner Gate
+
+- Do not edit files, run build/test commands, or start implementation before
+  Runner planning returns `next_step: executor`.
+- During intake, exploration, Spec, and planning, use read-only inspection only.
+- Do not load execution procedure or executor roles during the initial context
+  load. Runner loads them only after the planning gate returns
+  `next_step: executor`.
+- A Codex `Updated Plan` checklist is not enough by itself. The planning gate
+  must produce the Logos Task Plan fields: `target_files`, `role_routing`,
+  `verification_plan`, `excluded_scope`, `rollback_criteria`, Review-Lite, and
+  `next_step`.
+
+## Resume Policy
+
+- Do not scan `.logos/runs/` or `.logos/evidence/` at the start of normal work.
+- If previous work context is missing, read `.logos/memory/resume-snapshot.md` first.
+- If the snapshot is insufficient, read `.logos/memory/active-work.json` and `.logos/memory/run-index.json`.
+- Open a specific `.logos/plans/` or `.logos/runs/` record only when needed to continue or verify the active work.
+- Read raw evidence JSONL only for verification, debugging, or resolving a concrete uncertainty.
+
+## Runner Stage Map
+
+- `scan`: reads `.agents/logos/procedures/exploration.md` and exploration roles.
+- `intake`: reads `.agents/logos/procedures/intake.md` and intake roles.
+- `spec`: reads `.agents/logos/procedures/spec.md` and spec roles.
+- `plan`: reads `.agents/logos/procedures/planning.md`, planning roles, and review-lite context.
+- `execute`: reads `.agents/logos/procedures/execution.md`, executor routing, and selected implementation roles.
+- `verify`: reads `.agents/logos/procedures/verification.md` and verification roles.
+- `resume`: reads `.agents/logos/procedures/resume.md` only for context recovery.
+
+## Role Routing
+
+- Use `.agents/logos/roles/orch.md` as the overall coordinator role.
+- Use `.agents/logos/roles/intk.md`, `.agents/logos/roles/exp.md`, `.agents/logos/roles/sp.md`, and `.agents/logos/roles/pln.md` for intake, exploration, specification, and planning.
+- Use `.agents/logos/roles/exe.md` to route implementation to `.agents/logos/roles/bd.md`, `.agents/logos/roles/fd.md`, `.agents/logos/roles/db.md`, `.agents/logos/roles/sys.md`, or `.agents/logos/roles/test.md`.
+- Use `.agents/logos/roles/sec.md`, `.agents/logos/roles/rv.md`, and `.agents/logos/roles/vf.md` for security, review, and verification.
+- Use `.agents/logos/roles/mem.md` when resuming from Logos work-state records.
+
+## Complexity Handling
+
+Complexity is an internal agent judgment. Use `middle` as the default, lower to
+`low` for small and clear work, and raise to `high` for broad, risky,
+cross-cutting, or hard-to-reverse work.
 
 {{logos_codex_nous_skill}}
 
 ## Current Limits
 
-- Use `.agents/logos/procedures/risk-review.md` as the source of truth for guard enforcement status.
+- Use `.agents/logos/procedures/review.md` as the source of truth for guard enforcement status.
 - Evidence capture, run logging, hooks, and evaluator behavior are only available when implemented in Logos runtime code.
+- Work-state records are continuation aids. They are not a substitute for inspecting current files before editing.
 
 ## Outputs
 

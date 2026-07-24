@@ -10,6 +10,7 @@ from pathlib import Path
 from logos_core.assets.scanner import scan_core_assets
 from logos_core.assets.validate import load_asset, validate_paths
 from logos_core.session.state import validate_session_state_payload
+from logos_core.work_state.jsonl import validate_jsonl
 
 
 GEMINI_REQUIRED_PATHS = [
@@ -36,10 +37,29 @@ GEMINI_REQUIRED_PATHS = [
 CODEX_REQUIRED_PATHS = [
     "AGENTS.md",
     ".agents/skills/nous/SKILL.md",
-    ".agents/logos/procedures/codebase-exploration.md",
-    ".agents/logos/procedures/implementation-planning.md",
-    ".agents/logos/procedures/risk-review.md",
+    ".agents/logos/procedures/intake.md",
+    ".agents/logos/procedures/exploration.md",
+    ".agents/logos/procedures/spec.md",
+    ".agents/logos/procedures/planning.md",
+    ".agents/logos/procedures/execution.md",
     ".agents/logos/procedures/verification.md",
+    ".agents/logos/procedures/review.md",
+    ".agents/logos/procedures/resume.md",
+    ".agents/logos/roles/orch.md",
+    ".agents/logos/roles/intk.md",
+    ".agents/logos/roles/exp.md",
+    ".agents/logos/roles/sp.md",
+    ".agents/logos/roles/pln.md",
+    ".agents/logos/roles/exe.md",
+    ".agents/logos/roles/bd.md",
+    ".agents/logos/roles/fd.md",
+    ".agents/logos/roles/db.md",
+    ".agents/logos/roles/sys.md",
+    ".agents/logos/roles/test.md",
+    ".agents/logos/roles/sec.md",
+    ".agents/logos/roles/rv.md",
+    ".agents/logos/roles/vf.md",
+    ".agents/logos/roles/mem.md",
     ".codex/config.toml",
     ".codex/hooks.json",
     ".codex/hooks/pre_tool_use.py",
@@ -66,27 +86,84 @@ CODEX_OBSOLETE_PATHS = [
     ".agents/skills/implementation-planning/SKILL.md",
     ".agents/skills/risk-review/SKILL.md",
     ".agents/skills/verification/SKILL.md",
-]
-
-CODEX_PROCEDURE_PATHS = [
     ".agents/logos/procedures/codebase-exploration.md",
     ".agents/logos/procedures/implementation-planning.md",
     ".agents/logos/procedures/risk-review.md",
+]
+
+CODEX_PROCEDURE_PATHS = [
+    ".agents/logos/procedures/intake.md",
+    ".agents/logos/procedures/exploration.md",
+    ".agents/logos/procedures/spec.md",
+    ".agents/logos/procedures/planning.md",
+    ".agents/logos/procedures/execution.md",
     ".agents/logos/procedures/verification.md",
+    ".agents/logos/procedures/review.md",
+    ".agents/logos/procedures/resume.md",
 ]
 
 CODEX_PROCEDURE_IDS = {
-    ".agents/logos/procedures/codebase-exploration.md": "logos.procedure.codebase-exploration",
-    ".agents/logos/procedures/implementation-planning.md": "logos.procedure.implementation-planning",
-    ".agents/logos/procedures/risk-review.md": "logos.procedure.risk-review",
+    ".agents/logos/procedures/intake.md": "logos.procedure.intake",
+    ".agents/logos/procedures/exploration.md": "logos.procedure.exploration",
+    ".agents/logos/procedures/spec.md": "logos.procedure.spec",
+    ".agents/logos/procedures/planning.md": "logos.procedure.planning",
+    ".agents/logos/procedures/execution.md": "logos.procedure.execution",
     ".agents/logos/procedures/verification.md": "logos.procedure.verification",
+    ".agents/logos/procedures/review.md": "logos.procedure.review",
+    ".agents/logos/procedures/resume.md": "logos.procedure.resume",
+}
+
+CODEX_ROLE_PATHS = [
+    ".agents/logos/roles/orch.md",
+    ".agents/logos/roles/intk.md",
+    ".agents/logos/roles/exp.md",
+    ".agents/logos/roles/sp.md",
+    ".agents/logos/roles/pln.md",
+    ".agents/logos/roles/exe.md",
+    ".agents/logos/roles/bd.md",
+    ".agents/logos/roles/fd.md",
+    ".agents/logos/roles/db.md",
+    ".agents/logos/roles/sys.md",
+    ".agents/logos/roles/test.md",
+    ".agents/logos/roles/sec.md",
+    ".agents/logos/roles/rv.md",
+    ".agents/logos/roles/vf.md",
+    ".agents/logos/roles/mem.md",
+]
+
+CODEX_ROLE_IDS = {
+    ".agents/logos/roles/orch.md": "logos.role.orch",
+    ".agents/logos/roles/intk.md": "logos.role.intk",
+    ".agents/logos/roles/exp.md": "logos.role.exp",
+    ".agents/logos/roles/sp.md": "logos.role.sp",
+    ".agents/logos/roles/pln.md": "logos.role.pln",
+    ".agents/logos/roles/exe.md": "logos.role.exe",
+    ".agents/logos/roles/bd.md": "logos.implementation-role.bd",
+    ".agents/logos/roles/fd.md": "logos.implementation-role.fd",
+    ".agents/logos/roles/db.md": "logos.implementation-role.db",
+    ".agents/logos/roles/sys.md": "logos.implementation-role.sys",
+    ".agents/logos/roles/test.md": "logos.implementation-role.test",
+    ".agents/logos/roles/sec.md": "logos.role.sec",
+    ".agents/logos/roles/rv.md": "logos.role.rv",
+    ".agents/logos/roles/vf.md": "logos.role.vf",
+    ".agents/logos/roles/mem.md": "logos.role.mem",
 }
 
 CODEX_RUNTIME_REQUIRED_DIRS = [
     ".logos/session",
     ".logos/evidence",
+    ".logos/evidence/artifacts",
+    ".logos/memory",
+    ".logos/plans",
     ".logos/checkpoints",
     ".logos/runs",
+]
+
+CODEX_MEMORY_REQUIRED_PATHS = [
+    ".logos/memory/active-work.json",
+    ".logos/memory/run-index.json",
+    ".logos/memory/open-items.json",
+    ".logos/memory/resume-snapshot.md",
 ]
 
 
@@ -168,8 +245,10 @@ def doctor_target(
         validate_codex_install_shape(root, ok, errors)
         validate_codex_links(root, ok, errors)
         validate_codex_procedures(root, ok, errors)
+        validate_codex_roles(root, ok, errors)
         validate_codex_target_profile(root, ok, errors)
         validate_codex_runtime_dirs(root, ok, errors)
+        validate_codex_work_state(root, ok, errors)
 
     validate_session_state(root, ok, errors)
     install_manifest = validate_manifest(root, ok, errors)
@@ -211,6 +290,7 @@ def validate_target_provides(
                 "instructions": "AGENTS.md",
                 "skills": ".agents/skills",
                 "procedures": ".agents/logos/procedures",
+                "roles": ".agents/logos/roles",
                 "config": ".codex/config.toml",
                 "hooks": ".codex/hooks.json",
             },
@@ -411,6 +491,93 @@ def validate_codex_runtime_dirs(root: Path, ok: list[str], errors: list[str]) ->
             ok.append("Codex installs only nous as auto-discoverable skill")
 
 
+def validate_codex_work_state(root: Path, ok: list[str], errors: list[str]) -> None:
+    for relative in CODEX_MEMORY_REQUIRED_PATHS:
+        path = root / relative
+        if path.exists():
+            ok.append(relative)
+        else:
+            errors.append(f"Missing required work-state path: {relative}")
+
+    validate_work_state_json(
+        root / ".logos/memory/active-work.json",
+        {"schema_version", "status", "active_plan_id", "active_run_id", "updated_at"},
+        "active-work shape",
+        ok,
+        errors,
+    )
+    validate_work_state_json(
+        root / ".logos/memory/run-index.json",
+        {"schema_version", "runs", "updated_at"},
+        "run-index shape",
+        ok,
+        errors,
+    )
+    validate_work_state_json(
+        root / ".logos/memory/open-items.json",
+        {"schema_version", "items", "updated_at"},
+        "open-items shape",
+        ok,
+        errors,
+    )
+    validate_run_directories(root, ok, errors)
+    for relative in (
+        ".logos/evidence/hook-events.jsonl",
+        ".logos/evidence/command-results.jsonl",
+        ".logos/evidence/test-results.jsonl",
+    ):
+        for issue in validate_jsonl(root / relative):
+            errors.append(issue)
+
+
+def validate_work_state_json(
+    path: Path,
+    required: set[str],
+    ok_message: str,
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    if not path.exists():
+        return
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        errors.append(f"Invalid work-state JSON {path}: {exc}")
+        return
+    if not isinstance(loaded, dict):
+        errors.append(f"Work-state JSON must be an object: {path}")
+        return
+    missing = sorted(required - set(loaded))
+    if missing:
+        errors.append(f"Work-state JSON missing fields {missing}: {path}")
+        return
+    ok.append(ok_message)
+
+
+def validate_run_directories(root: Path, ok: list[str], errors: list[str]) -> None:
+    runs_dir = root / ".logos/runs"
+    if not runs_dir.exists():
+        return
+    checked = 0
+    for path in runs_dir.iterdir():
+        if not path.is_dir():
+            continue
+        run_json = path / "run.json"
+        validate_work_state_json(
+            run_json,
+            {"schema_version", "run_id", "selected_mode", "status", "started_at"},
+            f"run record shape: {path.name}",
+            ok,
+            errors,
+        )
+        for jsonl in ("commands.jsonl", "files.jsonl", "guards.jsonl"):
+            for issue in validate_jsonl(path / jsonl):
+                errors.append(issue)
+        checked += 1
+    if checked == 0:
+        ok.append("no run records yet")
+
+
 def validate_codex_links(root: Path, ok: list[str], errors: list[str]) -> None:
     agents = root / "AGENTS.md"
     if agents.exists():
@@ -430,6 +597,15 @@ def validate_codex_links(root: Path, ok: list[str], errors: list[str]) -> None:
     if nous.exists():
         text = nous.read_text(encoding="utf-8")
         for relative in CODEX_PROCEDURE_PATHS:
+            require_text(
+                text,
+                relative,
+                f"nous references {Path(relative).name}",
+                ".agents/skills/nous/SKILL.md",
+                ok,
+                errors,
+            )
+        for relative in CODEX_ROLE_PATHS:
             require_text(
                 text,
                 relative,
@@ -478,6 +654,33 @@ def validate_codex_procedures(root: Path, ok: list[str], errors: list[str]) -> N
             errors.append(f"{relative}: procedure must not use do_not_trigger_when.")
     if len(errors) == error_count:
         ok.append("Codex procedure frontmatter shape")
+
+
+def validate_codex_roles(root: Path, ok: list[str], errors: list[str]) -> None:
+    error_count = len(errors)
+    implementation_codes = {"bd", "fd", "db", "sys", "test"}
+    for relative, expected_id in CODEX_ROLE_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        role_code = Path(relative).stem
+        expected_kind = "implementation-role" if role_code in implementation_codes else "role"
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != expected_kind:
+            errors.append(f"{relative}: kind must be {expected_kind}.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+        if frontmatter.get("role_code") != role_code:
+            errors.append(f"{relative}: role_code must be {role_code}.")
+    if len(errors) == error_count:
+        ok.append("Codex role frontmatter shape")
 
 
 def validate_codex_target_profile(root: Path, ok: list[str], errors: list[str]) -> None:

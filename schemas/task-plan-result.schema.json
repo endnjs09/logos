@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://logos.local/schemas/task-plan-result.schema.json",
+  "title": "Logos Task Plan Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "source_spec",
+    "complexity",
+    "goal",
+    "target_files",
+    "role_routing",
+    "steps",
+    "verification_plan",
+    "rollback_criteria",
+    "excluded_scope",
+    "blocking_open_questions",
+    "context_handoff",
+    "review_lite",
+    "next_step"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_spec": {
+      "type": "string",
+      "minLength": 1
+    },
+    "complexity": {
+      "enum": ["low", "middle", "high"]
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "role_routing": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role_code", "reason"],
+        "properties": {
+          "role_code": {
+            "enum": ["exe", "bd", "fd", "db", "sys", "test", "sec", "rv", "vf", "mem"]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role_code", "description", "target_files"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role_code": {
+            "enum": ["exe", "bd", "fd", "db", "sys", "test", "sec", "rv", "vf", "mem"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "verification_plan": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "risk_notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": []
+    },
+    "rollback_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "excluded_scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blocking_open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "context_handoff": {
+      "$ref": "context-handoff.schema.json"
+    },
+    "review_lite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "findings"],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "next_step": {
+      "enum": ["executor", "clarification", "spec"]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "next_step": {
+            "const": "executor"
+          }
+        },
+        "required": ["next_step"]
+      },
+      "then": {
+        "properties": {
+          "blocking_open_questions": {
+            "maxItems": 0
+          },
+          "review_lite": {
+            "properties": {
+              "passed": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "complexity": {
+            "const": "high"
+          }
+        },
+        "required": ["complexity"]
+      },
+      "then": {
+        "properties": {
+          "context_handoff": {
+            "properties": {
+              "apply": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
