@@ -146,10 +146,11 @@ def build_codex_nous_skill(
         bullet_list(
             [
                 "Start or continue a Runner plan for repository work.",
+                "Use the project-local `.logos/bin/logos-runner.cmd` shim instead of a global PATH command on Windows.",
                 "Use `.logos/plans/<plan_id>/plan-state.json` as the stage pointer.",
                 "Use Runner-produced task, handoff, execution, and verification artifacts as the work contract.",
                 "Load procedure and role files only for the current Runner stage or for recovery.",
-                "Keep manual procedure execution as a fallback when Runner is unavailable.",
+                "If Runner is unavailable, stop before implementation and report the installation blocker.",
             ]
         ),
     ]

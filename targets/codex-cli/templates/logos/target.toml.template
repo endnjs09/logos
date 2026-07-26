@@ -9,6 +9,7 @@ procedures = ".agents/logos/procedures"
 roles = ".agents/logos/roles"
 config = ".codex/config.toml"
 hooks = ".codex/hooks.json"
+runner_bin = ".logos/bin/logos-runner.cmd"
 
 [runner]
 enabled = true
@@ -16,6 +17,8 @@ package = "logos-runner"
 planning_sequence = ["scan", "intake", "spec", "plan", "review_lite"]
 execute_stage = "manual"
 verify_stage = "manual"
+worker_execution = "codex-native-subagent"
+nested_codex_exec = false
 
 [target_support.agents_md]
 status = "confirmed"
@@ -36,6 +39,10 @@ notes = "Codex config.toml supports MCP server configuration."
 [target_support.skills]
 status = "confirmed"
 notes = "Codex supports repo skills through .agents/skills; Logos installs only the nous skill as the auto-discoverable Codex skill."
+
+[target_support.native_subagents]
+status = "confirmed"
+notes = "Codex app sessions expose multi_agent_v1 tools for spawning and coordinating role-separated workers without nested codex exec."
 
 [target_support.procedures]
 status = "emulated"
@@ -85,6 +92,14 @@ notes = "Codex plugins can bundle lifecycle hooks that load alongside other hook
 status = "experimental"
 notes = "Codex documents execpolicy rules for command prefix allow, prompt, and forbidden decisions, but marks rules as experimental."
 
+[target_support.nested_codex_exec]
+status = "not_used"
+notes = "Logos Codex target does not start codex exec from inside an active Codex session."
+
 [target_support.session_state]
 status = "emulated"
 notes = "Logos stores Nous Mode state in .logos/session/nous-state.json and initializes Codex installs with nous_mode true."
+
+[target_support.runner_shim]
+status = "emulated"
+notes = "Logos installs project-local .logos/bin/logos-runner.cmd and .ps1 shims so Codex can invoke Runner without a global PATH entry."

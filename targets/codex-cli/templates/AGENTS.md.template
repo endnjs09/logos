@@ -23,15 +23,23 @@ This installed project uses Logos Nous Mode by default for coding tasks.
 Apply the Logos Nous workflow to implementation, debugging, refactoring,
 testing, review, and repository-maintenance requests.
 
-The default orchestration path is Logos Runner:
+The default orchestration path is Logos Runner plus Codex native subagents:
 
-- `logos-runner start --root <project> "<request>"`
-- `logos-runner run --root <project> <plan_id>`
-- `logos-runner execute --root <project> <plan_id>`
-- `logos-runner verify --root <project> <plan_id>`
+- `.\.logos\bin\logos-runner.cmd start --root . "<request>"`
+- `.\.logos\bin\logos-runner.cmd next --root . <plan_id>`
+- Use Codex `multi_agent_v1.spawn_agent` for the prepared stage prompt.
+- Save the subagent's final JSON, then run
+  `.\.logos\bin\logos-runner.cmd record-stage --root . <plan_id> <stage> --file <json_file>`.
+- Run `.\.logos\bin\logos-runner.cmd gate --root . <plan_id> <stage> --apply`.
+- Repeat until the planning gate reaches execute, then run the execute and
+  verify stages through the same native subagent/result/gate loop.
 
 Do not manually recreate the Logos stage sequence when Runner can be used.
-Runner owns stage prompts, worker execution, plan artifacts, and handoff files.
+Runner owns stage prompts, plan state, gates, artifacts, and handoff files.
+Codex native subagents own worker execution inside the current Codex session.
+If the project-local Runner shim is missing or cannot run, stop before
+implementation and report the installation blocker. Do not continue with a
+Codex-only implementation plan.
 
 ## Skill Routing
 
@@ -49,12 +57,32 @@ active work contract. Do not replace Runner-produced `task-plan.json`,
 `context-handoff.json`, `execution-result.json`, or `verification-result.json`
 with an ad hoc Codex plan.
 
+Inside a plan directory, root JSON files are official contracts or final stage
+outputs. Per-stage process records live under
+`.logos/plans/<plan_id>/stages/<stage>/` as `prompt.md`, `raw.md`, and
+`result.json`. Parse and validation failures live under
+`.logos/plans/<plan_id>/errors/`.
+
 ## Operating Principles
 
-- For coding tasks, prefer Runner commands over manual procedure execution.
+- For coding tasks, prefer Runner-managed stage prompts over manual procedure execution.
 - Follow the Runner stage gate: scan/exploration -> intake -> spec -> plan ->
   execute -> verify.
 - Prefer Runner-produced artifacts for stage state and handoff.
+- Do not call nested `codex exec` from inside Codex. Use native subagent tools
+  when worker separation is needed.
+- Persisted Logos artifacts under `.logos/` must be written in English,
+  regardless of the user's input language.
+- Translate or summarize user-provided requirements into English for official
+  JSON artifacts.
+- Use `.logos/plans/<plan_id>/user-answers.jsonl` as the only official user
+  clarification log; do not create ad hoc clarification files.
+- Subagents return JSON to the parent Codex session. They must not directly
+  create or edit official stage result files under `.logos/plans/<plan_id>/`.
+- Official result JSON is created only by `logos-runner record-stage`.
+- After spawning a native subagent, avoid repeated empty wait updates. If no
+  agent has completed, report that at most once per stage, then wait quietly or
+  provide only meaningful status changes.
 - Do not edit files, run build/test commands, or start implementation before
   Runner planning has produced `next_step: executor`.
 - Read `.agents/logos/procedures/execution.md` only after the planning gate

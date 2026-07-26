@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -59,6 +61,8 @@ TEMPLATE_MAPS = {
         "codex/hooks/permission_request.py.template": ".codex/hooks/permission_request.py",
         "codex/hooks/post_tool_use.py.template": ".codex/hooks/post_tool_use.py",
         "codex/hooks/post_compact.py.template": ".codex/hooks/post_compact.py",
+        "logos/bin/logos-runner.ps1.template": ".logos/bin/logos-runner.ps1",
+        "logos/bin/logos-runner.cmd.template": ".logos/bin/logos-runner.cmd",
         "logos/config.toml.template": ".logos/config.toml",
         "logos/target.toml.template": ".logos/target.toml",
         "logos/active-profile.toml.template": ".logos/active-profile.toml",
@@ -82,6 +86,9 @@ def all_rendered_files(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "target": target,
         "profile": "codex" if target == "codex-cli" else "gemini",
+        "logos_source_root": str(source_root),
+        "logos_python_executable": sys.executable,
+        "codex_executable": detect_codex_executable(),
     }
     if extra_context:
         context.update(extra_context)
@@ -96,3 +103,11 @@ def render_template(path: Path, context: dict[str, str]) -> str:
     for key, value in context.items():
         text = text.replace("{{" + key + "}}", value)
     return text
+
+
+def detect_codex_executable() -> str:
+    for name in ("codex", "codex.cmd", "codex.exe"):
+        found = shutil.which(name)
+        if found:
+            return found
+    return ""

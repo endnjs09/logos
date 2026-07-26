@@ -66,6 +66,8 @@ CODEX_REQUIRED_PATHS = [
     ".codex/hooks/permission_request.py",
     ".codex/hooks/post_tool_use.py",
     ".codex/hooks/post_compact.py",
+    ".logos/bin/logos-runner.ps1",
+    ".logos/bin/logos-runner.cmd",
     ".logos/config.toml",
     ".logos/target.toml",
     ".logos/active-profile.toml",
@@ -151,6 +153,7 @@ CODEX_ROLE_IDS = {
 
 CODEX_RUNTIME_REQUIRED_DIRS = [
     ".logos/session",
+    ".logos/bin",
     ".logos/evidence",
     ".logos/evidence/artifacts",
     ".logos/memory",
@@ -293,6 +296,7 @@ def validate_target_provides(
                 "roles": ".agents/logos/roles",
                 "config": ".codex/config.toml",
                 "hooks": ".codex/hooks.json",
+                "runner_bin": ".logos/bin/logos-runner.cmd",
             },
             ok,
             errors,
@@ -590,12 +594,44 @@ def validate_codex_links(root: Path, ok: list[str], errors: list[str]) -> None:
             ok,
             errors,
         )
+        require_text(
+            text,
+            ".\\.logos\\bin\\logos-runner.cmd",
+            "AGENTS.md references project-local Runner shim",
+            "AGENTS.md",
+            ok,
+            errors,
+        )
+        require_text(
+            text,
+            "Do not continue with a\nCodex-only implementation plan",
+            "AGENTS.md blocks Codex-only fallback implementation",
+            "AGENTS.md",
+            ok,
+            errors,
+        )
         if "Gemini CLI is the primary research target" in text:
             errors.append("AGENTS.md contains Gemini-only primary target wording.")
 
     nous = root / ".agents/skills/nous/SKILL.md"
     if nous.exists():
         text = nous.read_text(encoding="utf-8")
+        require_text(
+            text,
+            ".\\.logos\\bin\\logos-runner.cmd",
+            "nous references project-local Runner shim",
+            ".agents/skills/nous/SKILL.md",
+            ok,
+            errors,
+        )
+        require_text(
+            text,
+            "do not continue to\nimplementation",
+            "nous blocks implementation when Runner is unavailable",
+            ".agents/skills/nous/SKILL.md",
+            ok,
+            errors,
+        )
         for relative in CODEX_PROCEDURE_PATHS:
             require_text(
                 text,

@@ -22,6 +22,7 @@ RUNTIME_DIRS = [
     ".gemini/plugin",
     ".agents/skills",
     ".logos/session",
+    ".logos/bin",
     ".logos/plans",
     ".logos/runs",
     ".logos/evidence",

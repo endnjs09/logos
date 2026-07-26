@@ -88,8 +88,8 @@ Use Logos Runner as the default orchestration path.
 When no Runner plan is active, start one for repository work:
 
 ```text
-logos-runner start --root <project> "<request>"
-logos-runner run --root <project> <plan_id>
+.\.logos\bin\logos-runner.cmd start --root . "<request>"
+.\.logos\bin\logos-runner.cmd next --root . <plan_id>
 ```
 
 When Logos Runner artifacts exist, use them as the active work contract:
@@ -99,10 +99,37 @@ When Logos Runner artifacts exist, use them as the active work contract:
 3. Do not recreate the workflow from scratch when Runner artifacts already define it.
 4. Do not replace Runner-produced `task-plan.json`, `context-handoff.json`,
    `execution-result.json`, or `verification-result.json` with a Codex-only plan.
+5. Treat plan-root JSON files as official contracts or final outputs.
+6. Treat `.logos/plans/<plan_id>/stages/<stage>/prompt.md`, `raw.md`, and
+   `result.json` as per-stage process records.
+7. Treat `.logos/plans/<plan_id>/errors/` as parse or validation failure records.
 
-If Runner cannot be used, use the manual recovery path only long enough to
-preserve safety: read the specific procedure needed for the current stage,
-avoid broad context loading, and state that Runner was unavailable.
+For each stage:
+
+1. Prepare the current stage prompt with `logos-runner next` or `run-stage`.
+2. Start a Codex native subagent with `multi_agent_v1.spawn_agent` using the
+   prepared stage prompt. Do not call nested `codex exec`.
+3. Wait for the subagent result.
+4. If no agent has completed yet, report that at most once for the current
+   stage. Do not repeatedly print empty wait status.
+5. Save the subagent's final JSON to the stage raw result file.
+6. Record it with `logos-runner record-stage`.
+7. Apply the stage gate with `logos-runner gate --apply`.
+8. Continue with the next prompt only after the gate advances the plan state.
+
+Persisted Logos artifacts under `.logos/` must be written in English,
+regardless of the user's input language. Translate or summarize user-provided
+requirements into English for official JSON artifacts.
+Use `.logos/plans/<plan_id>/user-answers.jsonl` as the only official user
+clarification log; do not create ad hoc clarification files.
+Subagents return JSON to the parent Codex session. They must not directly
+create or edit official stage result files under `.logos/plans/<plan_id>/`.
+Official result JSON is created only by `logos-runner record-stage`.
+
+If the project-local Runner shim is missing or cannot run, do not continue to
+implementation. Use the manual recovery path only to diagnose the missing
+Runner, inspect installed files, or explain the blocker. Do not replace Runner
+artifacts with a Codex-only `Updated Plan`.
 
 ## Runner Gate
 
@@ -116,6 +143,8 @@ avoid broad context loading, and state that Runner was unavailable.
   must produce the Logos Task Plan fields: `target_files`, `role_routing`,
   `verification_plan`, `excluded_scope`, `rollback_criteria`, Review-Lite, and
   `next_step`.
+- Native subagent completion is not a gate by itself. The result must be
+  recorded and accepted by Runner before moving to the next stage.
 
 ## Resume Policy
 

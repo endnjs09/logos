@@ -1,0 +1,31 @@
+@echo off
+REM logos-managed: true
+REM Logos project-local Runner shim for cmd.exe.
+
+set "LOGOS_SOURCE_ROOT={{logos_source_root}}"
+set "LOGOS_PYTHON={{logos_python_executable}}"
+set "LOGOS_CODEX_EXECUTABLE={{codex_executable}}"
+set "LOGOS_PYTHONPATH=%LOGOS_SOURCE_ROOT%\packages\logos-core\src;%LOGOS_SOURCE_ROOT%\packages\logos-installer\src;%LOGOS_SOURCE_ROOT%\packages\logos-runner\src"
+
+if not exist "%LOGOS_PYTHON%" (
+  echo Logos Python executable not found: %LOGOS_PYTHON% 1>&2
+  exit /b 1
+)
+
+if not exist "%LOGOS_SOURCE_ROOT%" (
+  echo Logos source root not found: %LOGOS_SOURCE_ROOT% 1>&2
+  exit /b 1
+)
+
+if defined PYTHONPATH (
+  set "PYTHONPATH=%LOGOS_PYTHONPATH%;%PYTHONPATH%"
+) else (
+  set "PYTHONPATH=%LOGOS_PYTHONPATH%"
+)
+
+if not defined LOGOS_CODEX_EXECUTABLE (
+  set "LOGOS_CODEX_EXECUTABLE=codex"
+)
+
+"%LOGOS_PYTHON%" -m logos_runner.cli %*
+exit /b %ERRORLEVEL%
