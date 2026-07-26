@@ -14,6 +14,22 @@ from pathlib import Path
 RISK_REVIEW_POINTER = ".agents/logos/procedures/review.md"
 
 
+def sanitize_for_json(value: object) -> object:
+    if isinstance(value, str):
+        return value.encode("utf-8", "replace").decode("utf-8")
+    if isinstance(value, dict):
+        return {str(sanitize_for_json(key)): sanitize_for_json(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [sanitize_for_json(item) for item in value]
+    if isinstance(value, tuple):
+        return [sanitize_for_json(item) for item in value]
+    return value
+
+
+def safe_json_dumps(value: object, **kwargs: object) -> str:
+    return json.dumps(sanitize_for_json(value), **kwargs)
+
+
 def main() -> int:
     raw = sys.stdin.read()
     if not raw.strip():
@@ -21,7 +37,7 @@ def main() -> int:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
-        print(json.dumps({"systemMessage": f"Logos PermissionRequest input could not be parsed: {exc}"}))
+        print(safe_json_dumps({"systemMessage": f"Logos PermissionRequest input could not be parsed: {exc}"}))
         return 0
     if not isinstance(payload, dict):
         return 0
@@ -32,7 +48,7 @@ def main() -> int:
     cwd = extract_cwd(payload)
     record_permission_decision(cwd, result)
     if not should_suppress_message(cwd, result):
-        print(json.dumps(to_codex_output(result), ensure_ascii=False))
+        print(safe_json_dumps(to_codex_output(result), ensure_ascii=False))
     return 0
 
 
@@ -124,7 +140,7 @@ def read_hook_state(path: Path) -> dict[str, object]:
 def write_hook_state(path: Path, state: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(safe_json_dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     except OSError:
         return
 
@@ -147,10 +163,37 @@ def record_permission_decision(cwd: str, result: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+            stream.write(safe_json_dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        return
+
+
+def record_unhandled_hook_error(exc: Exception) -> None:
+    root = Path.cwd()
+    path = root / ".logos" / "evidence" / "hook-errors.jsonl"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(
+                safe_json_dumps(
+                    {
+                        "schema_version": 1,
+                        "recorded_at": datetime.now(timezone.utc).isoformat(),
+                        "hook": "PermissionRequest",
+                        "error": str(exc),
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+                + "\n"
+            )
     except OSError:
         return
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        record_unhandled_hook_error(exc)
+        raise SystemExit(0)

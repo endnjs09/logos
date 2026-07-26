@@ -13,6 +13,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+def sanitize_for_json(value: object) -> object:
+    if isinstance(value, str):
+        return value.encode("utf-8", "replace").decode("utf-8")
+    if isinstance(value, dict):
+        return {str(sanitize_for_json(key)): sanitize_for_json(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [sanitize_for_json(item) for item in value]
+    if isinstance(value, tuple):
+        return [sanitize_for_json(item) for item in value]
+    return value
+
+
+def safe_json_dumps(value: object, **kwargs: object) -> str:
+    return json.dumps(sanitize_for_json(value), **kwargs)
+
+
 def main() -> int:
     raw = sys.stdin.read()
     if not raw.strip():
@@ -20,7 +36,7 @@ def main() -> int:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
-        print(json.dumps({"systemMessage": f"Logos PostToolUse input could not be parsed: {exc}"}))
+        print(safe_json_dumps({"systemMessage": f"Logos PostToolUse input could not be parsed: {exc}"}))
         return 0
     if isinstance(payload, dict):
         record_evidence(payload)
@@ -46,7 +62,7 @@ def record_evidence(payload: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(event, ensure_ascii=False) + "\n")
+            stream.write(safe_json_dumps(event, ensure_ascii=False) + "\n")
     except OSError:
         return
     record_run_observations(root, payload)
@@ -100,7 +116,7 @@ def record_run_observations(root: Path, payload: dict[str, object]) -> None:
         )
         run["command_count"] = int(run.get("command_count", 0)) + 1
 
-    for changed in detect_changed_files(root):
+    for changed in dedupe_changed_files([*detect_payload_changed_files(root, payload), *detect_changed_files(root)]):
         append_jsonl(
             root / ".logos" / "runs" / str(run["run_id"]) / "files.jsonl",
             {
@@ -109,7 +125,7 @@ def record_run_observations(root: Path, payload: dict[str, object]) -> None:
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "path": changed["path"],
                 "change_type": changed["change_type"],
-                "detected_by": "git-status",
+                "detected_by": changed.get("detected_by", "unknown"),
             },
         )
         touched = run.setdefault("touched_files", [])
@@ -143,6 +159,59 @@ def extract_exit_code(payload: dict[str, object]) -> int | None:
     return None
 
 
+def detect_payload_changed_files(root: Path, payload: dict[str, object]) -> list[dict[str, str]]:
+    changed: list[dict[str, str]] = []
+    text = collect_text(payload)
+    for line in text.splitlines():
+        stripped = line.strip()
+        for prefix, change_type in (
+            ("*** Add File: ", "added"),
+            ("*** Update File: ", "modified"),
+            ("*** Delete File: ", "deleted"),
+        ):
+            if stripped.startswith(prefix):
+                path = normalize_project_path(root, stripped.removeprefix(prefix).strip())
+                if path:
+                    changed.append({"path": path, "change_type": change_type, "detected_by": "apply-patch"})
+
+    for key in ("path", "file_path", "filepath", "filename", "target_file"):
+        for value in find_all_keys(payload, key):
+            if isinstance(value, str) and value.strip():
+                path = normalize_project_path(root, value.strip())
+                if path:
+                    changed.append({"path": path, "change_type": "modified", "detected_by": f"payload:{key}"})
+    return changed
+
+
+def normalize_project_path(root: Path, value: str) -> str:
+    candidate = value.strip().strip("'\"")
+    if not candidate or candidate.startswith("<"):
+        return ""
+    try:
+        path = Path(candidate)
+        if path.is_absolute():
+            resolved = path.resolve()
+            try:
+                return str(resolved.relative_to(root.resolve())).replace("\\", "/")
+            except ValueError:
+                return ""
+        return str(path).replace("\\", "/")
+    except OSError:
+        return ""
+
+
+def dedupe_changed_files(changed: list[dict[str, str]]) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in changed:
+        path = item.get("path", "").strip()
+        if not path or path in seen:
+            continue
+        result.append(item)
+        seen.add(path)
+    return result[:200]
+
+
 def detect_changed_files(root: Path) -> list[dict[str, str]]:
     try:
         completed = subprocess.run(
@@ -165,7 +234,7 @@ def detect_changed_files(root: Path) -> list[dict[str, str]]:
         path = line[3:].strip()
         if " -> " in path:
             path = path.split(" -> ", 1)[1]
-        changed.append({"path": path, "change_type": classify_git_status(status)})
+        changed.append({"path": path, "change_type": classify_git_status(status), "detected_by": "git-status"})
     return changed[:200]
 
 
@@ -183,16 +252,19 @@ def ensure_current_run(root: Path) -> dict[str, object]:
     initialize_memory_state(root)
     active_path = root / ".logos" / "memory" / "active-work.json"
     active = read_json(active_path) or {}
+    active_plan_id = active.get("active_plan_id")
     active_run_id = active.get("active_run_id")
     if isinstance(active_run_id, str):
         existing = read_json(root / ".logos" / "runs" / active_run_id / "run.json")
-        if existing is not None:
+        if existing is not None and (
+            not isinstance(active_plan_id, str) or existing.get("plan_id") == active_plan_id
+        ):
             return existing
     run_id = datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S%fZ")
     run = {
         "schema_version": 1,
         "run_id": run_id,
-        "plan_id": active.get("active_plan_id"),
+        "plan_id": active_plan_id,
         "selected_mode": "nous",
         "status": "active",
         "started_at": datetime.now(timezone.utc).isoformat(),
@@ -208,6 +280,7 @@ def ensure_current_run(root: Path) -> dict[str, object]:
         {
             "schema_version": 1,
             "status": "active",
+            "active_plan_id": active_plan_id,
             "active_run_id": run_id,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -300,7 +373,7 @@ def read_json(path: Path) -> dict[str, object] | None:
 def write_json(path: Path, payload: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(safe_json_dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     except OSError:
         return
 
@@ -315,7 +388,7 @@ def append_jsonl(path: Path, payload: dict[str, object]) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+            stream.write(safe_json_dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
     except OSError:
         return
 
@@ -336,5 +409,53 @@ def find_key(value: object, key: str) -> object:
     return None
 
 
+def find_all_keys(value: object, key: str):
+    if isinstance(value, dict):
+        if key in value:
+            yield value[key]
+        for nested in value.values():
+            yield from find_all_keys(nested, key)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from find_all_keys(nested, key)
+
+
+def collect_text(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return "\n".join(collect_text(item) for item in value.values())
+    if isinstance(value, list):
+        return "\n".join(collect_text(item) for item in value)
+    return ""
+
+
+def record_unhandled_hook_error(exc: Exception) -> None:
+    root = Path.cwd()
+    path = root / ".logos" / "evidence" / "hook-errors.jsonl"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(
+                safe_json_dumps(
+                    {
+                        "schema_version": 1,
+                        "recorded_at": datetime.now(timezone.utc).isoformat(),
+                        "hook": "PostToolUse",
+                        "error": str(exc),
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+    except OSError:
+        return
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        record_unhandled_hook_error(exc)
+        raise SystemExit(0)
