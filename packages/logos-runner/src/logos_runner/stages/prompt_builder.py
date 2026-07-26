@@ -66,6 +66,7 @@ def build_stage_prompt(project_root: Path, plan_id: str, stage: StageDefinition)
             "- Only Runner `record-stage` may materialize official result JSON files.",
             "- Do not proceed to later stages.",
             "- If required information is missing, record the blocker instead of guessing.",
+            "- Read the compact role directive first; do not load role detail references unless the role directive explicitly points to one and this stage needs it.",
             "- Final response must be one JSON object only.",
             "- Do not wrap the JSON in Markdown fences.",
             "- Do not add prose before or after the JSON.",

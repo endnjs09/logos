@@ -51,6 +51,10 @@ Detailed step procedures live under `.agents/logos/procedures/` and are loaded
 by Runner stage prompts or by `nous/SKILL.md` only for recovery/fallback.
 Role cards live under `.agents/logos/roles/` and are also routed through
 `nous/SKILL.md`; Codex should not treat them as standalone auto-selected skills.
+Role detail references live under `.agents/logos/roles/references/`. Read a
+detail reference only when the compact role card says to do so and the current
+stage cannot be completed safely or clearly from the role card, procedure, and
+official plan artifacts alone.
 
 When `.logos/plans/<plan_id>/` artifacts exist, treat those artifacts as the
 active work contract. Do not replace Runner-produced `task-plan.json`,

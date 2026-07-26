@@ -60,6 +60,21 @@ class AssemblyBundle:
                 ".agents/logos/roles/rv.md",
                 ".agents/logos/roles/vf.md",
                 ".agents/logos/roles/mem.md",
+                ".agents/logos/roles/references/orch-details.md",
+                ".agents/logos/roles/references/exp-details.md",
+                ".agents/logos/roles/references/intk-details.md",
+                ".agents/logos/roles/references/sp-details.md",
+                ".agents/logos/roles/references/pln-details.md",
+                ".agents/logos/roles/references/exe-details.md",
+                ".agents/logos/roles/references/mem-details.md",
+                ".agents/logos/roles/references/bd-details.md",
+                ".agents/logos/roles/references/fd-details.md",
+                ".agents/logos/roles/references/db-details.md",
+                ".agents/logos/roles/references/sys-details.md",
+                ".agents/logos/roles/references/test-details.md",
+                ".agents/logos/roles/references/rv-details.md",
+                ".agents/logos/roles/references/sec-details.md",
+                ".agents/logos/roles/references/vf-details.md",
             ]
         return []
 

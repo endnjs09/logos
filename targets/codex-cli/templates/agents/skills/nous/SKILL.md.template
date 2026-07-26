@@ -80,6 +80,9 @@ Run the default Logos coding workflow for Codex in this repository.
 - `.logos/memory/resume-snapshot.md` only when context loss, compaction, or unclear work state requires resume context.
 - Stage-specific procedure and role files only when Runner references them, or
   when recovery/fallback requires manual inspection.
+- `.agents/logos/roles/references/*-details.md` only when a loaded role card
+  explicitly points to that reference and the compact role card is insufficient
+  for the current decision.
 
 ## Procedure
 
@@ -175,6 +178,10 @@ artifacts with a Codex-only `Updated Plan`.
 - Use `.agents/logos/roles/exe.md` to route implementation to `.agents/logos/roles/bd.md`, `.agents/logos/roles/fd.md`, `.agents/logos/roles/db.md`, `.agents/logos/roles/sys.md`, or `.agents/logos/roles/test.md`.
 - Use `.agents/logos/roles/sec.md`, `.agents/logos/roles/rv.md`, and `.agents/logos/roles/vf.md` for security, review, and verification.
 - Use `.agents/logos/roles/mem.md` when resuming from Logos work-state records.
+- Treat `.agents/logos/roles/references/*-details.md` as optional role
+  references, not default context. Read them only when the active role card
+  points to the reference and a specific ambiguity, risk, verification issue,
+  or recovery task requires more detail.
 
 ## Complexity Handling
 

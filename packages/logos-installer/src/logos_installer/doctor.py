@@ -39,6 +39,21 @@ CODEX_REQUIRED_PATHS = [
     ".agents/logos/roles/rv.md",
     ".agents/logos/roles/vf.md",
     ".agents/logos/roles/mem.md",
+    ".agents/logos/roles/references/orch-details.md",
+    ".agents/logos/roles/references/exp-details.md",
+    ".agents/logos/roles/references/intk-details.md",
+    ".agents/logos/roles/references/sp-details.md",
+    ".agents/logos/roles/references/pln-details.md",
+    ".agents/logos/roles/references/exe-details.md",
+    ".agents/logos/roles/references/mem-details.md",
+    ".agents/logos/roles/references/bd-details.md",
+    ".agents/logos/roles/references/fd-details.md",
+    ".agents/logos/roles/references/db-details.md",
+    ".agents/logos/roles/references/sys-details.md",
+    ".agents/logos/roles/references/test-details.md",
+    ".agents/logos/roles/references/rv-details.md",
+    ".agents/logos/roles/references/sec-details.md",
+    ".agents/logos/roles/references/vf-details.md",
     ".codex/config.toml",
     ".codex/hooks.json",
     ".codex/hooks/pre_tool_use.py",
@@ -130,6 +145,24 @@ CODEX_ROLE_IDS = {
     ".agents/logos/roles/mem.md": "logos.role.mem",
 }
 
+CODEX_REFERENCE_IDS = {
+    ".agents/logos/roles/references/orch-details.md": "logos.reference.orch-details",
+    ".agents/logos/roles/references/exp-details.md": "logos.reference.exp-details",
+    ".agents/logos/roles/references/intk-details.md": "logos.reference.intk-details",
+    ".agents/logos/roles/references/sp-details.md": "logos.reference.sp-details",
+    ".agents/logos/roles/references/pln-details.md": "logos.reference.pln-details",
+    ".agents/logos/roles/references/exe-details.md": "logos.reference.exe-details",
+    ".agents/logos/roles/references/mem-details.md": "logos.reference.mem-details",
+    ".agents/logos/roles/references/bd-details.md": "logos.reference.bd-details",
+    ".agents/logos/roles/references/fd-details.md": "logos.reference.fd-details",
+    ".agents/logos/roles/references/db-details.md": "logos.reference.db-details",
+    ".agents/logos/roles/references/sys-details.md": "logos.reference.sys-details",
+    ".agents/logos/roles/references/test-details.md": "logos.reference.test-details",
+    ".agents/logos/roles/references/rv-details.md": "logos.reference.rv-details",
+    ".agents/logos/roles/references/sec-details.md": "logos.reference.sec-details",
+    ".agents/logos/roles/references/vf-details.md": "logos.reference.vf-details",
+}
+
 CODEX_RUNTIME_REQUIRED_DIRS = [
     ".logos/session",
     ".logos/bin",
@@ -214,6 +247,7 @@ def doctor_target(
         validate_codex_links(root, ok, errors)
         validate_codex_procedures(root, ok, errors)
         validate_codex_roles(root, ok, errors)
+        validate_codex_references(root, ok, errors)
         validate_codex_target_profile(root, ok, errors)
         validate_codex_runtime_dirs(root, ok, errors)
         validate_codex_work_state(root, ok, warnings, errors)
@@ -751,6 +785,31 @@ def validate_codex_roles(root: Path, ok: list[str], errors: list[str]) -> None:
             errors.append(f"{relative}: role_code must be {role_code}.")
     if len(errors) == error_count:
         ok.append("Codex role frontmatter shape")
+
+
+def validate_codex_references(root: Path, ok: list[str], errors: list[str]) -> None:
+    error_count = len(errors)
+    for relative, expected_id in CODEX_REFERENCE_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != "reference":
+            errors.append(f"{relative}: kind must be reference.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+        applies_to = frontmatter.get("applies_to")
+        if not isinstance(applies_to, list) or not applies_to:
+            errors.append(f"{relative}: reference must declare applies_to.")
+    if len(errors) == error_count:
+        ok.append("Codex reference frontmatter shape")
 
 
 def validate_codex_target_profile(root: Path, ok: list[str], errors: list[str]) -> None:
