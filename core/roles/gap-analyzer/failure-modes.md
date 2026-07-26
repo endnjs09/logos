@@ -1,2 +1,0 @@
-# Gap Analyzer Failure Modes
-

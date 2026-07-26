@@ -1,2 +1,0 @@
-# Tester Verification Policy
-
