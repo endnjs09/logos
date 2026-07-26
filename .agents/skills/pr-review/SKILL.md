@@ -1,2 +1,0 @@
-# PR Review Skill
-

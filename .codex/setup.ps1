@@ -1,2 +1,0 @@
-# Codex CLI setup placeholder.
-
