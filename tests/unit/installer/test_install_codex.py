@@ -39,6 +39,12 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert (project_root / ".codex/hooks/permission_request.py").exists()
     assert (project_root / ".codex/hooks/post_tool_use.py").exists()
     assert (project_root / ".codex/hooks/post_compact.py").exists()
+    assert (project_root / ".logos/bin/logos-runner.ps1").exists()
+    assert (project_root / ".logos/bin/logos-runner.cmd").exists()
+    cmd_text = (project_root / ".logos/bin/logos-runner.cmd").read_text(encoding="utf-8")
+    ps1_text = (project_root / ".logos/bin/logos-runner.ps1").read_text(encoding="utf-8")
+    assert "LOGOS_CODEX_EXECUTABLE" in cmd_text
+    assert "LOGOS_CODEX_EXECUTABLE" in ps1_text
     assert (project_root / ".logos/session/nous-state.json").exists()
     assert (project_root / ".logos/memory/active-work.json").exists()
     assert (project_root / ".logos/memory/run-index.json").exists()
@@ -72,11 +78,13 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert "target provides roles" in report.ok
     assert "target provides codex config" in report.ok
     assert "target provides hooks" in report.ok
+    assert "target provides runner_bin" in report.ok
     assert "codex config approval_policy" in report.ok
     assert "codex config sandbox_mode" in report.ok
     assert "codex config network_access" in report.ok
     assert "Codex hooks config shape" in report.ok
     assert ".logos/session" in report.ok
+    assert ".logos/bin" in report.ok
     assert ".logos/evidence" in report.ok
     assert ".logos/evidence/artifacts" in report.ok
     assert ".logos/memory" in report.ok
@@ -102,6 +110,9 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert ".logos/generated/prompt-assembly-manifest.json" in agents_text
     assert ".logos/memory/resume-snapshot.md" in agents_text
     assert "Do not read" in agents_text
+    assert ".\\.logos\\bin\\logos-runner.cmd" in agents_text
+    assert "Do not continue with a" in agents_text
+    assert "Codex-only implementation plan" in agents_text
     assert "logos-asset-version: 0.2.0" in agents_text
     assert "/nous" not in agents_text
     assert "Do not claim hard guard enforcement" not in agents_text
@@ -135,6 +146,9 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert "Do not edit files, run build/test commands, or start implementation" in nous_text
     assert "Use Logos Runner as the default orchestration path." in nous_text
     assert "manual recovery path" in nous_text
+    assert ".\\.logos\\bin\\logos-runner.cmd" in nous_text
+    assert "do not continue to" in nous_text
+    assert "Do not replace Runner" in nous_text
     assert "A Codex `Updated Plan` checklist is not enough by itself" in nous_text
     assert "exploration → spec → planning" not in nous_text
     intake_text = (project_root / ".agents/logos/procedures/intake.md").read_text(
@@ -376,6 +390,9 @@ def create_codex_templates(root: Path) -> None:
             "<!-- logos-asset-version: 0.2.0 -->\n"
             "## Default Workflow\n"
             "This installed project uses Logos Nous Mode by default.\n"
+            ".\\.logos\\bin\\logos-runner.cmd start --root . \"<request>\"\n"
+            "Do not continue with a\n"
+            "Codex-only implementation plan.\n"
             "## Skill Routing\n"
             "Use `.agents/skills/nous/SKILL.md`.\n"
             "Detailed step procedures live under `.agents/logos/procedures/`.\n"
@@ -404,6 +421,10 @@ def create_codex_templates(root: Path) -> None:
             "  - logos.rule.verification\n"
             "---\n"
             "<!-- logos-asset-version: 0.2.0 -->\n"
+            ".\\.logos\\bin\\logos-runner.cmd start --root . \"<request>\"\n"
+            "If the project-local Runner shim is missing or cannot run, do not continue to\n"
+            "implementation.\n"
+            "Do not replace Runner artifacts with a Codex-only `Updated Plan`.\n"
             "Use `.agents/logos/procedures/review.md` as the source of truth.\n"
             "Use `.agents/logos/procedures/intake.md`.\n"
             "Use `.agents/logos/procedures/exploration.md`.\n"
@@ -678,6 +699,15 @@ def create_codex_templates(root: Path) -> None:
         "codex/hooks/permission_request.py.template": "# logos-managed: true\n",
         "codex/hooks/post_tool_use.py.template": "# logos-managed: true\n",
         "codex/hooks/post_compact.py.template": "# logos-managed: true\n",
+        "logos/bin/logos-runner.ps1.template": (
+            "# logos-managed: true\n"
+            "$logosCodex = \"{{codex_executable}}\"\n"
+            "$env:LOGOS_CODEX_EXECUTABLE = $logosCodex\n"
+        ),
+        "logos/bin/logos-runner.cmd.template": (
+            "REM logos-managed: true\n"
+            "set \"LOGOS_CODEX_EXECUTABLE={{codex_executable}}\"\n"
+        ),
         "logos/config.toml.template": 'target = "codex-cli"\n',
         "logos/target.toml.template": (
             "[target]\n"
@@ -690,6 +720,7 @@ def create_codex_templates(root: Path) -> None:
             'roles = ".agents/logos/roles"\n'
             'config = ".codex/config.toml"\n'
             'hooks = ".codex/hooks.json"\n'
+            'runner_bin = ".logos/bin/logos-runner.cmd"\n'
             "\n"
             "[target_support.agents_md]\n"
             'status = "confirmed"\n'
