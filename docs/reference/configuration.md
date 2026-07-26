@@ -17,7 +17,7 @@ Logos configuration is expected to come from these sources:
 | `.env` | Local secrets and machine-specific values. Not committed. |
 | `.env.example` | Documented environment variable names. No secrets. |
 | `core/**/*.yaml` | Built-in roles, guards, workflows, and profiles. |
-| `targets/*/.logos-target/target.toml` | Target metadata for Gemini CLI and Codex CLI. |
+| `targets/*/.logos-target/target.toml` | Target metadata for Codex CLI. |
 | `plugins/*/.logos-plugin/plugin.toml` | Plugin metadata and provided assets. |
 | `schemas/*.schema.json` | Contract definitions for validation. |
 
@@ -89,9 +89,8 @@ Absolute paths make experiments harder to reproduce.
 
 Targets represent installation destinations, not model implementations.
 
-Supported targets:
+Supported target:
 
-- `gemini-cli`
 - `codex-cli`
 
 Target-specific information belongs in:
@@ -106,8 +105,8 @@ targets/<target>/templates/
 targets/<target>/install/
 ```
 
-Do not put Gemini CLI-specific prompt behavior in `core/`. Put it under
-`targets/gemini-cli`.
+Do not put Codex CLI-specific prompt behavior in `core/`. Put it under
+`targets/codex-cli`.
 
 ## Plugin Configuration
 
@@ -200,4 +199,3 @@ When changing configuration format:
 - update examples
 - update validation tests
 - add an ADR if the change affects architecture
-

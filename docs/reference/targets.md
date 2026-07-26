@@ -3,15 +3,14 @@
 Targets are CLI hosts that Logos can mount onto.
 
 Targets are not implemented by Logos. Logos adapts core assets and plugins into
-target-specific commands, prompts, hooks, tools, templates, and installation
+target-specific prompts, hooks, tools, templates, runner shims, and installation
 steps.
 
 ## Supported Targets
 
-Current targets:
+Current target:
 
-- `codex-cli`: primary implementation target.
-- `gemini-cli`: fallback and experimental target.
+- `codex-cli`: primary and only active implementation target.
 
 ## Target Manifest
 
@@ -26,8 +25,8 @@ The manifest should define:
 - target name
 - target kind
 - description
-- target support status for commands, plugin loading, lifecycle hooks, and other
-  host-dependent surfaces
+- target support status for commands, skills, hooks, approvals, sandbox,
+  subagents, MCP, and other host-dependent surfaces
 - provided asset directories
 
 ## Target Support Reality Check
@@ -38,21 +37,17 @@ host behavior.
 Use `target_support` for every host-dependent surface:
 
 ```toml
-[target_support.commands]
+[target_support.hooks]
 status = "confirmed"
-notes = "Target supports project commands."
+notes = "Codex can run configured hook commands."
 
-[target_support.plugin]
-status = "assumed"
-notes = "Plugin loading behavior still needs verification."
+[target_support.approval]
+status = "confirmed"
+notes = "Codex owns final approval prompts."
 
-[target_support.before_tool]
+[target_support.runner]
 status = "emulated"
-notes = "Logos adapter intercepts tool requests before forwarding."
-
-[target_support.after_tool]
-status = "assumed"
-notes = "Native lifecycle support is not confirmed."
+notes = "Logos installs runner shims under .logos/bin."
 ```
 
 Allowed status values:
@@ -71,13 +66,13 @@ Allowed status values:
 Runtime guarantees may rely only on `confirmed` or `emulated` surfaces.
 `experimental` surfaces may be used only with warning and explicit fallback
 planning. `reported`, `assumed`, and `unknown` surfaces are not runtime
-guarantees and must be recorded in benchmark metadata if included.
-`unsupported` surfaces must not be included in active target assembly.
+guarantees. `unsupported` surfaces must not be included in active target
+assembly.
 
 ## Target Directory Shape
 
 ```text
-targets/<target>/
+targets/codex-cli/
 +-- .logos-target/
 |   +-- target.toml
 +-- commands/
@@ -89,36 +84,6 @@ targets/<target>/
 +-- README.md
 ```
 
-## Target Kinds
-
-`primary`  
-The main implementation target. Currently `codex-cli`.
-
-`baseline`  
-A comparison target used to measure performance gaps.
-
-`compatibility`  
-A target supported to prove portability, but not the primary focus.
-
-## Gemini CLI Target
-
-The Gemini CLI target should emphasize:
-
-- strict planning before execution
-- code evidence collection
-- mode fit checks
-- context handoff
-- explicit verification
-- retry discipline
-- measurement logging
-
-Gemini-specific prompts should compensate for:
-
-- scope drift
-- weak plan following
-- overconfident verification
-- context sensitivity
-
 ## Codex CLI Target
 
 The Codex CLI target should emphasize:
@@ -127,20 +92,19 @@ The Codex CLI target should emphasize:
 - using Codex's confirmed config, sandbox, approval, hook, skill, MCP, and
   subagent surfaces
 - routing durable behavior through `AGENTS.md`, `nous/SKILL.md`, and
-  `.agents/logos/procedures/`
+  `.agents/logos/`
+- using Logos Runner artifacts under `.logos/plans`, `.logos/runs`,
+  `.logos/memory`, and `.logos/evidence`
 - mapping Logos guards to Codex hooks and approval boundaries before claiming
   hard enforcement
-
-Codex is the current primary implementation target. Gemini CLI remains a
-fallback and experimental target.
 
 ## Target Assets
 
 `commands/`  
-Target-specific command surfaces.
+Target-specific command surfaces when supported.
 
 `prompts/`  
-Target-specific prompt wrappers.
+Target-specific prompt wrappers and runner prompt fragments.
 
 `hooks/`  
 Target lifecycle integrations.
@@ -168,14 +132,14 @@ Target installers should:
 
 ## Target Review Checklist
 
-Before adding or changing a target:
+Before adding or changing target assets:
 
 - Is this an installation target, not a new runtime engine?
 - Is the manifest valid?
-- Are target-specific files isolated under `targets/<target>`?
+- Are target-specific files isolated under `targets/codex-cli`?
 - Are core policies left in `core/`?
 - Are target limitations documented?
-- Are `target_support` statuses explicit for commands, plugin loading, hooks,
-  tools, and context injection?
+- Are `target_support` statuses explicit for skills, hooks, approvals,
+  sandbox, subagents, tools, and context injection?
 - Are assumed surfaces excluded from runtime guarantees?
-- Can the installer dry-run the changes?
+- Can the installer and doctor verify the generated project shape?

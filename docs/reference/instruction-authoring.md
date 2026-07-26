@@ -90,8 +90,10 @@ Examples:
 
 - File write boundaries belong in `core/guards/file-write-boundary/`.
 - Test discipline belongs in `core/rules/` or `core/evaluation/`.
-- Gemini-specific command behavior belongs in `targets/gemini-cli/`.
-- Nous activation belongs in `.gemini/commands/nous.md` and the Gemini target.
+- Codex-specific command, hook, and runner behavior belongs in
+  `targets/codex-cli/`.
+- Nous routing belongs in `AGENTS.md`, `.agents/skills/nous/SKILL.md`, and
+  `.agents/logos/`.
 
 ## Clarifying Questions
 

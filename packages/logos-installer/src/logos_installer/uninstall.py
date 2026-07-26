@@ -8,7 +8,7 @@ from logos_installer.install import read_manifest
 from logos_installer.models import InstallResult
 
 
-def uninstall_gemini(root: Path) -> InstallResult:
+def uninstall_logos(root: Path) -> InstallResult:
     manifest = read_manifest(root)
     removed: list[Path] = []
     skipped: list[Path] = []
@@ -37,7 +37,7 @@ def uninstall_gemini(root: Path) -> InstallResult:
 
 
 def cleanup_empty_parents(root: Path, removed: list[Path]) -> None:
-    stop_dirs = {root, root / ".gemini", root / ".agents", root / ".logos"}
+    stop_dirs = {root, root / ".codex", root / ".agents", root / ".logos"}
     for relative in sorted(removed, key=lambda value: len(value.parts), reverse=True):
         current = (root / relative).parent
         while current not in stop_dirs and current.exists():

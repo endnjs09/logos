@@ -1,2 +1,0 @@
-// Nous mode resolution placeholder.
-

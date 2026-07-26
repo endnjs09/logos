@@ -1,2 +1,0 @@
-// Nous mode deactivation placeholder.
-

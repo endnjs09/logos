@@ -43,13 +43,7 @@ def write_prompt_assembly_manifest(root: Path, bundle: AssemblyBundle) -> None:
 
 
 def markers_for_target(target: str) -> list[str]:
-    if target == "codex-cli":
-        return [
-            "logos-assembly: codex-operating-context",
-            "logos-assembly: codex-nous-skill",
-        ]
     return [
-        "logos-assembly: gemini-bootstrap",
-        "logos-assembly: agents-operating-rules",
-        "logos-assembly: nous-skill-directive",
+        "logos-assembly: codex-operating-context",
+        "logos-assembly: codex-nous-skill",
     ]

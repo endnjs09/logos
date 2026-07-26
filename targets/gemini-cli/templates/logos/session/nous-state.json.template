@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "nous_mode": false,
-  "activated_at": null,
-  "activated_by": null,
-  "last_updated_at": "{{generated_at}}",
-  "target": "gemini-cli",
-  "profile": "gemini"
-}

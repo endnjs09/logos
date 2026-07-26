@@ -2,8 +2,8 @@
 
 Command templates for Codex CLI live here.
 
-These should stay close to Codex conventions and avoid assuming Gemini-specific
-behavior.
+These should stay close to Codex conventions and avoid assuming behavior from
+other targets.
 
 Project-local command templates are not part of the Codex integration path.
 

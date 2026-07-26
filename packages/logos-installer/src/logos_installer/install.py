@@ -17,23 +17,6 @@ from logos_installer.models import InstallError, InstallResult, RenderedFile
 from logos_installer.render import MANAGED_MARKER, all_rendered_files
 
 
-RUNTIME_DIRS = [
-    ".gemini/commands",
-    ".gemini/plugin",
-    ".agents/skills",
-    ".logos/session",
-    ".logos/bin",
-    ".logos/plans",
-    ".logos/runs",
-    ".logos/evidence",
-    ".logos/evidence/artifacts",
-    ".logos/memory",
-    ".logos/approvals",
-    ".logos/checkpoints",
-    ".logos/cache",
-    ".logos/generated",
-]
-
 CODEX_RUNTIME_DIRS = [
     ".codex",
     ".codex/hooks",
@@ -51,22 +34,6 @@ CODEX_RUNTIME_DIRS = [
     ".logos/cache",
     ".logos/generated",
 ]
-
-
-def install_gemini(
-    root: Path,
-    *,
-    source_root: Path | None = None,
-    force: bool = False,
-) -> InstallResult:
-    return install_target(
-        root,
-        target="gemini-cli",
-        profile="gemini",
-        runtime_dirs=RUNTIME_DIRS,
-        source_root=source_root,
-        force=force,
-    )
 
 
 def install_codex(
@@ -279,7 +246,6 @@ def sha256_text(text: str) -> str:
 
 def assembly_context(bundle) -> dict[str, str]:
     return {
-        "logos_gemini_bootstrap_context": bundle.gemini_bootstrap_context,
         "logos_agents_operating_rules": bundle.agents_operating_rules,
         "logos_nous_skill_directive": bundle.nous_skill_directive,
         "logos_codex_operating_context": bundle.codex_operating_context,

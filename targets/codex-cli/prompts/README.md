@@ -2,5 +2,5 @@
 
 Codex-specific prompt wrappers live here.
 
-These prompts should preserve Codex's native strengths while making benchmark
-comparison consistent with Gemini CLI runs.
+These prompts should preserve Codex's native strengths while keeping Logos
+workflow behavior consistent across repeatable runs.

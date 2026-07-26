@@ -15,8 +15,8 @@ def write_core_manifests(
     root: Path,
     scan: CoreAssetScan,
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
 ) -> None:
     generated = root / ".logos/generated"
     generated.mkdir(parents=True, exist_ok=True)

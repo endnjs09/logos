@@ -1,2 +1,0 @@
-// Gemini run log placeholder.
-

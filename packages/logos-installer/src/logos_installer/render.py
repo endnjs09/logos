@@ -13,22 +13,6 @@ from logos_installer.models import RenderedFile
 
 MANAGED_MARKER = "<!-- logos-managed: true -->"
 TEMPLATE_MAPS = {
-    "gemini-cli": {
-        "gemini/GEMINI.md.template": ".gemini/GEMINI.md",
-        "gemini/settings.json.template": ".gemini/settings.json",
-        "gemini/plugin/README.md.template": ".gemini/plugin/README.md",
-        "gemini/commands/nous.toml.template": ".gemini/commands/nous.toml",
-        "agents/AGENTS.md.template": ".agents/AGENTS.md",
-        "agents/skills/nous/SKILL.md.template": ".agents/skills/nous/SKILL.md",
-        "agents/skills/codebase-exploration/SKILL.md.template": ".agents/skills/codebase-exploration/SKILL.md",
-        "agents/skills/implementation-planning/SKILL.md.template": ".agents/skills/implementation-planning/SKILL.md",
-        "agents/skills/risk-review/SKILL.md.template": ".agents/skills/risk-review/SKILL.md",
-        "agents/skills/verification/SKILL.md.template": ".agents/skills/verification/SKILL.md",
-        "logos/config.toml.template": ".logos/config.toml",
-        "logos/target.toml.template": ".logos/target.toml",
-        "logos/active-profile.toml.template": ".logos/active-profile.toml",
-        "logos/session/nous-state.json.template": ".logos/session/nous-state.json",
-    },
     "codex-cli": {
         "AGENTS.md.template": "AGENTS.md",
         "agents/skills/nous/SKILL.md.template": ".agents/skills/nous/SKILL.md",
@@ -74,7 +58,7 @@ TEMPLATE_MAPS = {
 def all_rendered_files(
     root: Path,
     template_base: Path | None = None,
-    target: str = "gemini-cli",
+    target: str = "codex-cli",
     extra_context: dict[str, str] | None = None,
 ) -> list[RenderedFile]:
     source_root = template_base or Path.cwd()
@@ -85,7 +69,7 @@ def all_rendered_files(
         "project_name": root.name,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "target": target,
-        "profile": "codex" if target == "codex-cli" else "gemini",
+        "profile": "codex",
         "logos_source_root": str(source_root),
         "logos_python_executable": sys.executable,
         "codex_executable": detect_codex_executable(),

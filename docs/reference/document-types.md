@@ -10,7 +10,7 @@ required structure.
 | `role` | `core/roles/`, `.agents/logos/roles/` | Orchestration persona and procedure |
 | `implementation-role` | `core/roles/exe/`, `.agents/logos/roles/` | Domain specialist behavior |
 | `skill` | `.agents/skills/`, `plugins/*/skills/` | Reusable workflow package |
-| `command` | `.gemini/commands/`, `targets/*/commands/` | User or host entrypoint |
+| `command` | `targets/*/commands/` | User or host entrypoint |
 | `rule` | `core/rules/` | Soft model instruction |
 | `guard` | `core/guards/` | Hard runtime policy |
 | `workflow` | `core/workflows/` | State transition and task lifecycle |

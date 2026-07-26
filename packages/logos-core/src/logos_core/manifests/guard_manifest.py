@@ -12,8 +12,8 @@ from logos_core.assets.scanner import CoreAssetScan
 def build_guard_manifest(
     scan: CoreAssetScan,
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
 ) -> dict[str, Any]:
     guards = [asset for asset in scan.assets if asset.kind == "guard"]
     return {

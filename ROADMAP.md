@@ -6,7 +6,7 @@
 
 ## v2
 
-- Compare Gemini baseline with Gemini + Logos on repeatable benchmark tasks.
+- Compare Codex baseline behavior with Codex + Logos orchestration on repeatable benchmark tasks.
 
 ## v3+
 

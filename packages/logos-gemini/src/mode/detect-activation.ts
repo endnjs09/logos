@@ -1,2 +1,0 @@
-// Nous activation detection placeholder.
-

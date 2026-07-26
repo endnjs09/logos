@@ -1,7 +1,7 @@
 # Benchmark Format
 
-Benchmarks define repeatable tasks used to measure whether Logos improves Gemini
-Pro High behavior.
+Benchmarks define repeatable tasks used to measure whether Logos improves Codex
+CLI coding workflows.
 
 A benchmark is not just a prompt. It is a controlled experiment input with
 success criteria, constraints, expected evidence, and comparison conditions.
@@ -149,14 +149,12 @@ Suite files should define:
 
 Standard conditions:
 
-- `gemini-baseline`
-- `gemini-logos`
 - `codex-baseline`
+- `codex-logos`
 
 Future conditions may include:
 
-- `gemini-logos-with-plugin`
-- `codex-logos`
+- `codex-logos-with-plugin`
 - `claude-code-reference`
 
 Condition names must be stable because reports use them for comparison.
@@ -202,4 +200,4 @@ Before adding a benchmark:
 - Can the task run without private data?
 - Is verification defined?
 - Are limits defined?
-- Can Gemini baseline and Gemini + Logos both attempt it?
+- Can Codex baseline and Codex + Logos both attempt it?

@@ -34,8 +34,8 @@ def select_prompt_assembly_sources(
     root: Path,
     scan: CoreAssetScan,
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
 ) -> list[AssemblySource]:
     core_root = root / "core"
     by_path = {asset.relative_path.as_posix(): asset for asset in scan.assets}

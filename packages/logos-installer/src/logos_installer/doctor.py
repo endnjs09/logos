@@ -1,4 +1,4 @@
-"""Doctor checks for a Logos Gemini installation."""
+"""Doctor checks for a Logos Codex installation."""
 
 from __future__ import annotations
 
@@ -12,27 +12,6 @@ from logos_core.assets.validate import load_asset, validate_paths
 from logos_core.session.state import validate_session_state_payload
 from logos_core.work_state.jsonl import validate_jsonl
 
-
-GEMINI_REQUIRED_PATHS = [
-    ".gemini/GEMINI.md",
-    ".gemini/commands/nous.toml",
-    ".gemini/settings.json",
-    ".agents/AGENTS.md",
-    ".agents/skills/nous/SKILL.md",
-    ".agents/skills/codebase-exploration/SKILL.md",
-    ".agents/skills/implementation-planning/SKILL.md",
-    ".agents/skills/risk-review/SKILL.md",
-    ".agents/skills/verification/SKILL.md",
-    ".logos/config.toml",
-    ".logos/target.toml",
-    ".logos/active-profile.toml",
-    ".logos/session/nous-state.json",
-    ".logos/generated/install-manifest.json",
-    ".logos/generated/asset-manifest.json",
-    ".logos/generated/asset-hashes.json",
-    ".logos/generated/guards-manifest.json",
-    ".logos/generated/prompt-assembly-manifest.json",
-]
 
 CODEX_REQUIRED_PATHS = [
     "AGENTS.md",
@@ -179,20 +158,6 @@ class DoctorReport:
     @property
     def passed(self) -> bool:
         return not self.errors
-
-
-def doctor_gemini(root: Path, *, source_root: Path | None = None) -> DoctorReport:
-    return doctor_target(
-        root,
-        target="gemini-cli",
-        required_paths=GEMINI_REQUIRED_PATHS,
-        marker_checks={
-            ".gemini/GEMINI.md": "logos-assembly: gemini-bootstrap",
-            ".agents/AGENTS.md": "logos-assembly: agents-operating-rules",
-            ".agents/skills/nous/SKILL.md": "logos-assembly: nous-skill-directive",
-        },
-        source_root=source_root,
-    )
 
 
 def doctor_codex(root: Path, *, source_root: Path | None = None) -> DoctorReport:
@@ -468,11 +433,6 @@ def validate_codex_install_shape(root: Path, ok: list[str], errors: list[str]) -
         if (root / relative).exists():
             errors.append(f"Obsolete standalone Codex skill must not be installed: {relative}")
 
-    if (root / ".gemini").exists():
-        errors.append("Gemini target artifacts must not be present in Codex install: .gemini")
-    else:
-        ok.append("no Gemini target artifacts")
-
 
 def validate_codex_runtime_dirs(root: Path, ok: list[str], errors: list[str]) -> None:
     for relative in CODEX_RUNTIME_REQUIRED_DIRS:
@@ -610,8 +570,8 @@ def validate_codex_links(root: Path, ok: list[str], errors: list[str]) -> None:
             ok,
             errors,
         )
-        if "Gemini CLI is the primary research target" in text:
-            errors.append("AGENTS.md contains Gemini-only primary target wording.")
+        if "primary research target" in text and "Codex" not in text:
+            errors.append("AGENTS.md contains non-Codex primary target wording.")
 
     nous = root / ".agents/skills/nous/SKILL.md"
     if nous.exists():
@@ -854,8 +814,6 @@ def validate_codex_manifest_files(
             errors.append(f"Install manifest path must stay inside root: {value}")
             continue
         manifest_paths.add(value)
-        if value.startswith(".gemini/"):
-            errors.append(f"Gemini artifact listed in Codex install manifest: {value}")
         if value in CODEX_OBSOLETE_PATHS:
             errors.append(f"Obsolete standalone skill listed in Codex install manifest: {value}")
         if not (root / relative).exists():

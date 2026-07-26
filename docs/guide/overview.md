@@ -1,18 +1,21 @@
 # Overview
 
-Logos is a host-mounted calibration harness for AI coding CLIs.
+Logos is a Codex CLI-mounted orchestration harness for AI coding work.
 
-Its primary goal is to improve Gemini Pro High behavior through structured
-planning, context control, tool discipline, verification, and measurement. Logos
-does not replace Gemini CLI or Codex CLI. It mounts a harness onto them.
+Its primary goal is to make Codex-driven coding work more structured,
+auditable, and recoverable through planning, role routing, context control,
+tool discipline, verification, and run memory. Logos does not replace Codex CLI.
+It installs instructions, hooks, procedures, and runner shims onto Codex
+projects.
 
 ## What Logos Is
 
 Logos is:
 
-- a package of commands, prompts, roles, rules, guards, workflows, and tools
-- an installer for supported CLI targets
-- a measurement harness for comparing Gemini baseline with Gemini + Logos
+- a package of prompts, roles, rules, guards, workflows, hooks, and runner tools
+- an installer for the supported Codex CLI target
+- a runner-assisted workflow for intake, scan, spec, plan, execution, and
+  verification
 - a plugin-ready structure for future calibration packs
 
 Logos is not:
@@ -20,16 +23,15 @@ Logos is not:
 - a standalone IDE
 - a web app
 - a new model runtime
-- a replacement for Gemini CLI
 - a replacement for Codex CLI
 
 ## Main Concepts
 
 `core`  
-Built-in Logos assets shared across targets.
+Built-in Logos assets shared by generated instructions and runner prompts.
 
 `targets`  
-Installation surfaces for Gemini CLI and Codex CLI.
+Installation surfaces for Codex CLI.
 
 `plugins`  
 Optional calibration packs that extend core behavior.
@@ -40,37 +42,39 @@ Contracts for configuration, targets, plugins, benchmarks, runs, and reports.
 `benchmarks`  
 Repeatable tasks used to measure behavior.
 
-`runs`  
-Per-run artifacts and logs.
+`.logos/plans`  
+Per-task planning artifacts, stage prompts, raw worker output, and normalized
+stage results.
 
-`reports`  
-Comparison output across benchmark conditions.
+`.logos/runs`  
+Run-level evidence and execution state.
+
+`.logos/memory`  
+Compact resume summaries for long or interrupted tasks.
 
 ## Expected Flow
 
 ```text
-install Logos onto a target
-→ run a task or benchmark
-→ assemble core and plugin assets
-→ guide the host through a workflow
-→ execute tools under control
-→ verify the result
-→ write run artifacts
-→ compare conditions
+install Logos onto a Codex project
+-> run a coding task through Nous
+-> create or resume a Logos plan
+-> route Codex through scan, intake, spec, plan, execution, and verification
+-> execute tools under Codex sandbox and approval controls
+-> write plan, run, memory, and evidence artifacts
 ```
 
 ## Calibration Strategy
 
-Logos improves behavior by adding structure around the host:
+Logos improves behavior by adding structure around Codex:
 
 - separate planning from execution
 - require code evidence
-- ask clarifying questions before risky implementation
+- ask clarifying questions before risky or under-specified implementation
 - generate task plans and specs
 - pass compressed context to executor roles
 - verify results against success criteria
 - classify failures before retrying
-- record measurements for comparison
+- record durable memory and evidence for resume and review
 
 ## Reading Order
 

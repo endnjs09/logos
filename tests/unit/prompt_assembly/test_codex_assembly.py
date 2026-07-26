@@ -18,12 +18,12 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
         "# Verification\n\nVerify.",
     )
     write_targeted_asset(
-        tmp_path / "core" / "prompts" / "gemini-only.md",
-        "logos.template.gemini-only",
+        tmp_path / "core" / "prompts" / "other-target-only.md",
+        "logos.template.other-target-only",
         "template",
-        "# Gemini Only\n\nGemini-specific text.",
-        targets=["gemini-cli"],
-        profiles=["gemini"],
+        "# Other Target Only\n\nOther-target-specific text.",
+        targets=["other-cli"],
+        profiles=["other"],
     )
 
     scan = scan_core_assets(tmp_path)
@@ -68,8 +68,8 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     assert "Runner-Oriented Nous Material" in bundle.codex_nous_skill
     assert "Use Logos Runner as the default orchestration path" in bundle.codex_nous_skill
     assert "manual procedure execution as a fallback" in bundle.codex_nous_skill
-    assert "Gemini-specific text." not in bundle.codex_operating_context
-    assert all(item.id != "logos.template.gemini-only" for item in bundle.inputs)
+    assert "Other-target-specific text." not in bundle.codex_operating_context
+    assert all(item.id != "logos.template.other-target-only" for item in bundle.inputs)
 
 
 def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:

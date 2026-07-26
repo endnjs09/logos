@@ -6,10 +6,10 @@ description: Target adaptation material for assembled host instructions.
 status: active
 version: 0.1.0
 targets:
-  - gemini-cli
+  - codex-cli
   - codex-cli
 profiles:
-  - gemini
+  - codex
   - codex
 outputs:
   - target-adapter-context

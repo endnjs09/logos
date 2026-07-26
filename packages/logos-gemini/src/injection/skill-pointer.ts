@@ -1,2 +1,0 @@
-// Nous skill pointer placeholder.
-

@@ -1,2 +1,0 @@
-# Gemini BeforeTool Hook
-

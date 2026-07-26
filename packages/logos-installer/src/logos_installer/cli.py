@@ -5,14 +5,14 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from logos_installer.doctor import doctor_codex, doctor_gemini
-from logos_installer.install import install_codex, install_gemini
+from logos_installer.doctor import doctor_codex
+from logos_installer.install import install_codex
 from logos_installer.models import InstallError
 from logos_installer.session import read_session_state, set_nous_mode
-from logos_installer.uninstall import uninstall_gemini
+from logos_installer.uninstall import uninstall_logos
 
 
-TARGETS = ["gemini-cli", "codex-cli"]
+TARGETS = ["codex-cli"]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -26,14 +26,14 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     install_parser = subparsers.add_parser("install")
-    install_parser.add_argument("--target", default="gemini-cli", choices=TARGETS)
+    install_parser.add_argument("--target", default="codex-cli", choices=TARGETS)
     install_parser.add_argument("--force", action="store_true")
 
     uninstall_parser = subparsers.add_parser("uninstall")
-    uninstall_parser.add_argument("--target", default="gemini-cli", choices=TARGETS)
+    uninstall_parser.add_argument("--target", default="codex-cli", choices=TARGETS)
 
     doctor_parser = subparsers.add_parser("doctor")
-    doctor_parser.add_argument("--target", default="gemini-cli", choices=TARGETS)
+    doctor_parser.add_argument("--target", default="codex-cli", choices=TARGETS)
 
     subparsers.add_parser("status")
 
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "uninstall":
-        result = uninstall_gemini(root)
+        result = uninstall_logos(root)
         print_uninstall_result(result.updated, result.skipped, result.warnings)
         return 0
 
@@ -97,15 +97,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def install_for_target(target: str, root: Path, *, source_root: Path, force: bool):
-    if target == "codex-cli":
-        return install_codex(root, source_root=source_root, force=force)
-    return install_gemini(root, source_root=source_root, force=force)
+    return install_codex(root, source_root=source_root, force=force)
 
 
 def doctor_for_target(target: str, root: Path, *, source_root: Path):
-    if target == "codex-cli":
-        return doctor_codex(root, source_root=source_root)
-    return doctor_gemini(root, source_root=source_root)
+    return doctor_codex(root, source_root=source_root)
 
 
 def print_result(
@@ -139,8 +135,8 @@ def print_uninstall_result(removed: list[Path], skipped: list[Path], warnings: l
 def print_status(state: dict[str, object]) -> None:
     print("Logos status")
     print(f"Nous mode: {'ON' if state.get('nous_mode') else 'OFF'}")
-    print(f"Target: {state.get('target', 'gemini-cli')}")
-    print(f"Profile: {state.get('profile', 'gemini')}")
+    print(f"Target: {state.get('target', 'codex-cli')}")
+    print(f"Profile: {state.get('profile', 'codex')}")
     print(f"Activated by: {state.get('activated_by')}")
     print(f"Activated at: {state.get('activated_at')}")
     print(f"Last updated at: {state.get('last_updated_at')}")

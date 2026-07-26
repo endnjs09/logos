@@ -10,7 +10,7 @@
       "required": ["name", "kind"],
       "properties": {
         "name": {
-          "enum": ["gemini-cli", "codex-cli"]
+          "enum": ["codex-cli"]
         },
         "kind": {
           "enum": ["primary", "baseline", "compatibility"]

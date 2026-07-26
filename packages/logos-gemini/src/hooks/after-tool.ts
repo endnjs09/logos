@@ -1,2 +1,0 @@
-// AfterTool hook placeholder.
-

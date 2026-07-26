@@ -22,7 +22,6 @@ class AssemblyBundle:
     profile: str
     mode: str
     inputs: list[AssemblyInput]
-    gemini_bootstrap_context: str
     agents_operating_rules: str
     nous_skill_directive: str
     codex_operating_context: str
@@ -62,11 +61,7 @@ class AssemblyBundle:
                 ".agents/logos/roles/vf.md",
                 ".agents/logos/roles/mem.md",
             ]
-        return [
-            ".gemini/GEMINI.md",
-            ".agents/AGENTS.md",
-            ".agents/skills/nous/SKILL.md",
-        ]
+        return []
 
 
 @dataclass(frozen=True)

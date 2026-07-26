@@ -21,8 +21,8 @@ def selection_policy(target: str, profile: str) -> dict[str, str | bool]:
 def build_asset_manifest(
     scan: CoreAssetScan,
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
 ) -> dict[str, Any]:
     return {
         "schema_version": 1,

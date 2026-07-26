@@ -6,10 +6,10 @@ description: Keep file reads and edits scoped to the user request.
 status: active
 version: 0.1.0
 targets:
-  - gemini-cli
+  - codex-cli
   - codex-cli
 profiles:
-  - gemini
+  - codex
   - codex
 applies_to:
   - nous

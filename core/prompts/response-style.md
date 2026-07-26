@@ -6,10 +6,10 @@ description: Response style material used when assembling Logos host instruction
 status: active
 version: 0.1.0
 targets:
-  - gemini-cli
+  - codex-cli
   - codex-cli
 profiles:
-  - gemini
+  - codex
   - codex
 outputs:
   - response-style-context

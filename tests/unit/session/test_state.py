@@ -15,8 +15,8 @@ def test_default_session_state_uses_schema_version() -> None:
 
     assert state["schema_version"] == 1
     assert state["nous_mode"] is False
-    assert state["target"] == "gemini-cli"
-    assert state["profile"] == "gemini"
+    assert state["target"] == "codex-cli"
+    assert state["profile"] == "codex"
     assert state["last_updated_at"] == "2026-07-16T00:00:00+00:00"
 
 

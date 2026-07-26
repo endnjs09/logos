@@ -6,10 +6,10 @@ description: Preserve user work and use git information as evidence.
 status: active
 version: 0.1.0
 targets:
-  - gemini-cli
+  - codex-cli
   - codex-cli
 profiles:
-  - gemini
+  - codex
   - codex
 applies_to:
   - nous

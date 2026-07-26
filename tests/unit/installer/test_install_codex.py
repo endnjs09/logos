@@ -352,14 +352,12 @@ def test_doctor_codex_rejects_manifest_mismatch(tmp_path: Path, monkeypatch) -> 
     manifest["files"] = [
         item for item in manifest["files"] if item["path"] != ".agents/skills/nous/SKILL.md"
     ]
-    manifest["files"].append({"path": ".gemini/GEMINI.md", "managed": True, "sha256": "0" * 64})
     manifest["files"].append({"path": "../outside.md", "managed": True, "sha256": "0" * 64})
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     report = doctor_codex(project_root, source_root=source_root)
 
     assert "Required Codex file missing from install manifest: .agents/skills/nous/SKILL.md" in report.errors
-    assert "Gemini artifact listed in Codex install manifest: .gemini/GEMINI.md" in report.errors
     assert "Install manifest path must stay inside root: ../outside.md" in report.errors
 
 

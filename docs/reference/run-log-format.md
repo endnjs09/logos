@@ -17,7 +17,7 @@ runs/<timestamp>-<task-id>-<condition>/
 Example:
 
 ```text
-runs/2026-07-11T101530Z-movie-tracker-gemini-logos/
+runs/2026-07-11T101530Z-movie-tracker-codex-logos/
 ```
 
 ## Recommended Run Artifacts

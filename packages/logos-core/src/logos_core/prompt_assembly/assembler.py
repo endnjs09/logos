@@ -12,8 +12,8 @@ def assemble_prompt_bundle(
     root,
     scan: CoreAssetScan,
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
     mode: str = "nous",
 ) -> AssemblyBundle:
     sources = select_prompt_assembly_sources(root, scan, target=target, profile=profile)
@@ -27,7 +27,6 @@ def assemble_prompt_bundle(
         profile=profile,
         mode=mode,
         inputs=[to_input(source) for source in sources],
-        gemini_bootstrap_context=build_gemini_bootstrap(prompt_sources, profile_sources),
         agents_operating_rules=build_agents_rules(rule_sources),
         nous_skill_directive=build_nous_directive(rule_sources, workflow_sources, profile_sources),
         codex_operating_context=build_codex_context(
@@ -60,21 +59,6 @@ def to_input(source: AssemblySource) -> AssemblyInput:
         version=source.version,
         sha256=source.sha256,
     )
-
-
-def build_gemini_bootstrap(
-    prompt_sources: list[AssemblySource],
-    profile_sources: list[AssemblySource],
-) -> str:
-    sections = [
-        "<!-- logos-assembly: gemini-bootstrap -->",
-        "## Logos Gemini Bootstrap",
-        "When Logos Nous Mode is active, use the assembled Logos instructions below as the project operating context.",
-        source_section("Prompt Material", prompt_sources),
-    ]
-    if profile_sources:
-        sections.append(source_section("Gemini Profile", profile_sources))
-    return "\n\n".join(sections)
 
 
 def build_agents_rules(rule_sources: list[AssemblySource]) -> str:

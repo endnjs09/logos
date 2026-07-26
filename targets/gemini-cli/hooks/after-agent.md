@@ -1,2 +1,0 @@
-# Gemini AfterAgent Hook
-

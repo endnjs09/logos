@@ -24,8 +24,8 @@ def test_assembles_minimal_active_assets(tmp_path: Path) -> None:
     scan = scan_core_assets(tmp_path)
     bundle = assemble_prompt_bundle(tmp_path, scan)
 
-    assert "logos-assembly: gemini-bootstrap" in bundle.gemini_bootstrap_context
-    assert "Use Logos." in bundle.gemini_bootstrap_context
+    assert "logos-assembly: codex-operating-context" in bundle.codex_operating_context
+    assert "Use Logos." in bundle.codex_operating_context
     assert "logos-assembly: agents-operating-rules" in bundle.agents_operating_rules
     assert "### Verification" in bundle.agents_operating_rules
     assert "# Verification" not in bundle.agents_operating_rules.splitlines()
@@ -44,9 +44,9 @@ def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:
         "status: active\n"
         "version: 0.1.0\n"
         "targets:\n"
-        "  - gemini-cli\n"
+        "  - codex-cli\n"
         "profiles:\n"
-        "  - gemini\n"
+        "  - codex\n"
         "depends_on: []\n"
         "---\n\n"
         f"{body}\n",

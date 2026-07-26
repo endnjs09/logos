@@ -6,11 +6,10 @@ Accepted.
 
 ## Decision
 
-Logos uses `targets/` instead of `hosts/` for Gemini CLI and Codex CLI
-integration assets.
+Logos uses `targets/` instead of `hosts/` for Codex CLI integration assets.
 
 ## Rationale
 
-Gemini CLI and Codex CLI are not implemented by Logos. They are installation
-targets. Logos mounts commands, prompts, hooks, tools, and templates onto those
-existing CLI hosts.
+Codex CLI is not implemented by Logos. It is an installation target. Logos
+mounts prompts, hooks, tools, templates, skills, procedures, and runner shims
+onto an existing Codex CLI project.

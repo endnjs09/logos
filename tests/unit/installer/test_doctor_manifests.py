@@ -47,8 +47,8 @@ def test_validate_guards_manifest_rejects_count_mismatch() -> None:
             "selection_policy": {
                 "default_status": "active",
                 "raw_assets_selected": False,
-                "target": "gemini-cli",
-                "profile": "gemini",
+                "target": "codex-cli",
+                "profile": "codex",
             },
             "guard_count": 2,
             "guards": [],
@@ -171,6 +171,7 @@ def test_validate_target_provides_accepts_codex_paths(tmp_path: Path) -> None:
         'roles = ".agents/logos/roles"\n'
         'config = ".codex/config.toml"\n'
         'hooks = ".codex/hooks.json"\n',
+        'runner_bin = ".logos/bin/logos-runner.cmd"\n',
     )
     ok: list[str] = []
     errors: list[str] = []
@@ -184,6 +185,7 @@ def test_validate_target_provides_accepts_codex_paths(tmp_path: Path) -> None:
     assert "target provides roles" in ok
     assert "target provides codex config" in ok
     assert "target provides hooks" in ok
+    assert "target provides runner_bin" in ok
 
 
 def test_validate_target_provides_rejects_missing_table(tmp_path: Path) -> None:
@@ -209,6 +211,7 @@ def test_validate_target_provides_rejects_wrong_codex_paths(tmp_path: Path) -> N
         'roles = ".agents/roles"\n'
         'config = ".codex/settings.json"\n'
         'hooks = ".codex/hooks.yml"\n',
+        'runner_bin = "logos-runner"\n',
     )
     ok: list[str] = []
     errors: list[str] = []
@@ -221,6 +224,7 @@ def test_validate_target_provides_rejects_wrong_codex_paths(tmp_path: Path) -> N
     assert "Target provides.roles must be .agents/logos/roles." in errors
     assert "Target provides.config must be .codex/config.toml." in errors
     assert "Target provides.hooks must be .codex/hooks.json." in errors
+    assert "Target provides.runner_bin must be .logos/bin/logos-runner.cmd." in errors
 
 
 def test_validate_target_provides_reports_invalid_toml(tmp_path: Path) -> None:

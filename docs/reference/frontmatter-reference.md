@@ -141,10 +141,10 @@ as `triggers`, `do_not_trigger_when`, `applies_to`, `modes`, `domains`, or
 id: logos.command.nous
 kind: command
 name: nous
-description: Activate Logos nous mode for the current Gemini CLI project session.
+description: Activate Logos nous mode for the current Codex CLI project session.
 status: draft
 version: 0.1.0
-target: gemini-cli
+target: codex-cli
 argument_hint: ""
 loads:
   - logos.skill.nous
@@ -556,14 +556,14 @@ Recommended fields:
 id: logos.hook.before-tool
 kind: hook
 name: before-tool
-description: Runs guard checks before Gemini CLI tool execution.
+description: Runs guard checks before Codex CLI tool execution.
 status: draft
 version: 0.1.0
-target: gemini-cli
+target: codex-cli
 event: before-tool
 target_support:
-  status: assumed
-  notes: Gemini CLI hook support must be confirmed or emulated by the Logos adapter.
+  status: confirmed
+  notes: Codex hook support is used by the Codex target adapter.
 guards:
   - logos.guard.file-write-boundary
   - logos.guard.dangerous-command-denylist

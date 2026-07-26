@@ -1,2 +1,0 @@
-// AfterAgent hook placeholder.
-

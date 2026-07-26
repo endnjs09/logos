@@ -24,8 +24,8 @@ def utc_now() -> str:
 
 def default_session_state(
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
     now: str | None = None,
 ) -> dict[str, Any]:
     timestamp = now or utc_now()
@@ -59,8 +59,8 @@ def write_session_state(root: Path, state: dict[str, Any]) -> None:
 def init_session_state(
     root: Path,
     *,
-    target: str = "gemini-cli",
-    profile: str = "gemini",
+    target: str = "codex-cli",
+    profile: str = "codex",
 ) -> dict[str, Any]:
     state = default_session_state(target=target, profile=profile)
     write_session_state(root, state)
@@ -77,8 +77,8 @@ def activate_nous(root: Path, *, activated_by: str = "logos nous on") -> dict[st
             "activated_at": now,
             "activated_by": activated_by,
             "last_updated_at": now,
-            "target": state.get("target") or "gemini-cli",
-            "profile": state.get("profile") or "gemini",
+            "target": state.get("target") or "codex-cli",
+            "profile": state.get("profile") or "codex",
         }
     )
     write_session_state(root, state)
@@ -94,8 +94,8 @@ def deactivate_nous(root: Path, *, activated_by: str = "logos nous off") -> dict
             "activated_at": None,
             "activated_by": activated_by,
             "last_updated_at": utc_now(),
-            "target": state.get("target") or "gemini-cli",
-            "profile": state.get("profile") or "gemini",
+            "target": state.get("target") or "codex-cli",
+            "profile": state.get("profile") or "codex",
         }
     )
     write_session_state(root, state)
@@ -125,8 +125,8 @@ def normalize_legacy_state(state: dict[str, Any]) -> dict[str, Any]:
     normalized.pop("activation_source", None)
     normalized.pop("notes", None)
     normalized.setdefault("last_updated_at", utc_now())
-    normalized.setdefault("target", "gemini-cli")
-    normalized.setdefault("profile", "gemini")
+    normalized.setdefault("target", "codex-cli")
+    normalized.setdefault("profile", "codex")
     return normalized
 
 

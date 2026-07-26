@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "logos-harness"
 version = "0.1.0"
-description = "A performance calibration harness for lifting Gemini Pro High toward Codex and Claude Code coding-agent behavior."
+description = "A Codex CLI orchestration harness for structured coding-agent work."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }

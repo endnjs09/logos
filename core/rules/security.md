@@ -6,10 +6,10 @@ description: Preserve security boundaries while performing coding tasks.
 status: active
 version: 0.1.0
 targets:
-  - gemini-cli
+  - codex-cli
   - codex-cli
 profiles:
-  - gemini
+  - codex
   - codex
 applies_to:
   - nous
