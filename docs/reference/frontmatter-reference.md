@@ -96,6 +96,7 @@ rule
 guard
 workflow
 procedure
+reference
 rubric
 template
 hook
@@ -103,6 +104,42 @@ hook
 
 Do not invent new `kind` values without updating
 `docs/reference/document-types.md`.
+
+## Reference Fields
+
+Use `reference` for optional detail material that a primary asset points to but
+does not load by default.
+
+Example:
+
+```yaml
+id: logos.reference.exp-details
+kind: reference
+name: exp-details
+description: Detailed guidance for the Explorer role.
+status: active
+version: 0.1.0
+applies_to:
+  - logos.role.exp
+```
+
+Required common fields:
+
+- `id`
+- `kind`
+- `name`
+- `description`
+- `status`
+- `version`
+
+Recommended fields:
+
+- `applies_to`
+- `read_only_when`
+- `owner`
+
+Reference assets must not declare standalone triggers. They are read only when a
+role, skill, procedure, rule, or guard explicitly points to them.
 
 ## Description Rules
 

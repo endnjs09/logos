@@ -55,7 +55,7 @@ Minimum fields:
 ```yaml
 ---
 id: logos.<kind>.<name>
-kind: <role|implementation-role|skill|command|rule|guard|workflow|procedure|rubric|template|hook>
+kind: <role|implementation-role|skill|command|rule|guard|workflow|procedure|reference|rubric|template|hook>
 name: <machine-readable-name>
 description: <short trigger-oriented description>
 status: draft
@@ -151,6 +151,7 @@ Use one file type per responsibility.
 | `guard` | Hard policy that must be enforced by code |
 | `workflow` | Ordered state transition or task lifecycle |
 | `procedure` | Step-level procedure referenced by a primary skill |
+| `reference` | Optional detail material read only through an explicit pointer |
 | `rubric` | Evaluation criteria |
 | `template` | Required output shape |
 | `hook` | Lifecycle event behavior for a target host |

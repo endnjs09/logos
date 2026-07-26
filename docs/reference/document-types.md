@@ -8,13 +8,14 @@ required structure.
 | Kind | Primary Location | Runtime Role |
 |---|---|---|
 | `role` | `core/roles/`, `.agents/logos/roles/` | Orchestration persona and procedure |
-| `implementation-role` | `core/roles/exe/`, `.agents/logos/roles/` | Domain specialist behavior |
+| `implementation-role` | `core/roles/implementation/`, `.agents/logos/roles/` | Domain specialist behavior |
 | `skill` | `.agents/skills/`, `plugins/*/skills/` | Reusable workflow package |
 | `command` | `targets/*/commands/` | User or host entrypoint |
 | `rule` | `core/rules/` | Soft model instruction |
 | `guard` | `core/guards/` | Hard runtime policy |
 | `workflow` | `core/workflows/` | State transition and task lifecycle |
 | `procedure` | `.agents/logos/procedures/`, `docs/procedures/` | Installed step-level operating procedure |
+| `reference` | `core/**/references/`, `.agents/**/references/` | Optional detail material reached through an explicit pointer |
 | `rubric` | `core/evaluation/` | Evaluation criteria |
 | `template` | `core/prompts/`, `docs/templates/` | Output shape |
 | `hook` | `targets/*/hooks/` | Host lifecycle intervention |
@@ -59,7 +60,7 @@ Use for implementation specialists selected by `exe`.
 
 Implementation role codes:
 
-- `bd`: backend, API, service, and server-side logic
+- `bd`: default application behavior that is not clearly frontend, persistence, system, or test work
 - `fd`: frontend, UI, client state, and accessibility
 - `db`: database, schema, migration, and persistence work
 - `sys`: system, infrastructure, runtime, build, and deployment surfaces
@@ -222,6 +223,24 @@ The `planning` procedure converts Spec into an execution-ready Task Plan. It
 defines target files, role routing, ordered implementation steps, verification
 plan, rollback criteria, excluded scope, Context Handoff decision, and
 Review-Lite result before execution starts.
+
+## Reference
+
+Use for detailed material that should not be loaded by default.
+
+Required sections:
+
+- `Purpose`
+- `Read Only When`
+- `Detailed Guidance`
+- `Failure Handling`
+
+References are not standalone skills, roles, procedures, rules, or guards. A
+reference must be pointed to by a primary asset and read only when that primary
+asset says the extra detail is needed.
+
+Do not put essential operating instructions only in a reference. The primary
+role, skill, or procedure must remain usable on its own.
 
 ## Rubric
 
