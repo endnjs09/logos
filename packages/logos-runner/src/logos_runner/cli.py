@@ -143,6 +143,53 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    root = _project_root(args.root)
+    store = PlanStore(root)
+    state = store.read_state(args.plan_id)
+    run = store.read_run(args.plan_id) or {}
+    request = store.read_request(args.plan_id)
+
+    print("Logos Run Report")
+    print(f"Plan: {args.plan_id}")
+    print(f"Run: {run.get('run_id') or state.get('run_id') or '(none)'}")
+    print(f"Status: {run.get('status') or state.get('status') or 'unknown'}")
+    print("")
+    print("Request:")
+    print(str(request.get("user_request") or run.get("user_request") or "(none)"))
+    print("")
+    print("Execution:")
+    print(str(run.get("execution_summary") or run.get("summary") or "Not recorded yet."))
+    print("")
+    print("Changed files:")
+    touched = run.get("touched_files")
+    if isinstance(touched, list) and touched:
+        for path in touched[:30]:
+            print(f"- {path}")
+    else:
+        print("- None recorded")
+    print("")
+    print("Tests:")
+    print(str(run.get("test_summary") or "Not recorded yet."))
+    print("")
+    print("Verification:")
+    print(str(run.get("verification_summary") or "Not recorded yet."))
+    failure_reason = run.get("failure_reason")
+    if failure_reason:
+        print("")
+        print("Failure reason:")
+        print(str(failure_reason))
+    artifact_paths = run.get("artifact_paths")
+    if isinstance(artifact_paths, dict) and artifact_paths:
+        print("")
+        print("Key artifacts:")
+        for key in ("plan_state", "task_plan", "execution_result", "verification_result"):
+            value = artifact_paths.get(key)
+            if value:
+                print(f"- {key}: {value}")
+    return 0
+
+
 def cmd_next(args: argparse.Namespace) -> int:
     root = _project_root(args.root)
     store = PlanStore(root)
@@ -385,6 +432,11 @@ def build_parser() -> argparse.ArgumentParser:
     status = sub.add_parser("status")
     status.add_argument("--root")
     status.set_defaults(func=cmd_status)
+
+    report = sub.add_parser("report")
+    report.add_argument("plan_id")
+    report.add_argument("--root")
+    report.set_defaults(func=cmd_report)
 
     next_stage = sub.add_parser("next")
     next_stage.add_argument("plan_id")

@@ -12,6 +12,11 @@
     "path": { "type": "string" },
     "guard_id": { "type": "string" },
     "decision": { "type": "string" },
-    "summary": { "type": "string" }
+    "summary": { "type": "string" },
+    "status": { "type": "string" },
+    "name": { "type": "string" },
+    "passed_count": { "type": "integer", "minimum": 0 },
+    "failed_count": { "type": "integer", "minimum": 0 },
+    "detected_by": { "type": "string" }
   }
 }

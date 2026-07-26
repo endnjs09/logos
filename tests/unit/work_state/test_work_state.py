@@ -3,7 +3,13 @@ from pathlib import Path
 
 from logos_core.work_state.memory import initialize_memory_state, update_resume_snapshot
 from logos_core.work_state.plans import create_plan_record, write_active_plan
-from logos_core.work_state.runs import create_run, record_command, record_file_change, record_guard
+from logos_core.work_state.runs import (
+    create_run,
+    record_command,
+    record_file_change,
+    record_guard,
+    record_test_result,
+)
 
 
 def test_initialize_memory_state_creates_resume_files(tmp_path: Path) -> None:
@@ -30,19 +36,44 @@ def test_run_records_update_index_and_jsonl(tmp_path: Path) -> None:
         decision="ask",
         reason="git state change",
     )
+    record_test_result(
+        tmp_path,
+        name="unit tests",
+        command="project test command",
+        status="passed",
+        passed_count=3,
+        failed_count=0,
+        summary="3 tests passed.",
+    )
 
     run_json = json.loads(
         (tmp_path / ".logos/runs" / run["run_id"] / "run.json").read_text(encoding="utf-8")
     )
     assert run_json["command_count"] == 1
     assert run_json["guard_decision_count"] == 1
+    assert run_json["test_count"] == 1
+    assert run_json["failed_test_count"] == 0
+    assert run_json["last_command"] == "pytest"
+    assert "3 tests passed" in run_json["test_summary"]
     assert run_json["touched_files"] == ["src/auth/login.py"]
     assert (tmp_path / ".logos/runs" / run["run_id"] / "commands.jsonl").exists()
     assert (tmp_path / ".logos/runs" / run["run_id"] / "files.jsonl").exists()
     assert (tmp_path / ".logos/runs" / run["run_id"] / "guards.jsonl").exists()
+    assert (tmp_path / ".logos/runs" / run["run_id"] / "tests.jsonl").exists()
 
     index = json.loads((tmp_path / ".logos/memory/run-index.json").read_text())
     assert index["runs"][0]["run_id"] == run["run_id"]
+
+
+def test_run_index_marks_old_active_runs_stale(tmp_path: Path) -> None:
+    first = create_run(tmp_path, run_id="run-first", user_request="first")
+    second = create_run(tmp_path, run_id="run-second", user_request="second")
+
+    index = json.loads((tmp_path / ".logos/memory/run-index.json").read_text())
+    statuses = {item["run_id"]: item["status"] for item in index["runs"]}
+
+    assert statuses[first["run_id"]] == "stale"
+    assert statuses[second["run_id"]] == "active"
 
 
 def test_plan_record_and_resume_snapshot(tmp_path: Path) -> None:

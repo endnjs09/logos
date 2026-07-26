@@ -216,7 +216,7 @@ def doctor_target(
         validate_codex_roles(root, ok, errors)
         validate_codex_target_profile(root, ok, errors)
         validate_codex_runtime_dirs(root, ok, errors)
-        validate_codex_work_state(root, ok, errors)
+        validate_codex_work_state(root, ok, warnings, errors)
 
     validate_session_state(root, ok, errors)
     install_manifest = validate_manifest(root, ok, errors)
@@ -455,7 +455,9 @@ def validate_codex_runtime_dirs(root: Path, ok: list[str], errors: list[str]) ->
             ok.append("Codex installs only nous as auto-discoverable skill")
 
 
-def validate_codex_work_state(root: Path, ok: list[str], errors: list[str]) -> None:
+def validate_codex_work_state(
+    root: Path, ok: list[str], warnings: list[str], errors: list[str]
+) -> None:
     for relative in CODEX_MEMORY_REQUIRED_PATHS:
         path = root / relative
         if path.exists():
@@ -484,7 +486,7 @@ def validate_codex_work_state(root: Path, ok: list[str], errors: list[str]) -> N
         ok,
         errors,
     )
-    validate_run_directories(root, ok, errors)
+    validate_run_directories(root, ok, warnings, errors)
     for relative in (
         ".logos/evidence/hook-events.jsonl",
         ".logos/evidence/command-results.jsonl",
@@ -518,7 +520,7 @@ def validate_work_state_json(
     ok.append(ok_message)
 
 
-def validate_run_directories(root: Path, ok: list[str], errors: list[str]) -> None:
+def validate_run_directories(root: Path, ok: list[str], warnings: list[str], errors: list[str]) -> None:
     runs_dir = root / ".logos/runs"
     if not runs_dir.exists():
         return
@@ -527,19 +529,91 @@ def validate_run_directories(root: Path, ok: list[str], errors: list[str]) -> No
         if not path.is_dir():
             continue
         run_json = path / "run.json"
-        validate_work_state_json(
-            run_json,
-            {"schema_version", "run_id", "selected_mode", "status", "started_at"},
-            f"run record shape: {path.name}",
-            ok,
-            errors,
-        )
-        for jsonl in ("commands.jsonl", "files.jsonl", "guards.jsonl"):
+        validate_run_record_shape(run_json, path.name, ok, warnings, errors)
+        validate_run_semantics(root, path, ok, warnings, errors)
+        for jsonl in ("commands.jsonl", "files.jsonl", "guards.jsonl", "tests.jsonl"):
             for issue in validate_jsonl(path / jsonl):
                 errors.append(issue)
         checked += 1
     if checked == 0:
         ok.append("no run records yet")
+
+
+def validate_run_record_shape(
+    path: Path, name: str, ok: list[str], warnings: list[str], errors: list[str]
+) -> None:
+    base_required = {"schema_version", "run_id", "selected_mode", "status", "started_at"}
+    v9_required = {
+        "execution_summary",
+        "execution_deviations",
+        "verification_summary",
+        "test_summary",
+        "final_response_summary",
+        "failure_reason",
+        "artifact_paths",
+        "test_count",
+        "failed_test_count",
+    }
+    if not path.exists():
+        return
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        errors.append(f"Invalid work-state JSON {path}: {exc}")
+        return
+    if not isinstance(loaded, dict):
+        errors.append(f"Work-state JSON must be an object: {path}")
+        return
+
+    missing_base = sorted(base_required - set(loaded))
+    if missing_base:
+        errors.append(f"Work-state JSON missing fields {missing_base}: {path}")
+        return
+
+    missing_v9 = sorted(v9_required - set(loaded))
+    if missing_v9:
+        warnings.append(f"Legacy run record missing V9 fields {missing_v9}: {path}")
+        ok.append(f"legacy run record shape: {name}")
+        return
+
+    ok.append(f"run record shape: {name}")
+
+
+def validate_run_semantics(
+    root: Path, run_dir: Path, ok: list[str], warnings: list[str], errors: list[str]
+) -> None:
+    run_json = run_dir / "run.json"
+    if not run_json.exists():
+        return
+    try:
+        loaded = json.loads(run_json.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return
+    if not isinstance(loaded, dict):
+        return
+
+    status = loaded.get("status")
+    if status == "completed" and not loaded.get("ended_at"):
+        errors.append(f"Completed run must include ended_at: {run_json}")
+    if status == "completed" and loaded.get("last_error"):
+        warnings.append(f"Completed run should not keep last_error; use failure/deviation fields: {run_json}")
+    if status == "failed" and not loaded.get("failure_reason"):
+        errors.append(f"Failed run must include failure_reason: {run_json}")
+
+    artifact_paths = loaded.get("artifact_paths")
+    if isinstance(artifact_paths, dict):
+        missing: list[str] = []
+        for name, relative in artifact_paths.items():
+            if not isinstance(relative, str) or not relative:
+                errors.append(f"Run artifact path must be a string for {name}: {run_json}")
+                continue
+            candidate = root / relative
+            if name in {"plan_state", "request"} and not candidate.exists():
+                missing.append(relative)
+        if missing:
+            errors.append(f"Run artifact paths missing required files {missing}: {run_json}")
+        else:
+            ok.append(f"run artifact links: {run_dir.name}")
 
 
 def validate_codex_links(root: Path, ok: list[str], errors: list[str]) -> None:

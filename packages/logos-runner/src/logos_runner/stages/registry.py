@@ -45,6 +45,8 @@ STAGE_REGISTRY: tuple[StageDefinition, ...] = (
             "essential_information_status",
             "complexity",
             "questions",
+            "required_questions",
+            "optional_questions",
             "blocking_unknowns",
             "next_step",
         ),

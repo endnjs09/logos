@@ -260,9 +260,10 @@ def test_validate_codex_work_state_rejects_bad_jsonl(tmp_path: Path) -> None:
     (tmp_path / ".logos" / "runs").mkdir(parents=True)
 
     ok: list[str] = []
+    warnings: list[str] = []
     errors: list[str] = []
 
-    validate_codex_work_state(tmp_path, ok, errors)
+    validate_codex_work_state(tmp_path, ok, warnings, errors)
 
     assert "active-work shape" in ok
     assert any("invalid JSONL" in error for error in errors)

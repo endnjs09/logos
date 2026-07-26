@@ -112,10 +112,14 @@ For each stage:
 3. Wait for the subagent result.
 4. If no agent has completed yet, report that at most once for the current
    stage. Do not repeatedly print empty wait status.
-5. Save the subagent's final JSON to the stage raw result file.
-6. Record it with `logos-runner record-stage`.
-7. Apply the stage gate with `logos-runner gate --apply`.
-8. Continue with the next prompt only after the gate advances the plan state.
+5. After the first empty wait, suppress repeated raw wait messages such as
+   `Waiting for agents`, `Finished waiting`, or `No agents completed yet` for
+   that stage. Report only completion, blocker, approval request, or meaningful
+   state change.
+6. Save the subagent's final JSON to the stage raw result file.
+7. Record it with `logos-runner record-stage`.
+8. Apply the stage gate with `logos-runner gate --apply`.
+9. Continue with the next prompt only after the gate advances the plan state.
 
 Persisted Logos artifacts under `.logos/` must be written in English,
 regardless of the user's input language. Translate or summarize user-provided

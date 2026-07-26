@@ -19,6 +19,7 @@ def merge_interview_draft(project_root: Path, plan_id: str) -> Path:
     modes: list[str] = []
     latest_intake_sufficient = False
     latest_spec_has_no_blocking_questions = False
+    latest_spec_has_no_open_questions = False
 
     for file_name in ("scan-result.json", "intake-result.json", "spec.json"):
         stage = _stage_for_output(file_name)
@@ -44,6 +45,7 @@ def merge_interview_draft(project_root: Path, plan_id: str) -> Path:
             latest_intake_sufficient = _is_intake_sufficient(data)
         elif file_name == "spec.json":
             latest_spec_has_no_blocking_questions = _has_no_blocking_open_questions(data)
+            latest_spec_has_no_open_questions = _has_no_structured_open_questions(data)
 
         complexity = data.get("complexity")
         if isinstance(complexity, str):
@@ -65,7 +67,7 @@ def merge_interview_draft(project_root: Path, plan_id: str) -> Path:
     pending = state.get("pending_questions")
     if state.get("status") == "waiting_user":
         _extend_strings(open_questions, pending)
-    elif latest_intake_sufficient or latest_spec_has_no_blocking_questions:
+    elif latest_intake_sufficient and latest_spec_has_no_blocking_questions and latest_spec_has_no_open_questions:
         open_questions.clear()
 
     final_mode = _last_mode(modes)
@@ -108,16 +110,26 @@ def _dedupe(values: list[str]) -> list[str]:
 def _is_intake_sufficient(data: dict[str, object]) -> bool:
     status = data.get("essential_information_status")
     questions = data.get("questions")
+    required_questions = data.get("required_questions")
     blocking_unknowns = data.get("blocking_unknowns")
     return (
         status == "sufficient"
         and (not isinstance(questions, list) or len(questions) == 0)
+        and (not isinstance(required_questions, list) or len(required_questions) == 0)
         and (not isinstance(blocking_unknowns, list) or len(blocking_unknowns) == 0)
     )
 
 
 def _has_no_blocking_open_questions(data: dict[str, object]) -> bool:
     questions = data.get("blocking_open_questions")
+    return isinstance(questions, list) and len(questions) == 0
+
+
+def _has_no_structured_open_questions(data: dict[str, object]) -> bool:
+    structured = data.get("structured_spec")
+    if not isinstance(structured, dict):
+        return True
+    questions = structured.get("open_questions")
     return isinstance(questions, list) and len(questions) == 0
 
 

@@ -91,6 +91,8 @@ def record_run_observations(root: Path, payload: dict[str, object]) -> None:
     run = ensure_current_run(root)
     command = extract_command(payload)
     if command:
+        exit_code = extract_exit_code(payload)
+        summary = summarize_payload(payload)
         append_jsonl(
             root / ".logos" / "runs" / str(run["run_id"]) / "commands.jsonl",
             {
@@ -100,8 +102,8 @@ def record_run_observations(root: Path, payload: dict[str, object]) -> None:
                 "command": command,
                 "cwd": extract_cwd(payload),
                 "tool_name": payload.get("tool_name", "unknown"),
-                "exit_code": extract_exit_code(payload),
-                "summary": summarize_payload(payload),
+                "exit_code": exit_code,
+                "summary": summary,
             },
         )
         append_jsonl(
@@ -111,14 +113,24 @@ def record_run_observations(root: Path, payload: dict[str, object]) -> None:
                 "run_id": run["run_id"],
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "command": command,
-                "summary": summarize_payload(payload),
+                "summary": summary,
             },
         )
         run["command_count"] = int(run.get("command_count", 0)) + 1
+        run["last_command"] = command
+        if exit_code not in (None, 0):
+            run["last_error"] = summary
 
     for changed in dedupe_changed_files([*detect_payload_changed_files(root, payload), *detect_changed_files(root)]):
+        normalized = normalize_project_path(root, changed["path"])
+        if not normalized:
+            continue
+        changed["path"] = normalized
+        files_path = root / ".logos" / "runs" / str(run["run_id"]) / "files.jsonl"
+        if file_record_exists(files_path, changed["path"]):
+            continue
         append_jsonl(
-            root / ".logos" / "runs" / str(run["run_id"]) / "files.jsonl",
+            files_path,
             {
                 "schema_version": 1,
                 "run_id": run["run_id"],
@@ -192,12 +204,27 @@ def normalize_project_path(root: Path, value: str) -> str:
         if path.is_absolute():
             resolved = path.resolve()
             try:
-                return str(resolved.relative_to(root.resolve())).replace("\\", "/")
+                normalized = str(resolved.relative_to(root.resolve())).replace("\\", "/")
+                return normalized if is_project_touched_file(normalized) else ""
             except ValueError:
                 return ""
-        return str(path).replace("\\", "/")
+        normalized = str(path).replace("\\", "/")
+        return normalized if is_project_touched_file(normalized) else ""
     except OSError:
         return ""
+
+
+def is_project_touched_file(value: str) -> bool:
+    normalized = value.strip().replace("\\", "/")
+    if not normalized:
+        return False
+    if normalized == ".logos" or normalized.startswith(".logos/"):
+        return False
+    if normalized.startswith("/"):
+        return False
+    if "/" not in normalized:
+        return False
+    return True
 
 
 def dedupe_changed_files(changed: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -271,9 +298,20 @@ def ensure_current_run(root: Path) -> dict[str, object]:
         "ended_at": None,
         "user_request": None,
         "summary": "",
+        "execution_summary": "",
+        "execution_deviations": [],
+        "verification_summary": "",
+        "test_summary": "",
+        "final_response_summary": "",
+        "failure_reason": None,
+        "last_command": None,
+        "last_error": None,
         "touched_files": [],
         "command_count": 0,
         "guard_decision_count": 0,
+        "test_count": 0,
+        "failed_test_count": 0,
+        "artifact_paths": artifact_paths(active_plan_id),
     }
     write_json(root / ".logos" / "runs" / run_id / "run.json", run)
     active.update(
@@ -288,6 +326,24 @@ def ensure_current_run(root: Path) -> dict[str, object]:
     write_json(active_path, active)
     update_run_index(root, run)
     return run
+
+
+def artifact_paths(plan_id: object) -> dict[str, str]:
+    if not isinstance(plan_id, str) or not plan_id:
+        return {}
+    base = f".logos/plans/{plan_id}"
+    return {
+        "plan_state": f"{base}/plan-state.json",
+        "request": f"{base}/request.json",
+        "scan_result": f"{base}/stages/scan/result.json",
+        "intake_result": f"{base}/stages/intake/result.json",
+        "spec": f"{base}/spec.json",
+        "task_plan": f"{base}/task-plan.json",
+        "context_handoff": f"{base}/context-handoff.json",
+        "review_lite": f"{base}/review-lite.json",
+        "execution_result": f"{base}/execution-result.json",
+        "verification_result": f"{base}/verification-result.json",
+    }
 
 
 def initialize_memory_state(root: Path) -> None:
@@ -324,7 +380,15 @@ def update_run_index(root: Path, run: dict[str, object]) -> None:
     index = read_json(index_path) or {"schema_version": 1, "runs": []}
     runs = index.setdefault("runs", [])
     if isinstance(runs, list):
+        active_run_id_value = active_run_id(root)
         runs[:] = [item for item in runs if not isinstance(item, dict) or item.get("run_id") != run["run_id"]]
+        for item in runs:
+            if (
+                isinstance(item, dict)
+                and item.get("status") == "active"
+                and item.get("run_id") != active_run_id_value
+            ):
+                item["status"] = "stale"
         runs.append(
             {
                 "run_id": run["run_id"],
@@ -342,6 +406,9 @@ def update_run_index(root: Path, run: dict[str, object]) -> None:
 
 def update_resume_snapshot(root: Path, run: dict[str, object]) -> None:
     touched = run.get("touched_files") if isinstance(run.get("touched_files"), list) else []
+    artifact_paths_value = run.get("artifact_paths")
+    artifact_paths_map = artifact_paths_value if isinstance(artifact_paths_value, dict) else {}
+    plan_id = run.get("plan_id")
     lines = [
         "# Logos Resume Snapshot",
         "",
@@ -349,13 +416,34 @@ def update_resume_snapshot(root: Path, run: dict[str, object]) -> None:
         "Do not scan raw `.logos/runs` or `.logos/evidence` first.",
         "",
         f"Updated: {datetime.now(timezone.utc).isoformat()}",
+        f"Status: {run.get('status') or 'unknown'}",
         f"Current task: {run.get('summary') or 'Active Logos work'}",
         f"Last run id: {run.get('run_id')}",
+        f"Active plan id: {plan_id}",
+        "",
+        "## Current Summaries",
+        f"- Execution: {run.get('execution_summary') or 'Not recorded yet.'}",
+        f"- Deviations: {format_deviations(run.get('execution_deviations'))}",
+        f"- Tests: {run.get('test_summary') or 'Not recorded yet.'}",
+        f"- Verification: {run.get('verification_summary') or 'Not recorded yet.'}",
         "",
         "## Touched Files",
     ]
     lines.extend([f"- {item}" for item in touched[:20]] or ["- None"])
-    lines.extend(["", "## Where To Look Next", "- .logos/memory/active-work.json", "- .logos/memory/run-index.json"])
+    look_next = [
+        ".logos/memory/active-work.json",
+        ".logos/memory/run-index.json",
+        str(artifact_paths_map.get("plan_state") or f".logos/plans/{plan_id}/plan-state.json"),
+        str(artifact_paths_map.get("task_plan") or f".logos/plans/{plan_id}/task-plan.json"),
+    ]
+    execution_result = artifact_paths_map.get("execution_result")
+    verification_result = artifact_paths_map.get("verification_result")
+    if execution_result:
+        look_next.append(str(execution_result))
+    if verification_result:
+        look_next.append(str(verification_result))
+    lines.extend(["", "## Where To Look Next"])
+    lines.extend(f"- {item}" for item in look_next[:8])
     (root / ".logos" / "memory" / "resume-snapshot.md").write_text(
         "\n".join(lines).rstrip() + "\n",
         encoding="utf-8",
@@ -391,6 +479,33 @@ def append_jsonl(path: Path, payload: dict[str, object]) -> None:
             stream.write(safe_json_dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
     except OSError:
         return
+
+
+def file_record_exists(path: Path, candidate_path: str) -> bool:
+    if not path.exists():
+        return False
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            parsed = json.loads(line)
+            if isinstance(parsed, dict) and parsed.get("path") == candidate_path:
+                return True
+    except (OSError, json.JSONDecodeError):
+        return False
+    return False
+
+
+def active_run_id(root: Path) -> str | None:
+    active = read_json(root / ".logos" / "memory" / "active-work.json") or {}
+    value = active.get("active_run_id")
+    return value if isinstance(value, str) else None
+
+
+def format_deviations(value: object) -> str:
+    if not isinstance(value, list) or not value:
+        return "None"
+    return "; ".join(str(item) for item in value[:5])
 
 
 def find_key(value: object, key: str) -> object:

@@ -3,7 +3,13 @@
 from logos_core.work_state.ids import new_plan_id, new_run_id
 from logos_core.work_state.memory import initialize_memory_state, update_resume_snapshot
 from logos_core.work_state.plans import create_plan_record, write_active_plan
-from logos_core.work_state.runs import create_run, record_command, record_file_change, record_guard
+from logos_core.work_state.runs import (
+    create_run,
+    record_command,
+    record_file_change,
+    record_guard,
+    record_test_result,
+)
 
 __all__ = [
     "create_plan_record",
@@ -14,6 +20,7 @@ __all__ = [
     "record_command",
     "record_file_change",
     "record_guard",
+    "record_test_result",
     "update_resume_snapshot",
     "write_active_plan",
 ]

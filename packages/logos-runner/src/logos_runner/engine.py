@@ -171,6 +171,7 @@ def apply_recorded_execute_result(project_root: Path, plan_id: str) -> StageRunR
     if valid is not None:
         return valid
     data = store.read_stage_result(plan_id, stage.output_file)
+    store.reflect_execution_result(plan_id, data)
     next_step = str(data.get("next_step", ""))
     status = str(data.get("status", ""))
     if status == "completed" and next_step == "verify":
@@ -222,6 +223,7 @@ def apply_recorded_verify_result(project_root: Path, plan_id: str) -> StageRunRe
     if final_valid is not None:
         return final_valid
     data = store.read_stage_result(plan_id, stage.output_file)
+    store.reflect_verification_result(plan_id, data)
     next_step = str(data.get("next_step", ""))
     passed = data.get("passed")
     if passed is True and next_step == "complete":
@@ -394,10 +396,13 @@ def _apply_stage_decision(
 
     if stage.name == "intake":
         if next_step == "ask_user":
+            questions = data.get("required_questions")
+            if not isinstance(questions, list) or not questions:
+                questions = data.get("questions")
             store.mark_waiting_user(
                 plan_id,
                 stage.name,
-                list(data.get("questions", [])),
+                list(questions or []),
                 list(data.get("blocking_unknowns", [])),
             )
             return "waiting_user"

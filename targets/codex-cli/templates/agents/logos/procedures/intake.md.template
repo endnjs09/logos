@@ -44,6 +44,10 @@ default during intake.
 
 Ask only for information that is required before Spec or planning can start
 safely. Do not ask for information that the scan result already resolves.
+Code structure can resolve implementation patterns, but it cannot decide product
+or security policy by itself. When a request affects policy, authorization,
+data integrity, external integration, irreversible behavior, or user-visible
+contract semantics, ask the smallest useful set of policy questions before Spec.
 
 Complexity is an internal agent judgment. The default is `middle`; change it to
 `low` or `high` only when there is a concrete reason.
@@ -69,6 +73,22 @@ Ask when missing information would block safe progress before Spec:
 - The request may touch sensitive data, permissions, security, billing, irreversible changes, or production-like state.
 - Exploration cannot identify the missing information from repository files.
 
+Ask policy questions when the request requires decisions such as:
+
+- Authentication or identity policy, including sign-up, login, password reset, session, token, or account lifecycle behavior.
+- Authorization policy, including who may view, create, update, delete, approve, publish, export, or administer data.
+- Uniqueness and duplicate handling, including account, phone, email, username, slug, payment request, order, or idempotency keys.
+- Password, credential, secret, token, verification-code, or sensitive-response handling.
+- Billing, payment, points, refunds, settlement, quotas, external calls, or irreversible state transitions.
+- Database schema, migration, retention, deletion, audit, or recovery policy.
+- API contract choices that users or clients observe, including status codes, error semantics, response shape, and public/private fields.
+
+For these areas, do not silently turn an inferred default into a confirmed
+decision unless repository evidence already proves that exact policy. If a
+reasonable default exists but still changes service policy, ask a concise
+required question or state the default as an optional question that can be
+accepted by silence only when safe.
+
 ## Do Not Ask Criteria
 
 Do not ask when the information can be discovered or safely deferred:
@@ -77,6 +97,9 @@ Do not ask when the information can be discovered or safely deferred:
 - A reversible, conventional default is safe until planning refines it.
 - The question is stylistic, preferential, or not needed to start exploration.
 - The question would be more precise during planning.
+- The question only asks about naming, internal class layout, UI copy, color,
+  formatting style, or other implementation taste that the repository pattern
+  can decide.
 
 ## Question Budget
 
@@ -90,12 +113,13 @@ defer the rest to planning after Spec.
 2. Decide whether essential information is `sufficient` or `missing`.
 3. Set internal complexity to `middle` unless there is evidence for `low` or `high`.
 4. List only unknowns that block safe progress before Spec.
-5. If essential information is missing, ask the blocking questions and set `next_step` to `ask_user`.
-6. If essential information is sufficient, record safe assumptions and set `next_step` to `spec`.
-7. Start or update the Interview Draft with the raw request, known facts,
+5. Split questions into `required_questions` and `optional_questions`.
+6. If essential information is missing, ask the required questions and set `next_step` to `ask_user`.
+7. If essential information is sufficient, record safe assumptions and set `next_step` to `spec`.
+8. Start or update the Interview Draft with the raw request, known facts,
    blocking unknowns, questions, confirmed decisions, open questions, and
    excluded scope.
-8. After the user answers blocking questions, re-run this procedure, update the
+9. After the user answers blocking questions, re-run this procedure, update the
    Interview Draft, and proceed to Spec once the missing essentials are
    resolved.
 
@@ -117,7 +141,11 @@ complexity_basis:
 blocking_unknowns:
   - "<unknown that blocks safe progress before Spec>"
 questions:
-  - "<question for the user, only when essential information is missing>"
+  - "<all required questions for backward compatibility; mirror required_questions>"
+required_questions:
+  - "<question that must be answered before Spec>"
+optional_questions:
+  - "<question that would improve the task but can safely default or defer>"
 known_constraints:
   - "<confirmed constraint from the user request or prior answers>"
 assumptions_allowed:
@@ -138,8 +166,10 @@ next_step: ask_user | spec
 ```
 
 When `essential_information_status` is `sufficient`, `questions` should be
-empty and `next_step` must be `spec`. When it is `missing`, questions
-must target the blocking unknowns and `next_step` must be `ask_user`.
+empty, `required_questions` must be empty, and `next_step` must be `spec`.
+When it is `missing`, `questions` must mirror `required_questions`, required
+questions must target the blocking unknowns, and `next_step` must be `ask_user`.
+Optional questions must not block Spec by themselves.
 
 ## Failure Handling
 

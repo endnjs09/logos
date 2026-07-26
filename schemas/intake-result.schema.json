@@ -12,6 +12,8 @@
     "complexity_basis",
     "blocking_unknowns",
     "questions",
+    "required_questions",
+    "optional_questions",
     "known_constraints",
     "assumptions_allowed",
     "risk_notes",
@@ -50,6 +52,21 @@
     "questions": {
       "type": "array",
       "maxItems": 10,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_questions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "optional_questions": {
+      "type": "array",
       "items": {
         "type": "string",
         "minLength": 1
@@ -140,6 +157,9 @@
           "questions": {
             "maxItems": 0
           },
+          "required_questions": {
+            "maxItems": 0
+          },
           "blocking_unknowns": {
             "maxItems": 0
           },
@@ -166,11 +186,14 @@
           "questions": {
             "minItems": 1
           },
+          "required_questions": {
+            "minItems": 1
+          },
           "next_step": {
             "const": "ask_user"
           }
         },
-        "required": ["blocking_unknowns", "questions"]
+        "required": ["blocking_unknowns", "questions", "required_questions"]
       }
     }
   ]

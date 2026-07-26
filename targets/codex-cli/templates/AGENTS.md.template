@@ -83,6 +83,10 @@ outputs. Per-stage process records live under
 - After spawning a native subagent, avoid repeated empty wait updates. If no
   agent has completed, report that at most once per stage, then wait quietly or
   provide only meaningful status changes.
+- Do not relay raw repeated wait noise such as `Waiting for agents`,
+  `Finished waiting`, or `No agents completed yet` more than once for the same
+  stage. Prefer one concise stage-status sentence, then report only completion,
+  blocker, approval request, or material state change.
 - Do not edit files, run build/test commands, or start implementation before
   Runner planning has produced `next_step: executor`.
 - Read `.agents/logos/procedures/execution.md` only after the planning gate

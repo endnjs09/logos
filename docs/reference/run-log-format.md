@@ -1,128 +1,109 @@
 # Run Log Format
 
-Run logs record what Logos did, why it did it, and whether it improved the
-result compared with a baseline.
+Run logs record what Logos did, which plan it followed, what changed, and how
+execution and verification ended.
 
-Run logs are part of the product. If the run cannot be audited, Logos cannot
-prove calibration improvement.
+Run logs are part of the product. If the run cannot be audited or resumed,
+Logos cannot keep long Codex work reliable.
 
 ## Run Directory
 
-Each run should write to:
+Each installed project writes run records to:
 
 ```text
-runs/<timestamp>-<task-id>-<condition>/
+.logos/runs/<run_id>/
 ```
 
 Example:
 
 ```text
-runs/2026-07-11T101530Z-movie-tracker-codex-logos/
+.logos/runs/run-20260726T083710Z0000/
 ```
 
-## Recommended Run Artifacts
+## Current Run Artifacts
 
 ```text
-run/
-+-- request.json
-+-- config.json
-+-- target.json
-+-- plugins.json
-+-- snapshot.json
-+-- interview-draft.json
-+-- spec.json
-+-- task-plan.json
-+-- executor-context.json
-+-- tool-results.jsonl
-+-- verification.json
-+-- run-result.json
-+-- measurement.jsonl
-+-- diff.patch
+.logos/runs/<run_id>/
++-- run.json
++-- commands.jsonl
++-- files.jsonl
++-- guards.jsonl
++-- tests.jsonl
 ```
 
-Not every mode needs every artifact. Low Fast Path may skip interview draft and
-structured spec.
+`run.json` is the compact run summary. JSONL files are append-only event
+records. Official stage contracts live under `.logos/plans/<plan_id>/`.
 
-## Measurement Log
+## Plan Linkage
 
-`measurement.jsonl` is append-only.
+`run.json.artifact_paths` links the run to the important plan artifacts:
 
-Each line should be one JSON object.
+- `plan-state.json`
+- `request.json`
+- `scan-result.json`
+- `intake-result.json`
+- `spec.json`
+- `task-plan.json`
+- `context-handoff.json`
+- `review-lite.json`
+- `execution-result.json`
+- `verification-result.json`
 
-Required fields:
+The run summary copies only high-signal summaries from those artifacts. It does
+not duplicate full stage JSON.
 
-- `task_id`
-- `condition`
-- `target`
-- `host`
-- `initial_mode`
-- `final_mode`
-- `final_success`
+## Commands
 
-Recommended fields:
-
-- `mode_changed`
-- `low_fast_path_applied`
-- `context_handoff_applied`
-- `plugins`
-- `llm_call_count`
-- `tool_call_count`
-- `retry_count`
-- `token_input`
-- `token_output`
-- `executor_context_tokens`
-- `estimated_full_context_tokens`
-- `test_result`
-- `verification_result`
-- `failure_reason`
-
-## Tool Results
-
-`tool-results.jsonl` should record normalized tool calls.
-
-Each entry should include:
+`commands.jsonl` records normalized command observations:
 
 - tool name
-- command or operation
+- command
 - cwd
-- start time
-- end time
 - exit code
 - summary
-- redaction status
 
 Do not store secrets in tool logs.
 
-## Verification Result
+## Files
 
-`verification.json` should record:
+`files.jsonl` records changed file observations. `run.json.touched_files` is the
+deduplicated high-level list.
 
-- tests passed
-- success criteria status
-- quality gate status
-- excluded scope status
-- blocking questions
-- reviewer decision if applicable
+## Guards
 
-Verification should distinguish:
+`guards.jsonl` records structured guard decisions when Runner or hooks can
+associate the decision with the current run.
 
-- machine-verified
-- model-reviewed
-- human-reviewed
-- not verified
+## Tests
 
-## Run Result
+`tests.jsonl` records test results declared by execution or verification stage
+artifacts. Hooks must not infer whether a command is a test from command text.
 
-`run-result.json` should summarize:
+The semantic source is:
 
-- task id
-- condition
-- target
+- `execution-result.json.tests_run`
+- `verification-result.json.tests_run`
+
+Runner copies those structured records into `tests.jsonl` and updates:
+
+- `run.json.test_summary`
+- `run.json.test_count`
+- `run.json.failed_test_count`
+
+## Run Summary
+
+`run.json` should summarize:
+
+- run id
+- plan id
+- selected mode
+- status
+- user request
+- execution summary
+- verification summary
+- test summary
 - modified files
-- diff path
-- final status
 - failure reason
-- retry count
 - artifact paths
 
 ## Failure Reasons
@@ -169,8 +150,21 @@ A run should record enough information to answer:
 - What context was passed to execution?
 - Which tools were run?
 - What failed or succeeded?
+- Which plan artifacts explain the work?
+- What should Codex read first after context loss?
 
-## Report Linkage
+## Resume Memory
 
-Comparison reports in `reports/comp/` should reference run directories rather
-than duplicating all run content.
+Agents should not scan raw `.logos/runs/` or `.logos/evidence/` at the start of
+normal work. When context is unclear, read:
+
+```text
+.logos/memory/resume-snapshot.md
+```
+
+Then, only if needed, follow the plan/run links named in the snapshot.
+
+## Report Command
+
+`logos-runner report <plan_id>` prints the compact human-facing summary for a
+plan and its linked run.

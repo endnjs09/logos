@@ -14,8 +14,22 @@
     "ended_at": { "type": ["string", "null"] },
     "user_request": { "type": ["string", "null"] },
     "summary": { "type": "string" },
+    "execution_summary": { "type": "string" },
+    "execution_deviations": { "type": "array", "items": { "type": "string" } },
+    "verification_summary": { "type": "string" },
+    "test_summary": { "type": "string" },
+    "final_response_summary": { "type": "string" },
+    "failure_reason": { "type": ["string", "null"] },
+    "last_command": { "type": ["string", "null"] },
+    "last_error": { "type": ["string", "null"] },
     "touched_files": { "type": "array", "items": { "type": "string" } },
     "command_count": { "type": "integer", "minimum": 0 },
-    "guard_decision_count": { "type": "integer", "minimum": 0 }
+    "guard_decision_count": { "type": "integer", "minimum": 0 },
+    "test_count": { "type": "integer", "minimum": 0 },
+    "failed_test_count": { "type": "integer", "minimum": 0 },
+    "artifact_paths": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
   }
 }

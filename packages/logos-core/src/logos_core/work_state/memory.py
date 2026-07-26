@@ -50,9 +50,17 @@ def add_run_index_entry(root: Path, run: dict[str, Any]) -> None:
     index = read_json(path) or {"schema_version": 1, "runs": []}
     runs = index.setdefault("runs", [])
     if isinstance(runs, list):
+        active_run_id = str(run.get("run_id")) if run.get("status") == "active" else _active_run_id(root)
         runs[:] = [
             item for item in runs if not isinstance(item, dict) or item.get("run_id") != run["run_id"]
         ]
+        for item in runs:
+            if (
+                isinstance(item, dict)
+                and item.get("status") == "active"
+                and item.get("run_id") != active_run_id
+            ):
+                item["status"] = "stale"
         runs.append(
             {
                 "run_id": run["run_id"],
@@ -108,6 +116,16 @@ def update_resume_snapshot(
     lines.extend(_section("Remaining", remaining or []))
     lines.extend(_section("Touched Files", touched_files or []))
     lines.extend(_section("Blockers", blockers or []))
+    lines.extend(
+        [
+            "## Where To Look Next",
+            "- .logos/memory/active-work.json",
+            "- .logos/memory/run-index.json",
+            "- .logos/plans/<active_plan_id>/plan-state.json",
+            "- .logos/plans/<active_plan_id>/task-plan.json",
+            "",
+        ]
+    )
     (root / ".logos" / "memory" / "resume-snapshot.md").write_text(
         "\n".join(lines).rstrip() + "\n",
         encoding="utf-8",
@@ -132,3 +150,9 @@ def _section(title: str, items: list[str]) -> list[str]:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _active_run_id(root: Path) -> str | None:
+    active = read_json(root / ".logos" / "memory" / "active-work.json") or {}
+    value = active.get("active_run_id")
+    return value if isinstance(value, str) else None

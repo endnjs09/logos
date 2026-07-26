@@ -65,7 +65,16 @@ gates.
 |        `- <stage>-parse-error.json
 |- runs/
 |  `- <run_id>/
+|     |- run.json
+|     |- commands.jsonl
+|     |- files.jsonl
+|     |- guards.jsonl
+|     `- tests.jsonl
 `- memory/
+   |- active-work.json
+   |- run-index.json
+   |- open-items.json
+   `- resume-snapshot.md
 ```
 
 The plan root contains official work contracts and final stage outputs that are
@@ -79,6 +88,14 @@ process records:
 The `errors/` directory contains parse or validation failure records. Runner
 keeps backward-compatible readers for older flat plan directories, but new
 plans should use the grouped layout.
+
+The `runs/` directory contains work execution records. It stores compact run
+summaries and append-only command, file, guard, and test records. Test records
+come from structured stage artifacts such as `verification-result.json`, not
+from command-name guessing in hooks.
+
+The `memory/` directory is the first resume surface. Agents should read
+`resume-snapshot.md` before raw run or evidence logs when context is unclear.
 
 ## CLI Surface
 
@@ -95,6 +112,7 @@ Installed Codex projects should call the project-local shim:
 - `.logos/bin/logos-runner.cmd execute`
 - `.logos/bin/logos-runner.cmd verify`
 - `.logos/bin/logos-runner.cmd status`
+- `.logos/bin/logos-runner.cmd report`
 
 The PowerShell shim `.logos/bin/logos-runner.ps1` is also installed, but the
 `.cmd` shim is the default on Windows because it avoids PowerShell execution
