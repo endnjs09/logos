@@ -7,16 +7,38 @@ import tomllib
 from pathlib import Path
 
 from logos_runner.codex.capabilities import inspect_codex
-from logos_runner.engine import run_execute_stage, run_planning_sequence, run_stage_once, run_verify_stage
+from logos_runner.engine import (
+    apply_stage_gate,
+    check_gate_status,
+    prepare_stage_prompt,
+    record_stage_result,
+    run_execute_stage,
+    run_planning_sequence,
+    run_stage_once,
+    run_verify_stage,
+)
 from logos_runner.errors import LogosRunnerError
 from logos_runner.state.interview import merge_interview_draft
 from logos_runner.state.store import PlanStore
-from logos_runner.stages.prompt_builder import build_stage_prompt
 from logos_runner.stages.registry import STAGE_REGISTRY, get_stage
+from logos_runner.stages.subagent_prompt import build_subagent_assignment
 
 
 def _project_root(value: str | None) -> Path:
     return Path(value).resolve() if value else Path.cwd().resolve()
+
+
+def _print_subagent_assignment(root: Path, plan_id: str, stage_name: str, prompt_path: Path) -> None:
+    stage = get_stage(stage_name)
+    print("Subagent assignment:")
+    print(
+        build_subagent_assignment(
+            project_root=root,
+            plan_id=plan_id,
+            stage=stage,
+            prompt_path=prompt_path,
+        )
+    )
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -44,11 +66,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(f"Version: {result.version}")
     if result.auth_mode:
         print(f"Auth: {result.auth_mode}")
-    exec_status = "OK" if result.exec_supported else ("WARN" if result.inaccessible else "ERR")
-    print(f"exec: {exec_status}")
-    print(f"exec --output-schema: {'OK' if result.output_schema_supported else 'WARN'}")
-    print(f"exec --sandbox: {'OK' if result.sandbox_supported else 'WARN'}")
-    print(f"features multi_agent: {result.multi_agent_status}")
+    print("nested codex exec: not_used")
+    print("native subagents: required in active Codex session")
 
     if args.json:
         print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
@@ -59,7 +78,6 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         if missing
         or runner_errors
         or not result.codex_found
-        or (not result.exec_supported and not result.inaccessible)
         else 0
     )
 
@@ -85,9 +103,20 @@ def _validate_runner_target(root: Path) -> list[str]:
         errors.append("runner.execute_stage must be manual")
     if runner.get("verify_stage") != "manual":
         errors.append("runner.verify_stage must be manual")
+    if runner.get("worker_execution") != "codex-native-subagent":
+        errors.append("runner.worker_execution must be codex-native-subagent")
+    if runner.get("nested_codex_exec") is not False:
+        errors.append("runner.nested_codex_exec must be false")
     sequence = runner.get("planning_sequence")
     if sequence != ["scan", "intake", "spec", "plan", "review_lite"]:
         errors.append("runner.planning_sequence is invalid")
+    provides = loaded.get("provides") if isinstance(loaded, dict) else None
+    if not isinstance(provides, dict) or provides.get("runner_bin") != ".logos/bin/logos-runner.cmd":
+        errors.append("provides.runner_bin must be .logos/bin/logos-runner.cmd")
+    if not (root / ".logos" / "bin" / "logos-runner.ps1").exists():
+        errors.append("project-local Runner shim is missing: .logos/bin/logos-runner.ps1")
+    if not (root / ".logos" / "bin" / "logos-runner.cmd").exists():
+        errors.append("project-local Runner cmd shim is missing: .logos/bin/logos-runner.cmd")
     return errors
 
 
@@ -96,6 +125,7 @@ def cmd_start(args: argparse.Namespace) -> int:
     store = PlanStore(root)
     plan = store.create_plan(args.request)
     print(f"Created Logos plan: {plan.plan_id}")
+    print(f"Created Logos run: {plan.run_id}")
     print(plan.plan_dir)
     return 0
 
@@ -117,22 +147,17 @@ def cmd_next(args: argparse.Namespace) -> int:
     root = _project_root(args.root)
     store = PlanStore(root)
     stage = store.current_stage(args.plan_id)
-    prompt = build_stage_prompt(root, args.plan_id, stage)
-    prompt_path = store.plan_dir(args.plan_id) / f"{stage.name}-prompt.md"
-    prompt_path.write_text(prompt, encoding="utf-8")
-    store.mark_stage_prompted(args.plan_id, stage.name, prompt_path)
+    prompt_path = prepare_stage_prompt(
+        project_root=root,
+        plan_id=args.plan_id,
+        stage=stage,
+        rebuild_prompt=args.rebuild_prompt,
+    )
     print(f"Prepared {stage.name} prompt:")
     print(prompt_path)
+    _print_subagent_assignment(root, args.plan_id, stage.name, prompt_path)
     if args.print:
-        print(prompt)
-    return 0
-
-
-def cmd_complete(args: argparse.Namespace) -> int:
-    root = _project_root(args.root)
-    store = PlanStore(root)
-    store.mark_stage_completed(args.plan_id, args.stage)
-    print(f"Marked stage complete: {args.stage}")
+        print(prompt_path.read_text(encoding="utf-8"))
     return 0
 
 
@@ -146,12 +171,13 @@ def cmd_run_stage(args: argparse.Namespace) -> int:
             timeout_seconds=args.timeout,
             dry_run=args.dry_run,
         )
-        print(f"Worker stage: {result.stage}")
+        print(f"Stage: {result.stage}")
         print(f"Status: {result.status}")
         print(f"Message: {result.message}")
         if result.result_path:
-            print(f"Result JSON: {result.result_path}")
-        return 0 if result.status in {"ready_for_verify", "waiting_user", "redirect"} else 1
+            print(f"Prompt: {result.result_path}")
+            _print_subagent_assignment(root, args.plan_id, stage.name, result.result_path)
+        return 0 if result.status == "prompt_ready" else 1
 
     result = run_stage_once(
         project_root=root,
@@ -162,21 +188,14 @@ def cmd_run_stage(args: argparse.Namespace) -> int:
         rebuild_prompt=args.rebuild_prompt,
     )
 
-    print(f"Worker stage: {result.stage}")
+    print(f"Stage: {result.stage}")
     print(f"Status: {result.status}")
     print(f"Message: {result.message}")
     if result.result_path:
-        print(f"Result JSON: {result.result_path}")
+        print(f"Prompt: {result.result_path}")
+        _print_subagent_assignment(root, args.plan_id, stage.name, result.result_path)
 
-    if result.status != "result_ready":
-        return 1
-
-    if args.complete:
-        store = PlanStore(root)
-        store.mark_stage_completed(args.plan_id, stage.name)
-        print(f"Marked stage complete: {stage.name}")
-
-    return 0
+    return 0 if result.status == "prompt_ready" else 1
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -195,7 +214,57 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"Status: {result.status}")
     print(f"Completed stages: {', '.join(result.completed_stages) or '(none)'}")
     print(f"Message: {result.message}")
-    return 0 if result.status in {"complete", "ready_for_execute", "waiting_user", "redirect"} else 1
+    if result.status == "prompt_ready":
+        store = PlanStore(root)
+        stage = store.current_stage(args.plan_id)
+        prompt_path = store.stage_prompt_path(args.plan_id, stage.name)
+        _print_subagent_assignment(root, args.plan_id, stage.name, prompt_path)
+    return 0 if result.status == "prompt_ready" else 1
+
+
+def cmd_record_stage(args: argparse.Namespace) -> int:
+    root = _project_root(args.root)
+    stage = get_stage(args.stage)
+    raw_text = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
+    if not raw_text.strip():
+        raise LogosRunnerError("stage result text is empty")
+
+    result = record_stage_result(
+        project_root=root,
+        plan_id=args.plan_id,
+        stage=stage,
+        raw_text=raw_text,
+    )
+    print(f"Stage: {result.stage}")
+    print(f"Status: {result.status}")
+    print(f"Message: {result.message}")
+    if result.result_path:
+        print(f"Result JSON: {result.result_path}")
+    if result.status == "result_ready":
+        print(f"Next: .\\.logos\\bin\\logos-runner.cmd gate --root . {args.plan_id} {stage.name} --apply")
+    return 0 if result.status == "result_ready" else 1
+
+
+def cmd_gate(args: argparse.Namespace) -> int:
+    root = _project_root(args.root)
+    result = (
+        apply_stage_gate(root, args.plan_id, args.stage)
+        if args.apply
+        else check_gate_status(root, args.plan_id, args.stage)
+    )
+    print(f"Stage: {result.stage}")
+    print(f"Status: {result.status}")
+    print(f"Message: {result.message}")
+    if result.result_path:
+        print(f"Path: {result.result_path}")
+    if result.status == "next_prompt_ready" and result.result_path:
+        next_stage = PlanStore(root).current_stage(args.plan_id)
+        _print_subagent_assignment(root, args.plan_id, next_stage.name, result.result_path)
+    if result.status == "ready_for_execute":
+        print(f"Next: .\\.logos\\bin\\logos-runner.cmd execute --root . {args.plan_id}")
+    if result.status == "ready_for_verify":
+        print(f"Next: .\\.logos\\bin\\logos-runner.cmd verify --root . {args.plan_id}")
+    return 0 if result.status not in {"failed", "gate_blocked"} else 1
 
 
 def cmd_answer(args: argparse.Namespace) -> int:
@@ -215,7 +284,7 @@ def cmd_answer(args: argparse.Namespace) -> int:
     print(f"Recorded answer: {answers_path}")
     print(f"Interview draft: {draft_path}")
     print(f"Stage: {updated.get('current_stage')}")
-    print(f"Next: logos-runner continue {args.plan_id}")
+    print(f"Next: .\\.logos\\bin\\logos-runner.cmd continue --root . {args.plan_id}")
     return 0
 
 
@@ -245,7 +314,12 @@ def cmd_continue(args: argparse.Namespace) -> int:
     print(f"Status: {result.status}")
     print(f"Completed stages: {', '.join(result.completed_stages) or '(none)'}")
     print(f"Message: {result.message}")
-    return 0 if result.status in {"complete", "ready_for_execute", "waiting_user", "redirect"} else 1
+    if result.status == "prompt_ready":
+        store = PlanStore(root)
+        stage = store.current_stage(args.plan_id)
+        prompt_path = store.stage_prompt_path(args.plan_id, stage.name)
+        _print_subagent_assignment(root, args.plan_id, stage.name, prompt_path)
+    return 0 if result.status == "prompt_ready" else 1
 
 
 def cmd_execute(args: argparse.Namespace) -> int:
@@ -260,8 +334,9 @@ def cmd_execute(args: argparse.Namespace) -> int:
     print(f"Status: {result.status}")
     print(f"Message: {result.message}")
     if result.result_path:
-        print(f"Result JSON: {result.result_path}")
-    return 0 if result.status in {"ready_for_verify", "waiting_user", "redirect"} else 1
+        print(f"Prompt: {result.result_path}")
+        _print_subagent_assignment(root, args.plan_id, "execute", result.result_path)
+    return 0 if result.status == "prompt_ready" else 1
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
@@ -276,8 +351,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
     print(f"Status: {result.status}")
     print(f"Message: {result.message}")
     if result.result_path:
-        print(f"Result JSON: {result.result_path}")
-    return 0 if result.status in {"verified", "needs_rework", "needs_plan_revision", "waiting_user"} else 1
+        print(f"Prompt: {result.result_path}")
+        _print_subagent_assignment(root, args.plan_id, "verify", result.result_path)
+    return 0 if result.status == "prompt_ready" else 1
 
 
 def _read_answer(args: argparse.Namespace) -> str:
@@ -314,13 +390,8 @@ def build_parser() -> argparse.ArgumentParser:
     next_stage.add_argument("plan_id")
     next_stage.add_argument("--root")
     next_stage.add_argument("--print", action="store_true")
+    next_stage.add_argument("--rebuild-prompt", action="store_true")
     next_stage.set_defaults(func=cmd_next)
-
-    complete = sub.add_parser("complete")
-    complete.add_argument("plan_id")
-    complete.add_argument("stage")
-    complete.add_argument("--root")
-    complete.set_defaults(func=cmd_complete)
 
     run_stage = sub.add_parser("run-stage")
     run_stage.add_argument("plan_id")
@@ -328,7 +399,6 @@ def build_parser() -> argparse.ArgumentParser:
     run_stage.add_argument("--root")
     run_stage.add_argument("--timeout", type=int)
     run_stage.add_argument("--dry-run", action="store_true")
-    run_stage.add_argument("--complete", action="store_true")
     run_stage.add_argument("--rebuild-prompt", action="store_true")
     run_stage.set_defaults(func=cmd_run_stage)
 
@@ -341,6 +411,20 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--dry-run", action="store_true")
     run.add_argument("--simulate-intake-missing", action="store_true")
     run.set_defaults(func=cmd_run)
+
+    record_stage = sub.add_parser("record-stage")
+    record_stage.add_argument("plan_id")
+    record_stage.add_argument("stage")
+    record_stage.add_argument("--root")
+    record_stage.add_argument("--file")
+    record_stage.set_defaults(func=cmd_record_stage)
+
+    gate = sub.add_parser("gate")
+    gate.add_argument("plan_id")
+    gate.add_argument("stage")
+    gate.add_argument("--root")
+    gate.add_argument("--apply", action="store_true")
+    gate.set_defaults(func=cmd_gate)
 
     answer = sub.add_parser("answer")
     answer.add_argument("plan_id")

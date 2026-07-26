@@ -34,12 +34,17 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
             "",
             "- Verify only the completed implementation.",
             "- Do not modify files.",
+            "- Do not directly create or edit `.logos/plans/<plan_id>/verification-result.json`.",
+            "- Return the verification result JSON in the final response; Runner materializes the official result.",
             "- Compare implementation against `task-plan.json`, `spec.json`, and `execution-result.json`.",
             "- Check success criteria, verification plan, target file scope, excluded scope, and deviations.",
             "- Run tests only when safe and relevant in read-only mode.",
             "- If tests cannot run, inspect diffs or record why checks were skipped.",
             "- Do not introduce new requirements.",
             "- Do not expand implementation scope.",
+            "- Persisted Logos artifacts are English-only.",
+            "- Translate or summarize user-provided text into English before writing official JSON fields.",
+            "- Escape JSON strings correctly; invalid JSON blocks the stage gate.",
             "",
             "## Comparison Summary",
             "",
@@ -60,6 +65,7 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
             "## Required Final JSON",
             "",
             "Return one JSON object only. Do not wrap it in Markdown fences.",
+            "Write all string values in English.",
             "Include these keys:",
             "",
             "- `schema_version`",
@@ -94,4 +100,3 @@ def _format_list(value: object) -> str:
     if not isinstance(value, list) or not value:
         return "- none"
     return "\n".join(f"  - `{item}`" for item in value)
-

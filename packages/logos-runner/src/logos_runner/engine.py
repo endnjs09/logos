@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 
-from logos_runner.codex.worker import run_codex_worker
 from logos_runner.state.store import PlanStore
-from logos_runner.stages.execution_gate import require_execution_gate
+from logos_runner.stages.execution_gate import check_execution_gate, require_execution_gate
 from logos_runner.stages.executor_prompt import build_executor_prompt
 from logos_runner.stages.prompt_builder import build_stage_prompt
 from logos_runner.stages.registry import PLANNING_SEQUENCE, StageDefinition, get_stage
 from logos_runner.stages.result_materializer import materialize_stage_result
-from logos_runner.stages.verification_gate import require_verification_gate
+from logos_runner.stages.verification_gate import check_verification_gate, require_verification_gate
 from logos_runner.stages.verification_prompt import build_verification_prompt
 
 
@@ -40,9 +40,29 @@ def run_stage_once(
     rebuild_prompt: bool,
     simulate_intake_missing: bool = False,
 ) -> StageRunResult:
+    prompt_path = prepare_stage_prompt(
+        project_root=project_root,
+        plan_id=plan_id,
+        stage=stage,
+        rebuild_prompt=rebuild_prompt,
+    )
+    return StageRunResult(
+        stage=stage.name,
+        status="prompt_ready",
+        result_path=prompt_path,
+        message="native subagent prompt ready; run this stage through Codex multi_agent_v1",
+    )
+
+
+def prepare_stage_prompt(
+    *,
+    project_root: Path,
+    plan_id: str,
+    stage: StageDefinition,
+    rebuild_prompt: bool,
+) -> Path:
     store = PlanStore(project_root)
-    plan_dir = store.plan_dir(plan_id)
-    prompt_path = plan_dir / f"{stage.name}-prompt.md"
+    prompt_path = store.stage_prompt_path(plan_id, stage.name)
 
     if not prompt_path.exists() or rebuild_prompt:
         prompt = (
@@ -52,32 +72,33 @@ def run_stage_once(
             if stage.name == "verify"
             else build_stage_prompt(project_root, plan_id, stage)
         )
+        prompt_path.parent.mkdir(parents=True, exist_ok=True)
         prompt_path.write_text(prompt, encoding="utf-8")
         store.mark_stage_prompted(plan_id, stage.name, prompt_path)
 
-    store.mark_stage_running(plan_id, stage.name)
-    worker = run_codex_worker(
-        project_root=project_root,
-        plan_dir=plan_dir,
+    return prompt_path
+
+
+def record_stage_result(
+    *,
+    project_root: Path,
+    plan_id: str,
+    stage: StageDefinition,
+    raw_text: str,
+) -> StageRunResult:
+    store = PlanStore(project_root)
+    raw_output_path = store.stage_raw_path(plan_id, stage.name)
+    raw_output_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_output_path.write_text(raw_text, encoding="utf-8")
+    store.mark_stage_output_ready(plan_id, stage.name, raw_output_path)
+    materialized = materialize_stage_result(
+        plan_dir=store.plan_dir(plan_id),
         stage=stage,
-        plan_id=plan_id,
-        prompt_path=prompt_path,
-        timeout_seconds=timeout_seconds,
-        dry_run=dry_run,
-        simulate_intake_missing=simulate_intake_missing,
+        raw_output_path=raw_output_path,
+        stage_result_path=store.stage_result_path(plan_id, stage.name),
+        official_result_path=store.official_result_path(plan_id, stage.output_file),
+        error_path=store.stage_error_path(plan_id, stage.name),
     )
-
-    if worker.return_code != 0:
-        store.mark_stage_failed(plan_id, stage.name, f"codex exec returned {worker.return_code}")
-        return StageRunResult(
-            stage=stage.name,
-            status="failed",
-            result_path=None,
-            message=f"codex exec returned {worker.return_code}",
-        )
-
-    store.mark_stage_output_ready(plan_id, stage.name, worker.raw_output_path)
-    materialized = materialize_stage_result(plan_dir, stage, worker.raw_output_path)
     if not materialized.ok:
         message = materialized.error or "result materialization failed"
         store.mark_stage_failed(plan_id, stage.name, message)
@@ -88,7 +109,7 @@ def run_stage_once(
             message=message,
         )
 
-    store.mark_stage_result_ready(plan_id, stage.name, worker.raw_output_path, materialized.result_path)
+    store.mark_stage_result_ready(plan_id, stage.name, raw_output_path, materialized.result_path)
     return StageRunResult(
         stage=stage.name,
         status="result_ready",
@@ -107,36 +128,21 @@ def run_planning_sequence(
     dry_run: bool,
     simulate_intake_missing: bool = False,
 ) -> SequenceRunResult:
-    store = PlanStore(project_root)
     names = _sequence_slice(from_stage, until_stage)
-    completed: list[str] = []
-
-    for stage_name in names:
-        stage = get_stage(stage_name)
-        result = run_stage_once(
+    if not names:
+        return SequenceRunResult(plan_id, "failed", (), "empty stage sequence")
+    prompt = prepare_stage_prompt(
             project_root=project_root,
             plan_id=plan_id,
-            stage=stage,
-            timeout_seconds=timeout_seconds,
-            dry_run=dry_run,
-            rebuild_prompt=True,
-            simulate_intake_missing=simulate_intake_missing,
-        )
-        if result.status != "result_ready":
-            return SequenceRunResult(plan_id, "failed", tuple(completed), result.message)
-
-        data = store.read_stage_result(plan_id, stage.output_file)
-        decision = _apply_stage_decision(store, plan_id, stage, data)
-        if decision != "continue":
-            if decision == "completed":
-                completed.append(stage.name)
-            status = "ready_for_execute" if decision == "completed" else decision
-            return SequenceRunResult(plan_id, status, tuple(completed), _message_for(status))
-
-        store.mark_stage_completed(plan_id, stage.name)
-        completed.append(stage.name)
-
-    return SequenceRunResult(plan_id, "complete", tuple(completed), "sequence complete")
+        stage=get_stage(names[0]),
+        rebuild_prompt=True,
+    )
+    return SequenceRunResult(
+        plan_id,
+        "prompt_ready",
+        (),
+        f"native subagent prompt ready: {prompt}",
+    )
 
 
 def run_execute_stage(
@@ -147,29 +153,33 @@ def run_execute_stage(
     dry_run: bool,
 ) -> StageRunResult:
     require_execution_gate(project_root, plan_id)
-    store = PlanStore(project_root)
     stage = get_stage("execute")
-    result = run_stage_once(
+    prompt = prepare_stage_prompt(
         project_root=project_root,
         plan_id=plan_id,
         stage=stage,
-        timeout_seconds=timeout_seconds,
-        dry_run=dry_run,
         rebuild_prompt=True,
     )
-    if result.status != "result_ready":
-        return result
+    return StageRunResult("execute", "prompt_ready", prompt, "native executor prompt ready")
 
+
+def apply_recorded_execute_result(project_root: Path, plan_id: str) -> StageRunResult:
+    store = PlanStore(project_root)
+    stage = get_stage("execute")
+    result_path = store.existing_stage_result_path(plan_id, stage.name, stage.output_file)
+    valid = _validate_stage_result_file(store, plan_id, stage)
+    if valid is not None:
+        return valid
     data = store.read_stage_result(plan_id, stage.output_file)
     next_step = str(data.get("next_step", ""))
     status = str(data.get("status", ""))
     if status == "completed" and next_step == "verify":
         store.mark_stage_completed(plan_id, "execute")
         store.mark_ready_for_verify(plan_id)
-        return StageRunResult("execute", "ready_for_verify", result.result_path, "ready for verify")
+        return StageRunResult("execute", "ready_for_verify", result_path, "ready for verify")
     if next_step == "plan":
         store.mark_redirect(plan_id, "plan", "executor requested plan revision")
-        return StageRunResult("execute", "redirect", result.result_path, "executor requested plan revision")
+        return StageRunResult("execute", "redirect", result_path, "executor requested plan revision")
     if next_step == "clarification":
         store.mark_waiting_user(
             plan_id,
@@ -177,10 +187,10 @@ def run_execute_stage(
             [str(data.get("blocked_reason", "execution requires clarification"))],
             [str(data.get("blocked_reason", "execution requires clarification"))],
         )
-        return StageRunResult("execute", "waiting_user", result.result_path, "waiting for user clarification")
+        return StageRunResult("execute", "waiting_user", result_path, "waiting for user clarification")
 
     store.mark_stage_failed(plan_id, "execute", f"unsupported execution result: {status}/{next_step}")
-    return StageRunResult("execute", "failed", result.result_path, "unsupported execution result")
+    return StageRunResult("execute", "failed", result_path, "unsupported execution result")
 
 
 def run_verify_stage(
@@ -191,41 +201,170 @@ def run_verify_stage(
     dry_run: bool,
 ) -> StageRunResult:
     require_verification_gate(project_root, plan_id)
-    store = PlanStore(project_root)
     stage = get_stage("verify")
-    result = run_stage_once(
+    prompt = prepare_stage_prompt(
         project_root=project_root,
         plan_id=plan_id,
         stage=stage,
-        timeout_seconds=timeout_seconds,
-        dry_run=dry_run,
         rebuild_prompt=True,
     )
-    if result.status != "result_ready":
-        return result
+    return StageRunResult("verify", "prompt_ready", prompt, "native verification prompt ready")
 
+
+def apply_recorded_verify_result(project_root: Path, plan_id: str) -> StageRunResult:
+    store = PlanStore(project_root)
+    stage = get_stage("verify")
+    result_path = store.existing_stage_result_path(plan_id, stage.name, stage.output_file)
+    valid = _validate_stage_result_file(store, plan_id, stage)
+    if valid is not None:
+        return valid
+    final_valid = _validate_final_artifacts(store, plan_id)
+    if final_valid is not None:
+        return final_valid
     data = store.read_stage_result(plan_id, stage.output_file)
     next_step = str(data.get("next_step", ""))
     passed = data.get("passed")
     if passed is True and next_step == "complete":
         store.mark_stage_completed(plan_id, "verify")
         store.mark_verified(plan_id)
-        return StageRunResult("verify", "verified", result.result_path, "verification passed")
+        return StageRunResult("verify", "verified", result_path, "verification passed")
     if next_step == "execute":
         store.mark_needs_rework(plan_id)
-        return StageRunResult("verify", "needs_rework", result.result_path, "verification requires rework")
+        return StageRunResult("verify", "needs_rework", result_path, "verification requires rework")
     if next_step == "plan":
         store.mark_needs_plan_revision(plan_id)
         return StageRunResult(
-            "verify", "needs_plan_revision", result.result_path, "verification requires plan revision"
+            "verify", "needs_plan_revision", result_path, "verification requires plan revision"
         )
     if next_step == "clarification":
         findings = list(data.get("findings", []))
         store.mark_waiting_user(plan_id, "verify", findings, findings)
-        return StageRunResult("verify", "waiting_user", result.result_path, "verification requires clarification")
+        return StageRunResult("verify", "waiting_user", result_path, "verification requires clarification")
 
     store.mark_stage_failed(plan_id, "verify", f"unsupported verification result: {passed}/{next_step}")
-    return StageRunResult("verify", "failed", result.result_path, "unsupported verification result")
+    return StageRunResult("verify", "failed", result_path, "unsupported verification result")
+
+
+def apply_stage_gate(project_root: Path, plan_id: str, stage_name: str) -> StageRunResult:
+    store = PlanStore(project_root)
+    stage = get_stage(stage_name)
+
+    if stage.name == "execute":
+        return apply_recorded_execute_result(project_root, plan_id)
+    if stage.name == "verify":
+        return apply_recorded_verify_result(project_root, plan_id)
+
+    valid = _validate_stage_result_file(store, plan_id, stage)
+    if valid is not None:
+        return valid
+    if stage.name == "plan":
+        context_valid = _validate_json_file(store, plan_id, "context-handoff.json", stage.name)
+        if context_valid is not None:
+            return context_valid
+    data = store.read_stage_result(plan_id, stage.output_file)
+    decision = _apply_stage_decision(store, plan_id, stage, data)
+    if decision == "continue":
+        store.mark_stage_completed(plan_id, stage.name)
+        next_stage = store.current_stage(plan_id)
+        prompt_path = prepare_stage_prompt(
+            project_root=project_root,
+            plan_id=plan_id,
+            stage=next_stage,
+            rebuild_prompt=True,
+        )
+        return StageRunResult(
+            stage=stage.name,
+            status="next_prompt_ready",
+            result_path=prompt_path,
+            message=f"next stage prompt ready: {next_stage.name}",
+        )
+    if decision == "completed":
+        return StageRunResult(stage.name, "ready_for_execute", None, "ready for execute")
+    return StageRunResult(stage.name, decision, None, _message_for(decision))
+
+
+def check_gate_status(project_root: Path, plan_id: str, stage_name: str) -> StageRunResult:
+    if stage_name == "execute":
+        gate = check_execution_gate(project_root, plan_id)
+        return StageRunResult(
+            "execute",
+            "gate_passed" if gate.ok else "gate_blocked",
+            None,
+            "execution gate passed" if gate.ok else gate.reason or "execution gate blocked",
+        )
+    if stage_name == "verify":
+        gate = check_verification_gate(project_root, plan_id)
+        return StageRunResult(
+            "verify",
+            "gate_passed" if gate.ok else "gate_blocked",
+            None,
+            "verification gate passed" if gate.ok else gate.reason or "verification gate blocked",
+        )
+    return StageRunResult(stage_name, "gate_available", None, "record stage result, then apply gate")
+
+
+def _validate_stage_result_file(
+    store: PlanStore, plan_id: str, stage: StageDefinition
+) -> StageRunResult | None:
+    invalid = _validate_json_file(store, plan_id, stage.output_file, stage.name)
+    if invalid is not None:
+        return invalid
+    try:
+        data = store.read_stage_result(plan_id, stage.output_file)
+    except (OSError, json.JSONDecodeError) as exc:
+        return _fail_gate(store, plan_id, stage.name, f"invalid {stage.output_file}: {exc}")
+    missing = [key for key in stage.required_keys if key not in data]
+    if missing:
+        return _fail_gate(
+            store,
+            plan_id,
+            stage.name,
+            "missing required keys in " + stage.output_file + ": " + ", ".join(missing),
+        )
+    if "schema_version" in stage.required_keys and data.get("schema_version") != 1:
+        return _fail_gate(store, plan_id, stage.name, f"{stage.output_file} schema_version must be 1")
+    return None
+
+
+def _validate_final_artifacts(store: PlanStore, plan_id: str) -> StageRunResult | None:
+    required = (
+        ("scan-result.json", "scan"),
+        ("intake-result.json", "intake"),
+        ("spec.json", "spec"),
+        ("task-plan.json", "plan"),
+        ("context-handoff.json", "plan"),
+        ("review-lite.json", "review_lite"),
+        ("execution-result.json", "execute"),
+        ("verification-result.json", "verify"),
+    )
+    for filename, stage_name in required:
+        invalid = _validate_json_file(store, plan_id, filename, stage_name)
+        if invalid is not None:
+            return invalid
+    return None
+
+
+def _validate_json_file(
+    store: PlanStore, plan_id: str, filename: str, stage_name: str
+) -> StageRunResult | None:
+    stage = get_stage(stage_name)
+    path = (
+        store.existing_stage_result_path(plan_id, stage_name, filename)
+        if filename == stage.output_file
+        else store.plan_dir(plan_id) / filename
+    )
+    if not path.exists():
+        return _fail_gate(store, plan_id, stage_name, f"required artifact missing: {filename}")
+    try:
+        json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return _fail_gate(store, plan_id, stage_name, f"invalid JSON artifact {filename}: {exc}")
+    return None
+
+
+def _fail_gate(store: PlanStore, plan_id: str, stage_name: str, message: str) -> StageRunResult:
+    store.mark_stage_failed(plan_id, stage_name, message)
+    return StageRunResult(stage_name, "failed", None, message)
 
 
 def _sequence_slice(from_stage: str, until_stage: str) -> tuple[str, ...]:
