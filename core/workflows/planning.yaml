@@ -1,2 +1,111 @@
-# Planning workflow.
+schema_version: 1
+id: logos.workflow.planning
+kind: workflow
+name: planning
+status: active
+version: 0.1.0
+description: State transitions from user request through the pre-execution planning gate.
 
+entry_state: request_received
+exit_state: ready_for_execution
+
+states:
+  request_received:
+    owner_role: orch
+    output: request.json
+    next: scan
+
+  scan:
+    owner_role: exp
+    procedure: exploration
+    output: scan-result.json
+    allowed_actions:
+      - read_files
+      - inspect_structure
+      - summarize_evidence
+    forbidden_actions:
+      - edit_files
+      - run_mutating_commands
+    next:
+      success: intake
+      blocker: intake
+
+  intake:
+    owner_role: intk
+    procedure: intake
+    output: intake-result.json
+    next:
+      sufficient: spec
+      insufficient: ask_user
+      blocker: ask_user
+
+  ask_user:
+    owner_role: orch
+    output: user-answers.jsonl
+    next:
+      answered: intake
+      declined_or_unavailable: blocked
+
+  spec:
+    owner_role: sp
+    procedure: spec
+    output: spec.json
+    next:
+      success: plan
+      blocking_question: ask_user
+      insufficient_scan: scan
+
+  plan:
+    owner_role: pln
+    procedure: planning
+    outputs:
+      - task-plan.json
+      - context-handoff.json
+    next:
+      success: review_lite
+      blocking_question: ask_user
+      insufficient_spec: spec
+      insufficient_scan: scan
+
+  review_lite:
+    owner_role: rv
+    procedure: review
+    output: review-lite.json
+    next:
+      pass: ready_for_execution
+      fail: plan
+      needs_user: ask_user
+
+  ready_for_execution:
+    owner_role: orch
+    output: plan-state.json
+    next: execute
+
+gates:
+  intake_to_spec:
+    require:
+      - essential_information_status is sufficient
+      - required_questions is empty
+      - blocking_unknowns is empty
+  spec_to_plan:
+    require:
+      - spec_type is set
+      - success_criteria are present
+      - excluded_scope is present
+  plan_to_review_lite:
+    require:
+      - target_files are present
+      - role_routing is present
+      - verification_plan is present
+      - rollback_criteria is present
+  review_lite_to_execute:
+    require:
+      - review_lite passed
+      - task_plan.next_step is executor
+      - no blocking open questions remain
+
+failure_routes:
+  missing_required_information: ask_user
+  uncertain_target_files: scan
+  unclear_success_criteria: spec
+  unsafe_or_unreviewed_plan: plan
