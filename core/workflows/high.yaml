@@ -1,18 +1,124 @@
 schema_version: 1
+id: logos.workflow.high
+kind: workflow
+name: high
+status: active
+version: 0.1.0
+description: Structured workflow for broad, risky, cross-cutting, or hard-to-reverse work.
+
 mode: high
-stages:
-  - request
-  - snapshot
-  - feature_scan
-  - question_candidates
-  - clarification
-  - interview_draft
-  - structured_spec
-  - task_plan
-  - context_handoff
-  - execution
-  - testing
-  - qualitative_review
-  - verification
-  - retry_or_rollback
-  - measurement_log
+default_spec: structured_spec
+default_context_handoff: true
+
+entry_state: request_received
+exit_state: final_response_ready
+
+required_stages:
+  - scan
+  - intake
+  - spec
+  - plan
+  - review_lite
+  - execute
+  - verify
+
+stage_policy:
+  scan:
+    depth: structured
+    intent: identify affected domains, adjacent shared surfaces, existing conventions, risk surfaces, and likely verification paths.
+  intake:
+    question_policy: ask for missing essential policy before implementation; do not invent product, security, data, payment, permission, or operational policy.
+    max_questions: 10
+  spec:
+    type: structured_spec
+    required_fields:
+      - user_story
+      - confirmed_requirements
+      - success_criteria
+      - quality_gates
+      - constraints
+      - edge_cases
+      - excluded_scope
+      - open_questions
+  plan:
+    shape: task_plan_with_context_handoff
+    require:
+      - target_files
+      - allowed_write_paths
+      - role_routing
+      - implementation_steps
+      - verification_plan
+      - rollback_criteria
+      - risk_notes
+  review_lite:
+    required: true
+    blocks_execute: true
+  execute:
+    allowed_when:
+      - context_handoff exists and is complete
+      - review_lite passed
+      - no blocking open questions remain
+      - high-risk override blockers are absent
+  verify:
+    minimum_evidence:
+      - relevant automated test or clearly justified equivalent
+      - diff inspection summary
+      - success criteria comparison
+      - quality gate comparison
+      - remaining risk summary
+
+context_handoff_policy:
+  apply: true
+  required_fields:
+    - goal
+    - confirmed_requirements
+    - target_files
+    - allowed_write_paths
+    - role_routing
+    - verification_plan
+    - excluded_scope
+    - risk_notes
+
+high_risk_domains:
+  - authentication
+  - authorization
+  - payment
+  - billing
+  - secrets
+  - data deletion
+  - database migration
+  - dependency installation
+  - deployment
+  - production-like state
+  - external system integration
+
+blocked_transitions:
+  - from: plan
+    to: execute
+    when:
+      - context_handoff missing
+      - allowed_write_paths missing
+      - verification plan missing
+      - rollback criteria missing
+      - blocking open questions exist
+      - high-risk user override is unsafe or unsupported
+  - from: verify
+    to: final_response
+    when:
+      - success criteria are not satisfied
+      - quality gates are not evaluated
+      - verification evidence is missing
+
+recovery_policy:
+  retry_budget: 3
+  on_review_failed: return_to_plan
+  on_verification_failed: return_to_execute_or_plan
+  on_scope_violation: return_to_plan
+  on_blocking_question: return_to_intake
+
+completion_gate:
+  require:
+    - success criteria satisfied
+    - quality gates addressed
+    - verification evidence recorded
+    - remaining risk reported
