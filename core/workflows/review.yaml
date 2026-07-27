@@ -1,2 +1,65 @@
-# Review workflow.
+schema_version: 1
+id: logos.workflow.review
+kind: workflow
+name: review
+status: active
+version: 0.1.0
+description: Review workflow for pre-execution, security, and final verification decisions.
 
+review_types:
+  review_lite:
+    owner_role: rv
+    timing: before_execute
+    blocks:
+      - execute
+    inputs:
+      - spec.json
+      - task-plan.json
+      - context-handoff.json
+    output: review-lite.json
+    pass_conditions:
+      - target files match the request and spec
+      - implementation steps are ordered and scoped
+      - verification plan can prove success criteria
+      - rollback criteria exist for non-trivial work
+      - excluded scope is explicit
+      - blocking open questions are absent
+
+  security_review:
+    owner_role: sec
+    timing: before_or_after_execute
+    required_when:
+      - authentication or authorization changes
+      - payment, billing, ledger, or balance changes
+      - secrets, credentials, tokens, or sensitive configuration are involved
+      - data deletion or irreversible mutation is involved
+      - dependency, deployment, external system, or production-like behavior is involved
+    output: security-review
+    pass_conditions:
+      - sensitive behavior is not weakened
+      - user-provided secrets are not persisted in official artifacts
+      - risky assumptions are surfaced
+      - hard guard claims match implementation status
+
+  verification_review:
+    owner_role: vf
+    timing: after_execute
+    blocks:
+      - final_response
+    inputs:
+      - spec.json
+      - task-plan.json
+      - execution-result.json
+    output: verification-result.json
+    pass_conditions:
+      - success criteria are checked against evidence
+      - tests or equivalent verification evidence are recorded
+      - skipped checks are explained
+      - remaining risk is reported
+
+resolution:
+  review_lite_failed: return_to_plan
+  security_review_failed: return_to_plan_or_execute
+  verification_failed: return_to_execute_or_plan
+  missing_evidence: return_to_verify
+  unresolved_policy_question: return_to_intake
