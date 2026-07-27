@@ -1,10 +1,71 @@
 schema_version: 1
+id: logos.workflow.low
+kind: workflow
+name: low
+status: active
+version: 0.1.0
+description: Minimal workflow for small, clear, local, low-risk work.
+
 mode: low
-stages:
-  - request
-  - low_fast_path_check
-  - minimal_snapshot
-  - one_line_plan
-  - execution
-  - self_check
-  - measurement_log
+default_spec: low_fast_path
+default_context_handoff: false
+
+entry_state: request_received
+exit_state: final_response_ready
+
+required_stages:
+  - scan
+  - intake
+  - spec
+  - plan
+  - execute
+  - verify
+
+stage_policy:
+  scan:
+    depth: minimal
+    intent: identify only the immediately relevant files and project pattern.
+  intake:
+    question_policy: ask only when essential information is missing.
+    max_questions: 10
+  spec:
+    type: low_fast_path
+    required_fields:
+      - goal
+      - one_line_plan
+      - success_criteria
+      - excluded_scope
+  plan:
+    shape: minimal_task_plan
+    review_lite_required: false
+  execute:
+    allowed_when:
+      - target_files are known
+      - no blocking open questions remain
+      - requested change is local and reversible
+  verify:
+    minimum_evidence:
+      - relevant self-check or focused command result
+      - changed file summary
+
+escalation_rules:
+  - when: target files cannot be identified with shallow scan
+    next_mode: middle
+  - when: request touches auth, payment, permissions, data deletion, secrets, persistence schema, deployment, or external systems
+    next_mode: high
+  - when: implementation needs multiple coordinated surfaces
+    next_mode: middle
+
+blocked_transitions:
+  - from: plan
+    to: execute
+    when:
+      - target_files missing
+      - verification plan missing
+      - blocking open questions exist
+
+completion_gate:
+  require:
+    - success criteria satisfied
+    - no known scope violation
+    - verification evidence recorded
