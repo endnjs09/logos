@@ -16,6 +16,7 @@ required structure.
 | `workflow` | `core/workflows/` | State transition and task lifecycle |
 | `procedure` | `.agents/logos/procedures/`, `docs/procedures/` | Installed step-level operating procedure |
 | `reference` | `core/**/references/`, `.agents/**/references/` | Optional detail material reached through an explicit pointer |
+| `context` | `core/context/` | Memory, handoff, compression, and evidence context policy |
 | `rubric` | `core/evaluation/` | Evaluation criteria |
 | `template` | `core/prompts/`, `docs/templates/` | Output shape |
 | `hook` | `targets/*/hooks/` | Host lifecycle intervention |
@@ -241,6 +242,28 @@ asset says the extra detail is needed.
 
 Do not put essential operating instructions only in a reference. The primary
 role, skill, or procedure must remain usable on its own.
+
+## Context
+
+Use for source policies that define how Logos manages compact task context.
+
+Context assets should cover:
+
+- memory read and write policy
+- context handoff policy
+- compression boundaries
+- evidence versus memory separation
+- sensitive value and transcript exclusion
+
+Required sections:
+
+- `Read Policy`, `Apply`, or equivalent entry policy
+- `Store`, `Include`, or equivalent persistence policy
+- `Exclude` or equivalent boundary policy
+- `Details` when a reference file exists
+
+Do not put target-specific hook mechanics here. Target-specific behavior belongs
+under `targets/<target>/` or Runner code.
 
 ## Rubric
 

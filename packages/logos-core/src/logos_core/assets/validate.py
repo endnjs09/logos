@@ -22,6 +22,7 @@ ALLOWED_KINDS = {
     "workflow",
     "procedure",
     "reference",
+    "context",
     "rubric",
     "template",
     "hook",

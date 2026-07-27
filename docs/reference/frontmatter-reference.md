@@ -97,6 +97,7 @@ guard
 workflow
 procedure
 reference
+context
 rubric
 template
 hook
@@ -140,6 +141,47 @@ Recommended fields:
 
 Reference assets must not declare standalone triggers. They are read only when a
 role, skill, procedure, rule, or guard explicitly points to them.
+
+## Context Fields
+
+Use `context` for compact policy assets that define what Logos should remember,
+pass forward, compress, or exclude. Context assets are source policy and should
+not be treated as default Codex runtime context.
+
+Example:
+
+```yaml
+id: logos.context.memory
+kind: context
+name: memory
+description: Compact policy for reading and writing Logos work memory.
+status: active
+version: 0.1.0
+outputs:
+  - memory-policy
+depends_on: []
+related_workflows:
+  - logos.workflow.recovery
+```
+
+Required common fields:
+
+- `id`
+- `kind`
+- `name`
+- `description`
+- `status`
+- `version`
+
+Recommended fields:
+
+- `outputs`
+- `depends_on`
+- `related_workflows`
+- `applies_to`
+
+Context assets should name the storage or handoff surfaces they govern, but
+should not duplicate target-specific runner or hook implementation details.
 
 ## Description Rules
 
