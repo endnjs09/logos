@@ -1,2 +1,85 @@
-# Recovery workflow.
+schema_version: 1
+id: logos.workflow.recovery
+kind: workflow
+name: recovery
+status: active
+version: 0.1.0
+description: Recovery, retry, rollback, and resume transitions for interrupted or failed Logos work.
 
+entry_states:
+  - failed_stage
+  - context_loss
+  - interrupted_session
+  - blocked_execution
+
+resume_order:
+  - .logos/memory/resume-snapshot.md
+  - .logos/memory/active-work.json
+  - .logos/memory/run-index.json
+  - .logos/plans/<plan_id>/plan-state.json
+  - .logos/plans/<plan_id>/task-plan.json
+  - .logos/runs/<run_id>/run.json
+
+retry_budget:
+  low: 1
+  middle: 2
+  high: 3
+
+failure_routes:
+  test_failed:
+    next: execute
+    require:
+      - failure reason recorded
+      - retry budget available
+  build_failed:
+    next: execute
+    require:
+      - command output summarized
+      - likely failing files identified
+  success_criteria_not_met:
+    next: plan
+    require:
+      - unmet criteria listed
+  excluded_scope_violation:
+    next: plan
+    require:
+      - violated scope recorded
+      - target files reviewed
+  blocking_question_found:
+    next: intake
+    require:
+      - exact question recorded
+  review_failed:
+    next: plan
+    require:
+      - review recommendation recorded
+  context_handoff_missing:
+    next: plan
+  unsafe_action_required:
+    next: blocked
+  retry_budget_exceeded:
+    next: blocked
+
+rollback_policy:
+  default: do_not_auto_reset
+  require_user_approval_for:
+    - destructive git operations
+    - deleting files
+    - discarding uncommitted changes
+  record:
+    - pre_run_git_head when available
+    - dirty_worktree_state when available
+    - changed_files
+    - rollback recommendation
+
+resume_policy:
+  do_not_read_by_default:
+    - .logos/evidence/*.jsonl
+    - .logos/runs/*/large artifacts
+  read_only_when:
+    - compact snapshot is insufficient
+    - active plan state is ambiguous
+    - verification needs concrete evidence
+  output:
+    - resume-summary
+    - next-safe-stage
