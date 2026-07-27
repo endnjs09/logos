@@ -1,13 +1,90 @@
 schema_version: 1
+id: logos.workflow.middle
+kind: workflow
+name: middle
+status: active
+version: 0.1.0
+description: Default workflow for ordinary development work that needs a scoped spec and task plan.
+
 mode: middle
-stages:
-  - request
-  - snapshot
-  - feature_scan
-  - question_candidates
-  - clarification
-  - mini_spec
-  - task_plan
-  - execution
-  - verification
-  - measurement_log
+default_spec: mini_spec
+default_context_handoff: conditional
+
+entry_state: request_received
+exit_state: final_response_ready
+
+required_stages:
+  - scan
+  - intake
+  - spec
+  - plan
+  - review_lite
+  - execute
+  - verify
+
+stage_policy:
+  scan:
+    depth: focused
+    intent: inspect related domain files plus shallow shared, config, routing, middleware, build, and test surfaces.
+  intake:
+    question_policy: ask when implementation policy, behavior, safety, data shape, API contract, or verification expectations are essential and not inferable from code.
+    max_questions: 10
+  spec:
+    type: mini_spec
+    required_fields:
+      - goal
+      - success_criteria
+      - key_edge_cases
+      - excluded_scope
+      - confirmed_decisions
+  plan:
+    shape: task_plan
+    require:
+      - target_files
+      - implementation_steps
+      - role_routing
+      - verification_plan
+      - rollback_criteria
+  review_lite:
+    required: true
+    blocks_execute: true
+  execute:
+    allowed_when:
+      - review_lite passed
+      - next_step is executor
+      - no blocking open questions remain
+  verify:
+    minimum_evidence:
+      - focused test, build, lint, static check, or documented equivalent
+      - changed file summary
+      - success criteria comparison
+
+context_handoff_policy:
+  apply: conditional
+  apply_when:
+    - multiple roles are routed
+    - multiple target files are involved
+    - implementation spans different surfaces
+    - context needed by executor should be reduced from full planning history
+
+escalation_rules:
+  - when: request is broad, cross-cutting, risky, hard to reverse, or changes security-critical behavior
+    next_mode: high
+  - when: task proves tiny, local, clear, and low-risk after scan
+    next_mode: low
+
+blocked_transitions:
+  - from: review_lite
+    to: execute
+    when:
+      - review_lite did not pass
+      - target files are missing
+      - verification plan is missing
+      - rollback criteria are missing for non-trivial changes
+
+completion_gate:
+  require:
+    - success criteria satisfied
+    - verification evidence recorded
+    - skipped checks explained
+    - remaining risk reported
