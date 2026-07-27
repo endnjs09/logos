@@ -1,2 +1,74 @@
-# Execution workflow.
+schema_version: 1
+id: logos.workflow.execution
+kind: workflow
+name: execution
+status: active
+version: 0.1.0
+description: Execution gate and specialist routing after an approved Logos task plan.
 
+entry_state: ready_for_execution
+exit_state: ready_for_verification
+
+preconditions:
+  - task-plan.json exists
+  - review-lite.json exists and passed
+  - task-plan.next_step is executor
+  - target_files are present
+  - role_routing is present
+  - verification_plan is present
+  - blocking_open_questions is empty
+
+owner_role: exe
+
+specialist_roles:
+  bd:
+    use_when: default application behavior, API, service, domain logic, auth behavior, integration glue, or work not clearly owned by another specialist.
+  fd:
+    use_when: browser-facing UI, client state, form flow, accessibility, visual interaction, or frontend tests.
+  db:
+    use_when: schema, migration, persistence, constraints, indexing, query behavior, transactions, or data backfill.
+  sys:
+    use_when: build, runtime config, environment wiring, tooling, container, CI, deployment, or operational surface.
+  test:
+    use_when: test design, fixtures, focused regression tests, end-to-end checks, or verification support.
+
+write_policy:
+  allowed:
+    - edit files listed in task-plan.target_files
+    - edit additional files only when required by the approved plan and recorded as execution deviation
+  blocked:
+    - broad unrelated refactor
+    - scope expansion without returning to plan
+    - editing secrets with concrete secret values
+    - bypassing failed gates
+
+execution_deviation_policy:
+  record_when:
+    - actual changed files differ from target_files
+    - verification command differs materially from verification_plan
+    - implementation scope changes after review_lite
+  record_fields:
+    - deviation_type
+    - reason
+    - affected_files
+    - safety_impact
+    - whether_plan_update_is_required
+
+outputs:
+  - execution-result.json
+
+ready_for_verification_gate:
+  require:
+    - implementation_summary is present
+    - changed_files are present
+    - commands_run are recorded when commands were run
+    - tests_run are recorded when tests were run
+    - known_failures are recorded
+    - deviations are recorded or explicitly empty
+
+failure_routes:
+  target_file_scope_invalid: plan
+  blocking_missing_information: intake
+  unsafe_action_required: blocked
+  implementation_failed: execute
+  retry_budget_exceeded: blocked
