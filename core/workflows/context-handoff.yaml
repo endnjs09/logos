@@ -1,0 +1,101 @@
+schema_version: 1
+id: logos.workflow.context-handoff
+kind: workflow
+name: context-handoff
+status: active
+version: 0.1.0
+description: Policy for passing compact role-specific context between Logos stages.
+
+purpose:
+  - reduce token usage
+  - prevent executor roles from rereading full planning history
+  - preserve enough context to avoid forgetting confirmed requirements
+  - bound file write scope for later guards
+
+apply_by_complexity:
+  low:
+    apply: false
+    reason: small local work should not pay handoff overhead unless risk appears.
+  middle:
+    apply: conditional
+    apply_when:
+      - multiple roles are routed
+      - multiple target files are involved
+      - implementation spans different surfaces
+      - risk notes must be preserved for execution
+      - executor context should be smaller than full plan history
+  high:
+    apply: true
+    reason: complex or risky work needs explicit role handoff and write boundaries.
+
+required_fields_when_applied:
+  - goal
+  - confirmed_requirements
+  - success_criteria
+  - target_files
+  - allowed_write_paths
+  - role_routing
+  - verification_plan
+  - excluded_scope
+  - open_questions
+  - risk_notes
+
+role_specific_fields:
+  exp:
+    include:
+      - relevant_files
+      - observed_patterns
+      - unknowns
+  intk:
+    include:
+      - required_questions
+      - confirmed_decisions
+      - blocking_unknowns
+  sp:
+    include:
+      - success_criteria
+      - constraints
+      - edge_cases
+      - excluded_scope
+  pln:
+    include:
+      - target_files
+      - role_routing
+      - implementation_steps
+      - rollback_criteria
+  exe:
+    include:
+      - target_files
+      - allowed_write_paths
+      - implementation_steps
+      - role_routing
+  sec:
+    include:
+      - risk_notes
+      - sensitive_surfaces
+      - assumptions
+  vf:
+    include:
+      - success_criteria
+      - verification_plan
+      - changed_files
+      - commands_run
+      - tests_run
+
+excluded_content:
+  - full conversation transcript
+  - raw tool output unless required for verification
+  - concrete secret values
+  - unrelated file listings
+  - repeated procedure text
+
+gates:
+  execution_requires_when_applied:
+    - allowed_write_paths
+    - target_files
+    - verification_plan
+    - role_routing
+  missing_required_handoff_field:
+    next: plan
+  handoff_contains_secret_value:
+    next: blocked
