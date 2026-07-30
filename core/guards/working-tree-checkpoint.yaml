@@ -1,0 +1,35 @@
+id: logos.guard.working-tree-checkpoint
+kind: guard
+name: working-tree-checkpoint
+description: Records pre-run and pre-risk git state so failed work can be diagnosed or rolled back by the user.
+status: active
+version: 0.2.0
+enforcement: hard
+enforcement_status: implemented
+decision: allow_block_ask
+risk_level: medium
+severity: 2
+targets: [codex-cli]
+surfaces: [runner_start, pre_tool_use, post_tool_use]
+inputs:
+  - git.head
+  - git.status_short
+  - attempted_risky_action
+outputs:
+  - checkpoint-record
+  - guard-result
+schemas:
+  - schemas/checkpoint.schema.json
+  - schemas/guard-result.schema.json
+runtime_modules:
+  - logos_core.work_state.runs
+  - targets/codex-cli/templates/codex/hooks/pre_tool_use.py.template
+detail_reference: core/guards/references/working-tree-checkpoint-details.md
+policy:
+  allow_when:
+    - Repository state is recorded or git is unavailable and the action is not destructive.
+  ask_when:
+    - Dirty worktree exists before risky mutation.
+  block_when:
+    - A destructive action would run without any available checkpoint evidence.
+  git_unavailable_behavior: record_unavailable

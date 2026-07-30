@@ -23,6 +23,7 @@ CODEX_RUNTIME_DIRS = [
     ".agents/skills",
     ".agents/logos/procedures",
     ".agents/logos/roles",
+    ".agents/logos/rules",
     ".logos/session",
     ".logos/plans",
     ".logos/runs",

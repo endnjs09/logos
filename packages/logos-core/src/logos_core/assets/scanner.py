@@ -7,7 +7,12 @@ from pathlib import Path
 
 from logos_core.assets.loader import load_core_asset
 from logos_core.assets.model import CORE_ASSET_SUFFIXES, CoreAsset
-from logos_core.assets.validate import ValidationIssue, validate_paths
+from logos_core.assets.validate import (
+    Asset,
+    ValidationIssue,
+    validate_asset_graph,
+    validate_frontmatter,
+)
 
 
 @dataclass(frozen=True)
@@ -31,8 +36,13 @@ def scan_core_assets(root: Path) -> CoreAssetScan:
         if path.is_file() and path.suffix.lower() in CORE_ASSET_SUFFIXES
     ]
     assets = [load_core_asset(core_root, path) for path in paths]
-    strict_markdown_paths = [
-        asset.path for asset in assets if asset.suffix == ".md" and asset.has_frontmatter
+    validation_assets = [
+        Asset(path=asset.path, frontmatter=asset.frontmatter)
+        for asset in assets
+        if asset.has_frontmatter
     ]
-    validation_issues = validate_paths(strict_markdown_paths, default_assembly=False)
+    validation_issues: list[ValidationIssue] = []
+    for asset in validation_assets:
+        validation_issues.extend(validate_frontmatter(asset))
+    validation_issues.extend(validate_asset_graph(validation_assets))
     return CoreAssetScan(assets=assets, validation_issues=validation_issues)

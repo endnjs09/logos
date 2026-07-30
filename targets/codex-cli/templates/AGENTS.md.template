@@ -55,6 +55,11 @@ Role detail references live under `.agents/logos/roles/references/`. Read a
 detail reference only when the compact role card says to do so and the current
 stage cannot be completed safely or clearly from the role card, procedure, and
 official plan artifacts alone.
+Soft rule cards live under `.agents/logos/rules/`. Runner selects relevant
+rules through `.logos/generated/rules-manifest.json` and exposes compact
+pointers in stage prompts. Do not read the whole rule library by default; read
+only the specific rule card or `.agents/logos/rules/references/*-details.md`
+file named by the active stage prompt when more detail is needed.
 
 When `.logos/plans/<plan_id>/` artifacts exist, treat those artifacts as the
 active work contract. Do not replace Runner-produced `task-plan.json`,
@@ -108,7 +113,9 @@ outputs. Per-stage process records live under
 Use `.agents/logos/procedures/review.md` as the source of truth for guard
 enforcement status. Keep this file as routing guidance and put detailed
 procedures in `.agents/logos/procedures/` and role boundaries in
-`.agents/logos/roles/`.
+`.agents/logos/roles/`. Treat `.agents/logos/rules/` as soft guidance only;
+hard runtime enforcement belongs to hooks, guards, approval policy, and Runner
+gates.
 
 ## Work-State Recovery
 

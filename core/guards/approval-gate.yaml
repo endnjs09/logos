@@ -1,0 +1,32 @@
+id: logos.guard.approval-gate
+kind: guard
+name: approval-gate
+description: Uses Codex native permission requests for risky actions and adds Logos context only when meaningful.
+status: active
+version: 0.2.0
+enforcement: hard
+enforcement_status: implemented
+decision: allow_block_ask
+risk_level: high
+severity: 2
+targets: [codex-cli]
+surfaces: [permission_request]
+inputs:
+  - permission_request.payload
+  - guard_decision.reason
+outputs:
+  - guard-result
+schemas:
+  - schemas/guard-result.schema.json
+runtime_modules:
+  - logos_core.guards.approval_gate
+  - targets/codex-cli/templates/codex/hooks/permission_request.py.template
+detail_reference: core/guards/references/approval-gate-details.md
+policy:
+  allow_when:
+    - Codex approval request is unknown to Logos and no Logos guard adds useful context.
+  ask_when:
+    - Request needs network, workspace boundary expansion, MCP permission, or risky local mutation.
+  block_when:
+    - Request attempts unrestricted full access that contradicts the default Logos target policy.
+  silence_unknown_requests: true

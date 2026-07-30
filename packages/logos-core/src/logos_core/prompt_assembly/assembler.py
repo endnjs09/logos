@@ -65,11 +65,11 @@ def build_agents_rules(rule_sources: list[AssemblySource]) -> str:
     return "\n\n".join(
         [
             "<!-- logos-assembly: agents-operating-rules -->",
-            "## Logos Operating Rules",
-            "Apply these rules when Logos Nous Mode is active.",
-            source_section("Rules", rule_sources),
-        ]
-    )
+        "## Logos Operating Rules",
+        "Apply these rules when Logos Nous Mode is active.",
+        "Do not assemble full rule bodies by default. Rule cards are installed under `.agents/logos/rules/`; use `.logos/generated/rules-manifest.json` to identify conditional soft rules for the current stage, file path, or uncertainty.",
+    ]
+)
 
 
 def build_nous_directive(
@@ -92,7 +92,8 @@ def build_nous_directive(
             ]
         ),
         source_section("Workflow Material", workflow_sources),
-        source_section("Rule Material", rule_sources),
+        "### Conditional Rules",
+        "Use `.logos/generated/rules-manifest.json` for soft rule selection and `.agents/logos/rules/` for installed rule cards. Read rule detail references only when the compact stage prompt is not enough.",
     ]
     if profile_sources:
         parts.append(source_section("Target Profile", profile_sources))
@@ -109,6 +110,7 @@ def build_codex_context(
         "<!-- logos-assembly: codex-operating-context -->",
         "## Logos Codex Operating Context",
         "Use this repository-level context for Codex CLI. Keep detailed procedures in .agents/logos/procedures/.",
+        "Soft rules are installed under `.agents/logos/rules/` and indexed in `.logos/generated/rules-manifest.json`; do not load the whole rule library by default.",
         source_section("Prompt Material", prompt_sources),
     ]
     if profile_sources:
@@ -126,6 +128,7 @@ def build_codex_nous_skill(
         "## Runner-Oriented Nous Material",
         "Use Logos Runner as the default orchestration path for Codex coding tasks.",
         "Do not manually expand every procedure when Runner can create stage prompts and artifacts.",
+        "Use `.logos/generated/rules-manifest.json` as the soft rule index and `.agents/logos/rules/` as the installed rule library. Do not inject every rule body into the session.",
         "### Runner Stage Contract",
         bullet_list(
             [

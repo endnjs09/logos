@@ -1,0 +1,33 @@
+id: logos.guard.dependency-install-guard
+kind: guard
+name: dependency-install-guard
+description: Routes dependency graph mutations through planning, approval, and verification.
+status: active
+version: 0.1.0
+enforcement: hard
+enforcement_status: policy-only
+decision: allow_block_ask
+risk_level: high
+severity: 2
+targets: [codex-cli]
+surfaces: [pre_tool_use, runner_plan_review, verification]
+inputs:
+  - hook_event.command
+  - package_manifest_diff
+  - lockfile_diff
+  - task_plan.dependency_changes
+outputs:
+  - guard-result
+  - dependency-change-record
+schemas:
+  - schemas/guard-result.schema.json
+detail_reference: core/guards/references/dependency-install-guard-details.md
+policy:
+  allow_when:
+    - Existing project test or build restores dependencies from committed manifests.
+  ask_when:
+    - A new dependency is added, removed, upgraded, or lockfile state changes.
+  block_when:
+    - Remote installer is fetched and executed as a single unreviewed command.
+    - Dependency change bypasses the approved task plan.
+  note: Some dependency command classification is currently implemented through dangerous-command-denylist.

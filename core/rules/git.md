@@ -2,21 +2,36 @@
 id: logos.rule.git
 kind: rule
 name: git
-description: Preserve user work and use git information as evidence.
+description: Applies when using git state, diffs, branches, commits, or remote operations.
 status: active
-version: 0.1.0
-targets:
-  - codex-cli
-  - codex-cli
-profiles:
-  - codex
-  - codex
-applies_to:
-  - nous
-depends_on: []
+version: 0.2.0
+enforcement: soft
+always_apply: false
+stages: [exploration, execute, verify]
+globs:
+  - ".git/**"
+  - "**/.gitignore"
+  - "**/.gitattributes"
+related_guards:
+  - logos.guard.protected-branch-guard
+  - logos.guard.working-tree-checkpoint
+  - logos.guard.dangerous-command-denylist
+detail_reference: core/rules/references/git-details.md
 ---
 
-# Git Rule
+# Git
 
-Treat existing uncommitted changes as user work unless proven otherwise. Use
-git status and diffs to understand impact, but do not revert unrelated changes.
+## Rule
+Treat git as evidence and preserve user work.
+
+## Must
+- Use status and diffs to understand impact.
+- Distinguish existing user changes from Logos changes.
+- Ask before branch, remote, or history-affecting operations.
+
+## Must Not
+- Reset, discard, force-push, or rewrite history as a routine fix.
+- Revert unrelated changes unless the user explicitly asks.
+
+## Details
+See `core/rules/references/git-details.md`.

@@ -39,6 +39,11 @@ def build_guard_manifest(
                 "decision": asset.frontmatter.get("decision"),
                 "risk_level": asset.frontmatter.get("risk_level"),
                 "severity": asset.frontmatter.get("severity"),
+                "surfaces": asset.frontmatter.get("surfaces", []),
+                "inputs": asset.frontmatter.get("inputs", []),
+                "outputs": asset.frontmatter.get("outputs", []),
+                "runtime_modules": asset.frontmatter.get("runtime_modules", []),
+                "detail_reference": asset.frontmatter.get("detail_reference"),
                 "sha256": asset.sha256,
             }
             for asset in guards

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from logos_runner.paths import RunnerPaths
+from logos_runner.stages.rule_selection import format_relevant_rules
 
 
 def build_verification_prompt(project_root: Path, plan_id: str) -> str:
@@ -61,6 +62,23 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
             _format_list(execution.get("deviations_from_plan")),
             "- Spec type:",
             f"  - `{spec.get('spec_type', '')}`",
+            "",
+            "## Relevant Soft Rules",
+            "",
+            format_relevant_rules(
+                project_root,
+                stage_name="verify",
+                paths=[
+                    str(item)
+                    for item in [
+                        *(task_plan.get("target_files") if isinstance(task_plan.get("target_files"), list) else []),
+                        *(execution.get("modified_files") if isinstance(execution.get("modified_files"), list) else []),
+                    ]
+                    if isinstance(item, str)
+                ],
+            ),
+            "",
+            "Read rule detail references only when the compact rule pointer is not enough for the verification decision.",
             "",
             "## Required Final JSON",
             "",

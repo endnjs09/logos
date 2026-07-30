@@ -758,6 +758,15 @@ def create_core_assets(root: Path) -> None:
 
 
 def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:
+    extra = ""
+    if kind == "rule":
+        extra = (
+            "enforcement: soft\n"
+            "always_apply: false\n"
+            "stages:\n"
+            "  - verify\n"
+            "globs: []\n"
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "---\n"
@@ -771,6 +780,7 @@ def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:
         "  - codex-cli\n"
         "profiles:\n"
         "  - codex\n"
+        f"{extra}"
         "depends_on: []\n"
         "---\n\n"
         f"{body}\n",

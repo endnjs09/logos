@@ -2,22 +2,35 @@
 id: logos.rule.secrets
 kind: rule
 name: secrets
-description: Avoid exposing or committing secrets.
+description: Applies when credentials, tokens, private keys, cookies, or environment values may be read, written, logged, or summarized.
 status: active
-version: 0.1.0
-targets:
-  - codex-cli
-  - codex-cli
-profiles:
-  - codex
-  - codex
-applies_to:
-  - nous
-depends_on: []
+version: 0.2.0
+enforcement: soft
+always_apply: false
+stages: [intake, planning, execute, review, verify]
+globs:
+  - "**/.env*"
+  - "**/*secret*"
+  - "**/*credential*"
+  - "**/*private*key*"
+related_guards:
+  - logos.guard.secret-scan
+detail_reference: core/rules/references/secrets-details.md
 ---
 
-# Secrets Rule
+# Secrets
 
-Do not print, persist, or commit secrets. Treat `.env`, private keys, tokens,
-credentials, and production connection strings as sensitive unless the user
-explicitly provides a safe testing context.
+## Rule
+Use names and placeholders for secrets; do not expose concrete secret values.
+
+## Must
+- Refer to required values by name, such as `JWT_SECRET` or `OAUTH_CLIENT_ID`.
+- Tell the user to provide real values through their normal secret-management path.
+- Redact concrete secret-like values from reports and evidence.
+
+## Must Not
+- Generate, print, persist, commit, or summarize real credentials.
+- Copy user-provided secret values into examples, tests, or final responses.
+
+## Details
+See `core/rules/references/secrets-details.md`.

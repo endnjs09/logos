@@ -2,21 +2,32 @@
 id: logos.rule.filesystem
 kind: rule
 name: filesystem
-description: Keep file reads and edits scoped to the user request.
+description: Applies when reading, creating, editing, moving, or deleting project files.
 status: active
-version: 0.1.0
-targets:
-  - codex-cli
-  - codex-cli
-profiles:
-  - codex
-  - codex
-applies_to:
-  - nous
-depends_on: []
+version: 0.2.0
+enforcement: soft
+always_apply: false
+stages: [exploration, planning, execute, verify]
+globs:
+  - "**/*"
+related_guards:
+  - logos.guard.file-write-boundary
+detail_reference: core/rules/references/filesystem-details.md
 ---
 
-# Filesystem Rule
+# Filesystem
 
-Read files needed to understand the task before editing. Keep changes scoped to
-the requested behavior and avoid unrelated rewrites or metadata churn.
+## Rule
+Read before editing and keep file changes inside the approved task scope.
+
+## Must
+- Inspect nearby code before changing behavior.
+- Keep edits limited to target files or justified adjacent files.
+- Record unexpected file changes as deviations.
+
+## Must Not
+- Rewrite unrelated files, metadata, generated output, or user work.
+- Use file changes to bypass planning or guard decisions.
+
+## Details
+See `core/rules/references/filesystem-details.md`.

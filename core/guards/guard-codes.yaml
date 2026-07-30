@@ -1,0 +1,31 @@
+id: logos.reference.guard-codes
+kind: reference
+name: guard-codes
+description: Index of canonical Logos guard ids, decisions, and target surfaces.
+status: active
+version: 0.1.0
+guards:
+  - id: logos.guard.dangerous-command-denylist
+    default_decision: allow_block_ask
+    primary_surfaces: [pre_tool_use, permission_request]
+  - id: logos.guard.secret-scan
+    default_decision: allow_block_ask
+    primary_surfaces: [pre_tool_use, post_tool_use, runner_record_stage]
+  - id: logos.guard.approval-gate
+    default_decision: allow_block_ask
+    primary_surfaces: [permission_request]
+  - id: logos.guard.protected-branch-guard
+    default_decision: allow_block_ask
+    primary_surfaces: [pre_tool_use]
+  - id: logos.guard.working-tree-checkpoint
+    default_decision: allow_block_ask
+    primary_surfaces: [runner_start, pre_tool_use, post_tool_use]
+  - id: logos.guard.dependency-install-guard
+    default_decision: allow_block_ask
+    primary_surfaces: [pre_tool_use, runner_plan_review]
+  - id: logos.guard.file-write-boundary
+    default_decision: allow_block_ask
+    primary_surfaces: [runner_execute, post_tool_use, verification]
+  - id: logos.guard.high-risk-override-block
+    default_decision: allow_block
+    primary_surfaces: [intake, plan_review, runner_execute]

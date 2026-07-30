@@ -5,6 +5,7 @@ from logos_installer.doctor import (
     validate_codex_work_state,
     validate_core_hashes,
     validate_guards_manifest,
+    validate_rules_manifest,
     validate_session_state,
     validate_target_provides,
 )
@@ -58,6 +59,29 @@ def test_validate_guards_manifest_rejects_count_mismatch() -> None:
     )
 
     assert "Guards manifest guard_count must equal guards length." in errors
+
+
+def test_validate_rules_manifest_rejects_count_mismatch() -> None:
+    ok: list[str] = []
+    errors: list[str] = []
+
+    validate_rules_manifest(
+        {
+            "schema_version": 1,
+            "selection_policy": {
+                "default_status": "active",
+                "raw_assets_selected": False,
+                "target": "codex-cli",
+                "profile": "codex",
+            },
+            "rule_count": 2,
+            "rules": [],
+        },
+        ok,
+        errors,
+    )
+
+    assert "Rules manifest rule_count must equal rules length." in errors
 
 
 def test_validate_session_state_rejects_legacy_shape(tmp_path: Path) -> None:
@@ -169,6 +193,7 @@ def test_validate_target_provides_accepts_codex_paths(tmp_path: Path) -> None:
         'skills = ".agents/skills"\n'
         'procedures = ".agents/logos/procedures"\n'
         'roles = ".agents/logos/roles"\n'
+        'rules = ".agents/logos/rules"\n'
         'config = ".codex/config.toml"\n'
         'hooks = ".codex/hooks.json"\n',
         'runner_bin = ".logos/bin/logos-runner.cmd"\n',
@@ -183,6 +208,7 @@ def test_validate_target_provides_accepts_codex_paths(tmp_path: Path) -> None:
     assert "target provides skills" in ok
     assert "target provides procedures" in ok
     assert "target provides roles" in ok
+    assert "target provides rules" in ok
     assert "target provides codex config" in ok
     assert "target provides hooks" in ok
     assert "target provides runner_bin" in ok
@@ -209,6 +235,7 @@ def test_validate_target_provides_rejects_wrong_codex_paths(tmp_path: Path) -> N
         'skills = "skills"\n'
         'procedures = ".agents/procedures"\n'
         'roles = ".agents/roles"\n'
+        'rules = ".agents/rules"\n'
         'config = ".codex/settings.json"\n'
         'hooks = ".codex/hooks.yml"\n',
         'runner_bin = "logos-runner"\n',
@@ -222,6 +249,7 @@ def test_validate_target_provides_rejects_wrong_codex_paths(tmp_path: Path) -> N
     assert "Target provides.skills must be .agents/skills." in errors
     assert "Target provides.procedures must be .agents/logos/procedures." in errors
     assert "Target provides.roles must be .agents/logos/roles." in errors
+    assert "Target provides.rules must be .agents/logos/rules." in errors
     assert "Target provides.config must be .codex/config.toml." in errors
     assert "Target provides.hooks must be .codex/hooks.json." in errors
     assert "Target provides.runner_bin must be .logos/bin/logos-runner.cmd." in errors

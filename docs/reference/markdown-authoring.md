@@ -55,7 +55,7 @@ Minimum fields:
 ```yaml
 ---
 id: logos.<kind>.<name>
-kind: <role|implementation-role|skill|command|rule|guard|workflow|procedure|reference|context|rubric|template|hook>
+kind: <role|implementation-role|skill|command|rule|guard|workflow|prompt|profile|procedure|reference|context|rubric|template|hook>
 name: <machine-readable-name>
 description: <short trigger-oriented description>
 status: draft
@@ -185,6 +185,10 @@ Do not put hard safety requirements only in `core/rules/`. If violating the
 policy could damage files, leak secrets, alter production data, or invalidate
 research results, it belongs in `core/guards/` and must eventually be enforced
 by code.
+
+Keep rule cards compact. A rule should be readable as a conditional policy
+snippet and should point to a `reference` asset for long examples. Use
+`always_apply`, `stages`, and `globs` to define when the rule is relevant.
 
 ## Progressive Disclosure
 

@@ -7,6 +7,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from logos_core.assets.loader import read_yaml_mapping
 from logos_core.assets.scanner import scan_core_assets
 from logos_core.assets.validate import load_asset, validate_paths
 from logos_core.session.state import validate_session_state_payload
@@ -54,6 +55,26 @@ CODEX_REQUIRED_PATHS = [
     ".agents/logos/roles/references/rv-details.md",
     ".agents/logos/roles/references/sec-details.md",
     ".agents/logos/roles/references/vf-details.md",
+    ".agents/logos/rules/README.md",
+    ".agents/logos/rules/rule-codes.yaml",
+    ".agents/logos/rules/command-execution.md",
+    ".agents/logos/rules/context-handoff.md",
+    ".agents/logos/rules/filesystem.md",
+    ".agents/logos/rules/git.md",
+    ".agents/logos/rules/security.md",
+    ".agents/logos/rules/secrets.md",
+    ".agents/logos/rules/testing.md",
+    ".agents/logos/rules/user-approval.md",
+    ".agents/logos/rules/verification.md",
+    ".agents/logos/rules/references/command-execution-details.md",
+    ".agents/logos/rules/references/context-handoff-details.md",
+    ".agents/logos/rules/references/filesystem-details.md",
+    ".agents/logos/rules/references/git-details.md",
+    ".agents/logos/rules/references/security-details.md",
+    ".agents/logos/rules/references/secrets-details.md",
+    ".agents/logos/rules/references/testing-details.md",
+    ".agents/logos/rules/references/user-approval-details.md",
+    ".agents/logos/rules/references/verification-details.md",
     ".codex/config.toml",
     ".codex/hooks.json",
     ".codex/hooks/pre_tool_use.py",
@@ -70,6 +91,7 @@ CODEX_REQUIRED_PATHS = [
     ".logos/generated/asset-manifest.json",
     ".logos/generated/asset-hashes.json",
     ".logos/generated/guards-manifest.json",
+    ".logos/generated/rules-manifest.json",
     ".logos/generated/prompt-assembly-manifest.json",
 ]
 
@@ -163,6 +185,31 @@ CODEX_REFERENCE_IDS = {
     ".agents/logos/roles/references/vf-details.md": "logos.reference.vf-details",
 }
 
+CODEX_RULE_IDS = {
+    ".agents/logos/rules/command-execution.md": "logos.rule.command-execution",
+    ".agents/logos/rules/context-handoff.md": "logos.rule.context-handoff",
+    ".agents/logos/rules/filesystem.md": "logos.rule.filesystem",
+    ".agents/logos/rules/git.md": "logos.rule.git",
+    ".agents/logos/rules/security.md": "logos.rule.security",
+    ".agents/logos/rules/secrets.md": "logos.rule.secrets",
+    ".agents/logos/rules/testing.md": "logos.rule.testing",
+    ".agents/logos/rules/user-approval.md": "logos.rule.user-approval",
+    ".agents/logos/rules/verification.md": "logos.rule.verification",
+}
+
+CODEX_RULE_REFERENCE_IDS = {
+    ".agents/logos/rules/README.md": "logos.reference.rules-overview",
+    ".agents/logos/rules/references/command-execution-details.md": "logos.reference.command-execution-details",
+    ".agents/logos/rules/references/context-handoff-details.md": "logos.reference.context-handoff-details",
+    ".agents/logos/rules/references/filesystem-details.md": "logos.reference.filesystem-details",
+    ".agents/logos/rules/references/git-details.md": "logos.reference.git-details",
+    ".agents/logos/rules/references/security-details.md": "logos.reference.security-details",
+    ".agents/logos/rules/references/secrets-details.md": "logos.reference.secrets-details",
+    ".agents/logos/rules/references/testing-details.md": "logos.reference.testing-details",
+    ".agents/logos/rules/references/user-approval-details.md": "logos.reference.user-approval-details",
+    ".agents/logos/rules/references/verification-details.md": "logos.reference.verification-details",
+}
+
 CODEX_RUNTIME_REQUIRED_DIRS = [
     ".logos/session",
     ".logos/bin",
@@ -248,6 +295,7 @@ def doctor_target(
         validate_codex_procedures(root, ok, errors)
         validate_codex_roles(root, ok, errors)
         validate_codex_references(root, ok, errors)
+        validate_codex_rules(root, ok, errors)
         validate_codex_target_profile(root, ok, errors)
         validate_codex_runtime_dirs(root, ok, errors)
         validate_codex_work_state(root, ok, warnings, errors)
@@ -293,6 +341,7 @@ def validate_target_provides(
                 "skills": ".agents/skills",
                 "procedures": ".agents/logos/procedures",
                 "roles": ".agents/logos/roles",
+                "rules": ".agents/logos/rules",
                 "config": ".codex/config.toml",
                 "hooks": ".codex/hooks.json",
                 "runner_bin": ".logos/bin/logos-runner.cmd",
@@ -812,6 +861,64 @@ def validate_codex_references(root: Path, ok: list[str], errors: list[str]) -> N
         ok.append("Codex reference frontmatter shape")
 
 
+def validate_codex_rules(root: Path, ok: list[str], errors: list[str]) -> None:
+    error_count = len(errors)
+    for relative, expected_id in CODEX_RULE_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != "rule":
+            errors.append(f"{relative}: kind must be rule.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+        if frontmatter.get("enforcement") != "soft":
+            errors.append(f"{relative}: enforcement must be soft.")
+        if not isinstance(frontmatter.get("stages"), list):
+            errors.append(f"{relative}: stages must be a list.")
+        if not isinstance(frontmatter.get("globs"), list):
+            errors.append(f"{relative}: globs must be a list.")
+
+    for relative, expected_id in CODEX_RULE_REFERENCE_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != "reference":
+            errors.append(f"{relative}: kind must be reference.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+
+    rule_codes = root / ".agents/logos/rules/rule-codes.yaml"
+    if rule_codes.exists():
+        loaded = read_yaml_mapping(rule_codes.read_text(encoding="utf-8"))
+        if loaded.get("id") != "logos.reference.rule-codes":
+            errors.append(".agents/logos/rules/rule-codes.yaml: id must be logos.reference.rule-codes.")
+        if loaded.get("kind") != "reference":
+            errors.append(".agents/logos/rules/rule-codes.yaml: kind must be reference.")
+        if loaded.get("status") != "active":
+            errors.append(".agents/logos/rules/rule-codes.yaml: status must be active.")
+        if not isinstance(loaded.get("rules"), list):
+            errors.append(".agents/logos/rules/rule-codes.yaml: rules must be a list.")
+
+    if len(errors) == error_count:
+        ok.append("Codex rule frontmatter shape")
+
+
 def validate_codex_target_profile(root: Path, ok: list[str], errors: list[str]) -> None:
     validate_toml_value(
         root / ".logos/target.toml",
@@ -969,6 +1076,7 @@ def validate_core_manifests(
     asset_manifest = load_json_manifest(root / ".logos/generated/asset-manifest.json", errors)
     hash_manifest = load_json_manifest(root / ".logos/generated/asset-hashes.json", errors)
     guards_manifest = load_json_manifest(root / ".logos/generated/guards-manifest.json", errors)
+    rules_manifest = load_json_manifest(root / ".logos/generated/rules-manifest.json", errors)
 
     if isinstance(asset_manifest, dict):
         validate_asset_manifest(asset_manifest, ok, errors)
@@ -978,6 +1086,8 @@ def validate_core_manifests(
 
     if isinstance(guards_manifest, dict):
         validate_guards_manifest(guards_manifest, ok, errors)
+    if isinstance(rules_manifest, dict):
+        validate_rules_manifest(rules_manifest, ok, errors)
 
 
 def validate_prompt_assembly(
@@ -1136,6 +1246,52 @@ def validate_guard_entry(item: dict[str, object], errors: list[str]) -> None:
             errors.append(f"Frontmatter guard must use hard enforcement: {item.get('path')}")
         if not isinstance(item.get("enforcement_status"), str):
             errors.append(f"Frontmatter guard requires enforcement_status: {item.get('path')}")
+
+
+def validate_rules_manifest(
+    manifest: dict[str, object],
+    ok: list[str],
+    errors: list[str],
+) -> None:
+    require_int(manifest, "schema_version", errors)
+    rule_count = require_int(manifest, "rule_count", errors)
+    validate_selection_policy(manifest.get("selection_policy"), errors)
+
+    rules = manifest.get("rules")
+    if not isinstance(rules, list):
+        errors.append("Rules manifest must contain rules list.")
+        return
+    if rule_count is not None and rule_count != len(rules):
+        errors.append("Rules manifest rule_count must equal rules length.")
+
+    for item in rules:
+        if not isinstance(item, dict):
+            errors.append("Rule manifest entries must be JSON objects.")
+            continue
+        validate_rule_entry(item, errors)
+    ok.append("rules manifest shape")
+
+
+def validate_rule_entry(item: dict[str, object], errors: list[str]) -> None:
+    for field in ("id", "path", "installed_path", "status", "sha256"):
+        require_str(item, field, errors)
+    for field in ("selected", "has_frontmatter"):
+        if not isinstance(item.get(field), bool):
+            errors.append(f"Rule manifest entries require boolean {field}.")
+    value = item.get("sha256")
+    if isinstance(value, str) and not is_sha256(value):
+        errors.append(f"Rule manifest entry has invalid sha256: {item.get('path')}")
+    if item.get("has_frontmatter") is True:
+        if item.get("enforcement") != "soft":
+            errors.append(f"Frontmatter rule must use soft enforcement: {item.get('path')}")
+        if not isinstance(item.get("stages"), list):
+            errors.append(f"Frontmatter rule requires stages list: {item.get('path')}")
+        if not isinstance(item.get("globs"), list):
+            errors.append(f"Frontmatter rule requires globs list: {item.get('path')}")
+        detail = item.get("detail_reference")
+        installed_detail = item.get("detail_installed_path")
+        if isinstance(detail, str) and detail and not isinstance(installed_detail, str):
+            errors.append(f"Frontmatter rule detail reference requires installed path: {item.get('path')}")
 
 
 def validate_core_hashes(

@@ -75,6 +75,21 @@ ROLE_SOURCE_MAP = {
 }
 
 
+def core_rules_source_map(source_root: Path) -> dict[str, str]:
+    rules_root = source_root / "core" / "rules"
+    if not rules_root.exists():
+        return {}
+
+    result: dict[str, str] = {}
+    for source in sorted(rules_root.rglob("*")):
+        if not source.is_file() or source.suffix.lower() not in {".md", ".yaml", ".yml"}:
+            continue
+        relative = source.relative_to(source_root).as_posix()
+        destination = Path(".agents/logos/rules") / source.relative_to(rules_root)
+        result[relative] = destination.as_posix()
+    return result
+
+
 def all_rendered_files(
     root: Path,
     template_base: Path | None = None,
@@ -101,6 +116,7 @@ def all_rendered_files(
         for template, destination in template_map.items()
     ]
     rendered.extend(render_role_sources(source_root, target))
+    rendered.extend(render_rule_sources(source_root))
     return rendered
 
 
@@ -114,6 +130,14 @@ def render_template(path: Path, context: dict[str, str]) -> str:
 def render_role_sources(source_root: Path, target: str) -> list[RenderedFile]:
     rendered: list[RenderedFile] = []
     for source, destination in ROLE_SOURCE_MAP[target].items():
+        content = (source_root / source).read_text(encoding="utf-8")
+        rendered.append(RenderedFile(Path(destination), content))
+    return rendered
+
+
+def render_rule_sources(source_root: Path) -> list[RenderedFile]:
+    rendered: list[RenderedFile] = []
+    for source, destination in core_rules_source_map(source_root).items():
         content = (source_root / source).read_text(encoding="utf-8")
         rendered.append(RenderedFile(Path(destination), content))
     return rendered

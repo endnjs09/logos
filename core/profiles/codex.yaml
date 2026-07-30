@@ -1,3 +1,9 @@
+id: logos.profile.codex
+kind: profile
+name: codex
+description: Default Logos profile for Codex CLI target installation and execution.
+status: active
+version: 0.1.0
 schema_version: 1
 host: codex
 role: baseline

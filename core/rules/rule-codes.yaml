@@ -1,0 +1,52 @@
+id: logos.reference.rule-codes
+kind: reference
+name: rule-codes
+description: Index of canonical Logos rule ids and conditional matching hints.
+status: active
+version: 0.1.0
+rules:
+  - id: logos.rule.command-execution
+    default_injection: conditional
+    stages: [execute, verify]
+    related_guards:
+      - logos.guard.dangerous-command-denylist
+      - logos.guard.approval-gate
+  - id: logos.rule.context-handoff
+    default_injection: conditional
+    stages: [planning, execute, resume]
+    related_context:
+      - logos.context.handoff
+  - id: logos.rule.filesystem
+    default_injection: conditional
+    stages: [exploration, planning, execute, verify]
+    related_guards:
+      - logos.guard.file-write-boundary
+  - id: logos.rule.git
+    default_injection: conditional
+    stages: [exploration, execute, verify]
+    related_guards:
+      - logos.guard.protected-branch-guard
+      - logos.guard.working-tree-checkpoint
+  - id: logos.rule.security
+    default_injection: conditional
+    stages: [intake, spec, planning, execute, review, verify]
+    related_guards:
+      - logos.guard.high-risk-override-block
+      - logos.guard.secret-scan
+  - id: logos.rule.secrets
+    default_injection: conditional
+    stages: [intake, planning, execute, review, verify]
+    related_guards:
+      - logos.guard.secret-scan
+  - id: logos.rule.testing
+    default_injection: conditional
+    stages: [planning, execute, verify]
+  - id: logos.rule.user-approval
+    default_injection: conditional
+    stages: [intake, planning, execute, review]
+    related_guards:
+      - logos.guard.approval-gate
+      - logos.guard.high-risk-override-block
+  - id: logos.rule.verification
+    default_injection: conditional
+    stages: [planning, execute, verify, review]

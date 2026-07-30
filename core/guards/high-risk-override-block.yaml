@@ -1,0 +1,30 @@
+id: logos.guard.high-risk-override-block
+kind: guard
+name: high-risk-override-block
+description: Blocks user or model overrides that would weaken critical safety, data, auth, billing, or production safeguards.
+status: active
+version: 0.1.0
+enforcement: hard
+enforcement_status: policy-only
+decision: allow_block
+risk_level: high
+severity: 3
+targets: [codex-cli]
+surfaces: [intake, plan_review, runner_execute, verification]
+inputs:
+  - user_override_request
+  - task_plan.risk_notes
+  - excluded_scope
+  - guard_decisions
+outputs:
+  - guard-result
+schemas:
+  - schemas/guard-result.schema.json
+detail_reference: core/guards/references/high-risk-override-block-details.md
+policy:
+  allow_when:
+    - Override narrows scope or chooses a safer implementation path.
+  block_when:
+    - Override weakens authentication, authorization, payment integrity, secret handling, data deletion safeguards, database migration safety, or production deployment controls.
+    - Override asks Logos to ignore a verified hard guard.
+  escalation: return_to_clarification_or_plan_review

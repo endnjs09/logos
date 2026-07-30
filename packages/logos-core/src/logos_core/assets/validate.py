@@ -20,6 +20,8 @@ ALLOWED_KINDS = {
     "rule",
     "guard",
     "workflow",
+    "prompt",
+    "profile",
     "procedure",
     "reference",
     "context",
@@ -128,8 +130,7 @@ def validate_frontmatter(asset: Asset) -> list[ValidationIssue]:
     if kind == "guard":
         issues.extend(validate_guard(asset))
     elif kind == "rule":
-        if fm.get("enforcement") == "hard":
-            issues.append(ValidationIssue(asset.path, "rule assets must not use enforcement: hard"))
+        issues.extend(validate_rule(asset))
 
     if kind == "hook":
         issues.extend(validate_hook(asset))
@@ -170,6 +171,26 @@ def validate_guard(asset: Asset) -> list[ValidationIssue]:
         issues.append(
             ValidationIssue(asset.path, "low-risk severity 3 guards require a rationale")
         )
+
+    return issues
+
+
+def validate_rule(asset: Asset) -> list[ValidationIssue]:
+    fm = asset.frontmatter
+    issues: list[ValidationIssue] = []
+
+    if fm.get("enforcement") != "soft":
+        issues.append(ValidationIssue(asset.path, "rule assets must use enforcement: soft"))
+    if "stages" not in fm:
+        issues.append(ValidationIssue(asset.path, "rule assets require stages"))
+    elif not isinstance(fm.get("stages"), list):
+        issues.append(ValidationIssue(asset.path, "rule assets require stages list"))
+    if "globs" not in fm:
+        issues.append(ValidationIssue(asset.path, "rule assets require globs"))
+    elif not isinstance(fm.get("globs"), list):
+        issues.append(ValidationIssue(asset.path, "rule assets require globs list"))
+    if "always_apply" in fm and not isinstance(fm.get("always_apply"), bool):
+        issues.append(ValidationIssue(asset.path, "rule assets require boolean always_apply"))
 
     return issues
 

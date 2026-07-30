@@ -13,14 +13,6 @@ MINIMAL_ASSEMBLY_PATHS = {
     "prompts/base-system.md",
     "prompts/response-style.md",
     "prompts/target-adapter.md",
-    "rules/verification.md",
-    "rules/context-handoff.md",
-    "rules/user-approval.md",
-    "rules/command-execution.md",
-    "rules/filesystem.md",
-    "rules/git.md",
-    "rules/secrets.md",
-    "rules/security.md",
 }
 
 WORKFLOW_SUPPORT_PATHS = {

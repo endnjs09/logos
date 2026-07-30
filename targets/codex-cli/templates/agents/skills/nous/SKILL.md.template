@@ -83,6 +83,10 @@ Run the default Logos coding workflow for Codex in this repository.
 - `.agents/logos/roles/references/*-details.md` only when a loaded role card
   explicitly points to that reference and the compact role card is insufficient
   for the current decision.
+- `.agents/logos/rules/*.md` and `.agents/logos/rules/references/*-details.md`
+  only when Runner stage prompts or uncertainty point to a specific soft rule.
+  Use `.logos/generated/rules-manifest.json` as the rule index; do not load the
+  whole rule library by default.
 
 ## Procedure
 
@@ -182,6 +186,9 @@ artifacts with a Codex-only `Updated Plan`.
   references, not default context. Read them only when the active role card
   points to the reference and a specific ambiguity, risk, verification issue,
   or recovery task requires more detail.
+- Treat `.agents/logos/rules/` as installed soft policy. Runner decides which
+  rule pointers are relevant for the current stage; read only those rule cards
+  and only open detail references when the compact card is not enough.
 
 ## Complexity Handling
 

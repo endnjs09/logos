@@ -5,6 +5,7 @@ from pathlib import Path
 from logos_runner.paths import RunnerPaths
 from logos_runner.state.store import PlanStore
 from logos_runner.stages.registry import STAGE_REGISTRY, StageDefinition
+from logos_runner.stages.rule_selection import format_relevant_rules
 
 ROOT_OFFICIAL_OUTPUTS = {
     "spec.json",
@@ -98,6 +99,12 @@ def build_stage_prompt(project_root: Path, plan_id: str, stage: StageDefinition)
             "",
             "\n".join(f"- `{_artifact_display_path(plan_id, _artifact_path(store, plan_id, name))}`" for name in required_inputs)
             or "- `request.json` only",
+            "",
+            "## Relevant Soft Rules",
+            "",
+            format_relevant_rules(project_root, stage_name=stage.name),
+            "",
+            "Read rule detail references only when the compact rule pointer is not enough for this stage decision.",
             "",
             "## Clarification Artifacts",
             "",

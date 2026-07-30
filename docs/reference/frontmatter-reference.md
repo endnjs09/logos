@@ -95,6 +95,8 @@ command
 rule
 guard
 workflow
+prompt
+profile
 procedure
 reference
 context
@@ -471,26 +473,40 @@ description: Requires explicit user confirmation before risky or ambiguous work 
 status: draft
 version: 0.1.0
 enforcement: soft
+always_apply: false
+stages:
+  - planning
+  - execute
+globs: []
 triggers:
   - risky or ambiguous work
 do_not_trigger_when:
   - no action is being taken
 related_guards:
   - logos.guard.approval-gate
+detail_reference: core/rules/references/user-approval-details.md
 ---
 ```
 
-Required rule-specific field:
+Required rule-specific fields:
 
 - `enforcement: soft`
+- `always_apply`
+- `stages`
+- `globs`
 
 Optional fields:
 
-- `globs`
 - `applies_to`
 - `triggers`
 - `do_not_trigger_when`
 - `related_guards`
+- `detail_reference`
+
+Rules are soft, conditional instruction assets. Do not assemble every rule body
+into default target instructions. Use `always_apply: true` only for short rules
+that must guide every Logos coding task. Use `stages` and `globs` to support
+conditional rule selection by Runner or hooks.
 
 ## Guard Fields
 

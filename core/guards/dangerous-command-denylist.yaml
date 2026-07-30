@@ -1,0 +1,37 @@
+id: logos.guard.dangerous-command-denylist
+kind: guard
+name: dangerous-command-denylist
+description: Routes destructive, irreversible, external, or ambiguous shell commands to approval or block.
+status: active
+version: 0.2.0
+enforcement: hard
+enforcement_status: implemented
+decision: allow_block_ask
+risk_level: high
+severity: 3
+targets: [codex-cli]
+surfaces: [pre_tool_use, permission_request]
+inputs:
+  - hook_event.command
+  - hook_event.tool_name
+  - command_segments
+outputs:
+  - guard-result
+schemas:
+  - schemas/guard-result.schema.json
+runtime_modules:
+  - logos_core.guards.dangerous_command
+  - targets/codex-cli/templates/codex/hooks/pre_tool_use.py.template
+detail_reference: core/guards/references/dangerous-command-denylist-details.md
+policy:
+  allow_when:
+    - Command is read-only or local verification.
+    - Command mutates only planned local build/test artifacts.
+  ask_when:
+    - Command changes git history, branch state, dependencies, network state, or local filesystem broadly.
+    - Compound command includes an unclear mutating segment.
+  block_when:
+    - Command discards tracked work irreversibly.
+    - Command performs broad recursive deletion without a verified narrow target.
+    - Command fetches and executes remote code in one flow.
+  resolution: most_restrictive

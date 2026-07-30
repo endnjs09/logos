@@ -1,2 +1,34 @@
-# File write boundary guard.
-
+id: logos.guard.file-write-boundary
+kind: guard
+name: file-write-boundary
+description: Detects writes outside the approved task plan and routes deviations back to planning or review.
+status: active
+version: 0.2.0
+enforcement: hard
+enforcement_status: implemented
+decision: allow_block_ask
+risk_level: high
+severity: 3
+targets: [codex-cli]
+surfaces: [runner_execute, post_tool_use, verification]
+inputs:
+  - task_plan.target_files
+  - context_handoff.allowed_write_paths
+  - observed_touched_files
+outputs:
+  - guard-result
+  - execution-deviation
+schemas:
+  - schemas/guard-result.schema.json
+runtime_modules:
+  - logos_runner.stages
+  - logos_core.work_state.runs
+detail_reference: core/guards/references/file-write-boundary-details.md
+policy:
+  allow_when:
+    - Touched file is listed in target_files or allowed_write_paths.
+  ask_when:
+    - New file is adjacent to an approved target and needed for implementation.
+  block_when:
+    - Write escapes the workspace, generated target, excluded scope, or approved plan boundary.
+  current_behavior: record_and_fail_review_when_out_of_scope

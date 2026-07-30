@@ -1,0 +1,35 @@
+id: logos.guard.protected-branch-guard
+kind: guard
+name: protected-branch-guard
+description: Protects mainline branches from direct destructive git mutation.
+status: active
+version: 0.2.0
+enforcement: hard
+enforcement_status: implemented
+decision: allow_block_ask
+risk_level: high
+severity: 3
+targets: [codex-cli]
+surfaces: [pre_tool_use]
+inputs:
+  - hook_event.command
+  - git.current_branch
+  - git.protected_branch_patterns
+outputs:
+  - guard-result
+schemas:
+  - schemas/guard-result.schema.json
+runtime_modules:
+  - logos_core.guards.protected_branch
+  - targets/codex-cli/templates/codex/hooks/pre_tool_use.py.template
+depends_on:
+  - logos.guard.dangerous-command-denylist
+detail_reference: core/guards/references/protected-branch-guard-details.md
+policy:
+  allow_when:
+    - Git command is read-only.
+    - Mutating git command targets a non-protected feature branch.
+  ask_when:
+    - Command pushes, commits, tags, or changes branch state on a protected branch.
+  block_when:
+    - Command force-pushes, hard-resets, deletes, or rewrites protected branch history.

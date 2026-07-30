@@ -2,22 +2,32 @@
 id: logos.rule.context-handoff
 kind: rule
 name: context-handoff
-description: Keep implementation context scoped and sufficient.
+description: Applies when passing compact task context between Logos stages or roles.
 status: active
-version: 0.1.0
-targets:
-  - codex-cli
-  - codex-cli
-profiles:
-  - codex
-  - codex
-applies_to:
-  - nous
-depends_on: []
+version: 0.2.0
+enforcement: soft
+always_apply: false
+stages: [planning, execute, resume]
+globs:
+  - ".logos/plans/**/context-handoff.json"
+  - ".logos/memory/**"
+related_context:
+  - logos.context.handoff
+detail_reference: core/rules/references/context-handoff-details.md
 ---
 
-# Context Handoff Rule
+# Context Handoff
 
-Execution should receive the smallest sufficient context, not the full planning
-history. Preserve the user goal, target files, constraints, excluded scope,
-known risks, and verification plan.
+## Rule
+Pass the smallest sufficient context to the next stage or role.
+
+## Must
+- Include goal, success criteria, target files, excluded scope, risks, and verification plan.
+- Preserve confirmed decisions separately from unresolved questions.
+
+## Must Not
+- Copy full transcripts or unrelated evidence into handoff payloads.
+- Hide blocking unknowns as assumptions.
+
+## Details
+See `core/rules/references/context-handoff-details.md`.

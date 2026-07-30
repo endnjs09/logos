@@ -2,24 +2,39 @@
 id: logos.rule.security
 kind: rule
 name: security
-description: Preserve security boundaries while performing coding tasks.
+description: Applies when authentication, authorization, validation, payment, data safety, or production-like behavior may change.
 status: active
-version: 0.1.0
-targets:
-  - codex-cli
-  - codex-cli
-profiles:
-  - codex
-  - codex
-applies_to:
-  - nous
-depends_on:
-  - logos.rule.secrets
-  - logos.rule.user-approval
+version: 0.2.0
+enforcement: soft
+always_apply: false
+stages: [intake, spec, planning, execute, review, verify]
+globs:
+  - "**/*Security*"
+  - "**/*Auth*"
+  - "**/*Jwt*"
+  - "**/*OAuth*"
+  - "**/*Payment*"
+  - "**/*Permission*"
+related_guards:
+  - logos.guard.high-risk-override-block
+  - logos.guard.secret-scan
+  - logos.guard.approval-gate
+detail_reference: core/rules/references/security-details.md
 ---
 
-# Security Rule
+# Security
 
-Do not weaken authentication, authorization, validation, audit logging, or data
-protection to make an implementation easier. Escalate security-sensitive
-ambiguity to the user instead of guessing.
+## Rule
+Preserve security boundaries while implementing requested behavior.
+
+## Must
+- Ask blocking policy questions for auth, authorization, payment, and data safety.
+- Keep secure defaults when project evidence is missing.
+- Route sensitive changes through security review.
+
+## Must Not
+- Weaken validation, authentication, authorization, or auditability to make code pass.
+- Treat user impatience as permission to bypass high-risk guardrails.
+
+## Details
+See `core/rules/references/security-details.md`.

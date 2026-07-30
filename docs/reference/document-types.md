@@ -14,6 +14,8 @@ required structure.
 | `rule` | `core/rules/` | Soft model instruction |
 | `guard` | `core/guards/` | Hard runtime policy |
 | `workflow` | `core/workflows/` | State transition and task lifecycle |
+| `prompt` | `core/prompts/` | Shared prompt text or response-shape source |
+| `profile` | `core/profiles/` | Target/model execution profile |
 | `procedure` | `.agents/logos/procedures/`, `docs/procedures/` | Installed step-level operating procedure |
 | `reference` | `core/**/references/`, `.agents/**/references/` | Optional detail material reached through an explicit pointer |
 | `context` | `core/context/` | Memory, handoff, compression, and evidence context policy |
@@ -132,17 +134,15 @@ Use for soft model instructions.
 
 Required sections:
 
-- `Rule Statement`
-- `Rationale`
-- `Applies To`
+- `Rule`
 - `Must`
 - `Must Not`
-- `Exceptions`
-- `Enforcement`
-- `Related Guards`
-- `Examples`
+- `Details`
 
 Rules may influence model behavior, but they do not guarantee enforcement.
+Rule frontmatter must include `enforcement: soft`, `always_apply`, `stages`, and
+`globs` so tools can select rules conditionally instead of injecting the whole
+rule library.
 
 ## Guard
 
@@ -191,6 +191,22 @@ Required sections:
 - `Failure Handling`
 
 When a workflow waits for user input, define the waiting state explicitly.
+
+## Prompt
+
+Use for shared prompt source or response-shape text that is assembled into a
+target instruction only through an explicit template or assembler path.
+
+Prompt assets should stay small and should not duplicate role, procedure, rule,
+or guard content.
+
+## Profile
+
+Use for target or model execution profiles such as Codex defaults, benchmark
+profiles, and experiment variants.
+
+Profiles define selection context. They should not contain full role,
+procedure, rule, or guard instructions.
 
 ## Procedure
 

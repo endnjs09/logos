@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from logos_runner.paths import RunnerPaths
+from logos_runner.stages.rule_selection import format_relevant_rules
 
 
 def build_executor_prompt(project_root: Path, plan_id: str) -> str:
@@ -64,6 +65,16 @@ def build_executor_prompt(project_root: Path, plan_id: str) -> str:
             _format_list(verification_plan),
             "- Excluded scope:",
             _format_list(excluded_scope),
+            "",
+            "## Relevant Soft Rules",
+            "",
+            format_relevant_rules(
+                project_root,
+                stage_name="execute",
+                paths=[str(item) for item in target_files if isinstance(item, str)],
+            ),
+            "",
+            "Read rule detail references only when the compact rule pointer is not enough for the execution decision.",
             "",
             "## Required Final JSON",
             "",
