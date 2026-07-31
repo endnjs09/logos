@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from logos_runner.paths import RunnerPaths
+from logos_runner.stages.prompt_contracts import format_prompt_contracts
 from logos_runner.stages.rule_selection import format_relevant_rules
 
 
@@ -16,6 +17,14 @@ def build_executor_prompt(project_root: Path, plan_id: str) -> str:
     verification_plan = task_plan.get("verification_plan", [])
     excluded_scope = task_plan.get("excluded_scope", [])
     role_routing = task_plan.get("role_routing", [])
+    prompt_contracts = format_prompt_contracts(
+        project_root,
+        [
+            "worker-envelope.md",
+            "json-result-contract.md",
+            "evidence-contract.md",
+        ],
+    )
 
     return "\n".join(
         [
@@ -36,6 +45,10 @@ def build_executor_prompt(project_root: Path, plan_id: str) -> str:
             "",
             "## Execution Boundary",
             "",
+            prompt_contracts,
+            "",
+            "## Stage-Specific Boundary",
+            "",
             "- Execute only the approved task plan.",
             "- Treat `task-plan.json` as the highest-priority execution contract.",
             "- Use `context-handoff.json` as the compact handoff for implementation.",
@@ -48,9 +61,6 @@ def build_executor_prompt(project_root: Path, plan_id: str) -> str:
             "- Do not invent secrets, credentials, tokens, URLs, API keys, or production values.",
             "- Use placeholder names for missing external values and explain them in verification notes.",
             "- Preserve existing project style and patterns.",
-            "- Persisted Logos artifacts are English-only.",
-            "- Translate or summarize user-provided text into English before writing official JSON fields.",
-            "- Escape JSON strings correctly; invalid JSON blocks the stage gate.",
             "",
             "## Task Plan Summary",
             "",
@@ -78,8 +88,6 @@ def build_executor_prompt(project_root: Path, plan_id: str) -> str:
             "",
             "## Required Final JSON",
             "",
-            "Return one JSON object only. Do not wrap it in Markdown fences.",
-            "Write all string values in English.",
             "Include these keys:",
             "",
             "- `schema_version`",

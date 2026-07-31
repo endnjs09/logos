@@ -8,7 +8,9 @@ when assembled into host prompts.
 Logos instruction assets should be layered from stable to specific:
 
 ```text
-core/prompts/base-system
+core/prompts/worker-envelope
+  -> core/prompts/json-result-contract
+  -> core/prompts/evidence-contract
   -> core/rules
   -> core/workflows
   -> core/roles

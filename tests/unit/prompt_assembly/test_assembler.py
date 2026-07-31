@@ -6,9 +6,9 @@ from logos_core.prompt_assembly.assembler import assemble_prompt_bundle
 
 def test_assembles_minimal_active_assets(tmp_path: Path) -> None:
     write_asset(
-        tmp_path / "core" / "prompts" / "base-system.md",
-        "logos.template.base-system",
-        "template",
+        tmp_path / "core" / "prompts" / "worker-envelope.md",
+        "logos.prompt.worker-envelope",
+        "prompt",
         "# Base\n\nUse Logos.",
     )
     write_asset(

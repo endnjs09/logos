@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from logos_runner.paths import RunnerPaths
+from logos_runner.stages.prompt_contracts import format_prompt_contracts
 from logos_runner.stages.rule_selection import format_relevant_rules
 
 
@@ -13,6 +14,14 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
     task_plan = _read_json(plan_dir / "task-plan.json")
     execution = _read_json(plan_dir / "execution-result.json")
     spec = _read_json(plan_dir / "spec.json")
+    prompt_contracts = format_prompt_contracts(
+        project_root,
+        [
+            "worker-envelope.md",
+            "json-result-contract.md",
+            "evidence-contract.md",
+        ],
+    )
 
     return "\n".join(
         [
@@ -33,6 +42,10 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
             "",
             "## Verification Boundary",
             "",
+            prompt_contracts,
+            "",
+            "## Stage-Specific Boundary",
+            "",
             "- Verify only the completed implementation.",
             "- Do not modify files.",
             "- Do not directly create or edit `.logos/plans/<plan_id>/verification-result.json`.",
@@ -43,9 +56,6 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
             "- If tests cannot run, inspect diffs or record why checks were skipped.",
             "- Do not introduce new requirements.",
             "- Do not expand implementation scope.",
-            "- Persisted Logos artifacts are English-only.",
-            "- Translate or summarize user-provided text into English before writing official JSON fields.",
-            "- Escape JSON strings correctly; invalid JSON blocks the stage gate.",
             "",
             "## Comparison Summary",
             "",
@@ -82,8 +92,6 @@ def build_verification_prompt(project_root: Path, plan_id: str) -> str:
             "",
             "## Required Final JSON",
             "",
-            "Return one JSON object only. Do not wrap it in Markdown fences.",
-            "Write all string values in English.",
             "Include these keys:",
             "",
             "- `schema_version`",

@@ -55,6 +55,12 @@ CODEX_REQUIRED_PATHS = [
     ".agents/logos/roles/references/rv-details.md",
     ".agents/logos/roles/references/sec-details.md",
     ".agents/logos/roles/references/vf-details.md",
+    ".agents/logos/prompts/README.md",
+    ".agents/logos/prompts/worker-envelope.md",
+    ".agents/logos/prompts/json-result-contract.md",
+    ".agents/logos/prompts/evidence-contract.md",
+    ".agents/logos/prompts/user-response-contract.md",
+    ".agents/logos/prompts/references/prompt-assembly-details.md",
     ".agents/logos/rules/README.md",
     ".agents/logos/rules/rule-codes.yaml",
     ".agents/logos/rules/command-execution.md",
@@ -210,6 +216,18 @@ CODEX_RULE_REFERENCE_IDS = {
     ".agents/logos/rules/references/verification-details.md": "logos.reference.verification-details",
 }
 
+CODEX_PROMPT_IDS = {
+    ".agents/logos/prompts/worker-envelope.md": "logos.prompt.worker-envelope",
+    ".agents/logos/prompts/json-result-contract.md": "logos.prompt.json-result-contract",
+    ".agents/logos/prompts/evidence-contract.md": "logos.prompt.evidence-contract",
+    ".agents/logos/prompts/user-response-contract.md": "logos.prompt.user-response-contract",
+}
+
+CODEX_PROMPT_REFERENCE_IDS = {
+    ".agents/logos/prompts/README.md": "logos.reference.prompts-overview",
+    ".agents/logos/prompts/references/prompt-assembly-details.md": "logos.reference.prompt-assembly-details",
+}
+
 CODEX_RUNTIME_REQUIRED_DIRS = [
     ".logos/session",
     ".logos/bin",
@@ -296,6 +314,7 @@ def doctor_target(
         validate_codex_roles(root, ok, errors)
         validate_codex_references(root, ok, errors)
         validate_codex_rules(root, ok, errors)
+        validate_codex_prompts(root, ok, errors)
         validate_codex_target_profile(root, ok, errors)
         validate_codex_runtime_dirs(root, ok, errors)
         validate_codex_work_state(root, ok, warnings, errors)
@@ -342,6 +361,7 @@ def validate_target_provides(
                 "procedures": ".agents/logos/procedures",
                 "roles": ".agents/logos/roles",
                 "rules": ".agents/logos/rules",
+                "prompts": ".agents/logos/prompts",
                 "config": ".codex/config.toml",
                 "hooks": ".codex/hooks.json",
                 "runner_bin": ".logos/bin/logos-runner.cmd",
@@ -919,6 +939,52 @@ def validate_codex_rules(root: Path, ok: list[str], errors: list[str]) -> None:
 
     if len(errors) == error_count:
         ok.append("Codex rule frontmatter shape")
+
+
+def validate_codex_prompts(root: Path, ok: list[str], errors: list[str]) -> None:
+    error_count = len(errors)
+    for relative, expected_id in CODEX_PROMPT_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != "prompt":
+            errors.append(f"{relative}: kind must be prompt.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+        outputs = frontmatter.get("outputs")
+        if not isinstance(outputs, list) or not outputs:
+            errors.append(f"{relative}: prompt must declare outputs.")
+
+    for relative, expected_id in CODEX_PROMPT_REFERENCE_IDS.items():
+        path = root / relative
+        if not path.exists():
+            continue
+        asset, issues = load_asset(path)
+        for issue in issues:
+            errors.append(f"{relative}: {issue.message}")
+        if asset is None:
+            continue
+        frontmatter = asset.frontmatter
+        if frontmatter.get("id") != expected_id:
+            errors.append(f"{relative}: id must be {expected_id}.")
+        if frontmatter.get("kind") != "reference":
+            errors.append(f"{relative}: kind must be reference.")
+        if frontmatter.get("status") != "active":
+            errors.append(f"{relative}: status must be active.")
+        applies_to = frontmatter.get("applies_to")
+        if not isinstance(applies_to, list) or not applies_to:
+            errors.append(f"{relative}: reference must declare applies_to.")
+
+    if len(errors) == error_count:
+        ok.append("Codex prompt frontmatter shape")
 
 
 def validate_codex_target_profile(root: Path, ok: list[str], errors: list[str]) -> None:

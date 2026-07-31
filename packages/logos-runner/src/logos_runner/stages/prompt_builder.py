@@ -4,6 +4,7 @@ from pathlib import Path
 
 from logos_runner.paths import RunnerPaths
 from logos_runner.state.store import PlanStore
+from logos_runner.stages.prompt_contracts import format_prompt_contracts
 from logos_runner.stages.registry import STAGE_REGISTRY, StageDefinition
 from logos_runner.stages.rule_selection import format_relevant_rules
 
@@ -29,6 +30,14 @@ def build_stage_prompt(project_root: Path, plan_id: str, stage: StageDefinition)
     request = _read_optional(plan_dir / "request.json")
     procedure = _read_optional(paths.procedures_dir / stage.procedure)
     role = _read_optional(paths.roles_dir / f"{stage.role}.md")
+    prompt_contracts = format_prompt_contracts(
+        project_root,
+        [
+            "worker-envelope.md",
+            "json-result-contract.md",
+            "evidence-contract.md",
+        ],
+    )
 
     previous_artifacts = [
         "scan-result.json",
@@ -59,6 +68,10 @@ def build_stage_prompt(project_root: Path, plan_id: str, stage: StageDefinition)
             "",
             "## Operating Boundary",
             "",
+            prompt_contracts,
+            "",
+            "## Stage-Specific Boundary",
+            "",
             "- Perform only this stage.",
             "- Do not write files unless this stage explicitly requires implementation edits.",
             "- Return the stage result in the final response.",
@@ -68,14 +81,8 @@ def build_stage_prompt(project_root: Path, plan_id: str, stage: StageDefinition)
             "- Do not proceed to later stages.",
             "- If required information is missing, record the blocker instead of guessing.",
             "- Read the compact role directive first; do not load role detail references unless the role directive explicitly points to one and this stage needs it.",
-            "- Final response must be one JSON object only.",
-            "- Do not wrap the JSON in Markdown fences.",
-            "- Do not add prose before or after the JSON.",
             "- Include every required field for this stage.",
-            "- Persisted Logos artifacts are English-only.",
-            "- Translate or summarize user-provided text into English before writing official JSON fields.",
             "- Preserve original user wording only in raw user-answer records, not in official stage result JSON.",
-            "- Escape JSON strings correctly; invalid JSON blocks the stage gate.",
             "",
             "## Required JSON Fields",
             "",

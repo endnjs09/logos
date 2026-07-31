@@ -24,6 +24,7 @@ CODEX_RUNTIME_DIRS = [
     ".agents/logos/procedures",
     ".agents/logos/roles",
     ".agents/logos/rules",
+    ".agents/logos/prompts",
     ".logos/session",
     ".logos/plans",
     ".logos/runs",

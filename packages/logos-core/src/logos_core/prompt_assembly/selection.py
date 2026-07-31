@@ -10,9 +10,10 @@ from logos_core.prompt_assembly.model import AssemblySource
 
 
 MINIMAL_ASSEMBLY_PATHS = {
-    "prompts/base-system.md",
-    "prompts/response-style.md",
-    "prompts/target-adapter.md",
+    "prompts/worker-envelope.md",
+    "prompts/json-result-contract.md",
+    "prompts/evidence-contract.md",
+    "prompts/user-response-contract.md",
 }
 
 WORKFLOW_SUPPORT_PATHS = {

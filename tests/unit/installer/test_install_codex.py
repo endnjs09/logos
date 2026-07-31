@@ -33,6 +33,10 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert (project_root / ".agents/logos/roles/orch.md").exists()
     assert (project_root / ".agents/logos/roles/sp.md").exists()
     assert (project_root / ".agents/logos/roles/bd.md").exists()
+    assert (project_root / ".agents/logos/prompts/worker-envelope.md").exists()
+    assert (project_root / ".agents/logos/prompts/json-result-contract.md").exists()
+    assert (project_root / ".agents/logos/prompts/evidence-contract.md").exists()
+    assert (project_root / ".agents/logos/prompts/user-response-contract.md").exists()
     assert (project_root / ".codex/config.toml").exists()
     assert (project_root / ".codex/hooks.json").exists()
     assert (project_root / ".codex/hooks/pre_tool_use.py").exists()
@@ -76,6 +80,8 @@ def test_install_codex_generates_agents_config_and_manifests(tmp_path: Path, mon
     assert "target provides skills" in report.ok
     assert "target provides procedures" in report.ok
     assert "target provides roles" in report.ok
+    assert "target provides rules" in report.ok
+    assert "target provides prompts" in report.ok
     assert "target provides codex config" in report.ok
     assert "target provides hooks" in report.ok
     assert "target provides runner_bin" in report.ok
@@ -716,6 +722,8 @@ def create_codex_templates(root: Path) -> None:
             'skills = ".agents/skills"\n'
             'procedures = ".agents/logos/procedures"\n'
             'roles = ".agents/logos/roles"\n'
+            'rules = ".agents/logos/rules"\n'
+            'prompts = ".agents/logos/prompts"\n'
             'config = ".codex/config.toml"\n'
             'hooks = ".codex/hooks.json"\n'
             'runner_bin = ".logos/bin/logos-runner.cmd"\n'
@@ -744,10 +752,40 @@ def create_codex_templates(root: Path) -> None:
 
 def create_core_assets(root: Path) -> None:
     write_asset(
-        root / "core" / "prompts" / "base-system.md",
-        "logos.template.base-system",
-        "template",
-        "# Base\n\nUse Logos.",
+        root / "core" / "prompts" / "worker-envelope.md",
+        "logos.prompt.worker-envelope",
+        "prompt",
+        "# Worker Envelope Contract\n\nUse Logos.",
+    )
+    write_asset(
+        root / "core" / "prompts" / "json-result-contract.md",
+        "logos.prompt.json-result-contract",
+        "prompt",
+        "# JSON Result Contract\n\nReturn JSON.",
+    )
+    write_asset(
+        root / "core" / "prompts" / "evidence-contract.md",
+        "logos.prompt.evidence-contract",
+        "prompt",
+        "# Evidence Contract\n\nRecord evidence.",
+    )
+    write_asset(
+        root / "core" / "prompts" / "user-response-contract.md",
+        "logos.prompt.user-response-contract",
+        "prompt",
+        "# User Response Contract\n\nReport clearly.",
+    )
+    write_asset(
+        root / "core" / "prompts" / "README.md",
+        "logos.reference.prompts-overview",
+        "reference",
+        "# Prompts\n\nPrompt overview.",
+    )
+    write_asset(
+        root / "core" / "prompts" / "references" / "prompt-assembly-details.md",
+        "logos.reference.prompt-assembly-details",
+        "reference",
+        "# Prompt Assembly Details\n\nDetails.",
     )
     write_asset(
         root / "core" / "rules" / "verification.md",
@@ -767,6 +805,10 @@ def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:
             "  - verify\n"
             "globs: []\n"
         )
+    if kind == "prompt":
+        extra = "outputs:\n  - stage-prompt\n"
+    if kind == "reference":
+        extra = "applies_to:\n  - runner-prompt-assembly\n"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "---\n"

@@ -6,9 +6,9 @@ from logos_core.prompt_assembly.assembler import assemble_prompt_bundle
 
 def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     write_asset(
-        tmp_path / "core" / "prompts" / "base-system.md",
-        "logos.template.base-system",
-        "template",
+        tmp_path / "core" / "prompts" / "worker-envelope.md",
+        "logos.prompt.worker-envelope",
+        "prompt",
         "# Base\n\nUse Logos.",
     )
     write_asset(
@@ -19,8 +19,8 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     )
     write_targeted_asset(
         tmp_path / "core" / "prompts" / "other-target-only.md",
-        "logos.template.other-target-only",
-        "template",
+        "logos.prompt.other-target-only",
+        "prompt",
         "# Other Target Only\n\nOther-target-specific text.",
         targets=["other-cli"],
         profiles=["other"],
@@ -69,7 +69,7 @@ def test_assembles_codex_operating_context(tmp_path: Path) -> None:
     assert "Use Logos Runner as the default orchestration path" in bundle.codex_nous_skill
     assert "manual procedure execution as a fallback" in bundle.codex_nous_skill
     assert "Other-target-specific text." not in bundle.codex_operating_context
-    assert all(item.id != "logos.template.other-target-only" for item in bundle.inputs)
+    assert all(item.id != "logos.prompt.other-target-only" for item in bundle.inputs)
 
 
 def write_asset(path: Path, asset_id: str, kind: str, body: str) -> None:

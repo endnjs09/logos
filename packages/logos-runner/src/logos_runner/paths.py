@@ -37,10 +37,13 @@ class RunnerPaths:
         return self.agents_dir / "logos" / "roles"
 
     @property
+    def prompts_dir(self) -> Path:
+        return self.agents_dir / "logos" / "prompts"
+
+    @property
     def nous_skill(self) -> Path:
         return self.agents_dir / "skills" / "nous" / "SKILL.md"
 
     @property
     def root_agents(self) -> Path:
         return self.project_root / "AGENTS.md"
-
