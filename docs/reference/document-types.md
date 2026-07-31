@@ -16,7 +16,7 @@ required structure.
 | `workflow` | `core/workflows/` | State transition and task lifecycle |
 | `prompt` | `core/prompts/` | Shared prompt text or response-shape source |
 | `profile` | `core/profiles/` | Target/model execution profile |
-| `procedure` | `.agents/logos/procedures/`, `docs/procedures/` | Installed step-level operating procedure |
+| `procedure` | `core/procedures/`, `.agents/logos/procedures/` | Step-level operating procedure |
 | `reference` | `core/**/references/`, `.agents/**/references/` | Optional detail material reached through an explicit pointer |
 | `context` | `core/context/` | Memory, handoff, compression, and evidence context policy |
 | `rubric` | `core/evaluation/` | Evaluation criteria |

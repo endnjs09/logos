@@ -7,9 +7,9 @@ Codex during normal task execution.
 ## Responsibility
 
 - `core/roles/` defines who performs a responsibility.
+- `core/procedures/` defines the Codex-facing step instructions installed for
+  each stage.
 - `core/workflows/` defines how work moves from one state to the next.
-- `targets/codex-cli/templates/agents/logos/procedures/` defines the installed
-  Codex-facing procedure text for each stage.
 - `packages/logos-runner/` materializes workflow decisions into plan state,
   stage prompts, gates, and result files.
 
@@ -29,11 +29,11 @@ Codex during normal task execution.
 
 ## Installation Policy
 
-Workflow assets are normally not copied verbatim into target projects. Their
-rules are reflected in installed procedures, role cards, Runner gates, and
-generated manifests. If a future target needs local workflow inspection, install
-a manifest or selected workflow summary instead of loading every workflow file as
-default context.
+Workflow assets are normally not copied verbatim into target projects.
+Procedures are copied from `core/procedures/`; workflows remain the structured
+source for Runner state transitions, gates, and generated manifests. If a future
+target needs local workflow inspection, install a manifest or selected workflow
+summary instead of loading every workflow file as default context.
 
 ## Authoring Rules
 

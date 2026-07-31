@@ -16,14 +16,6 @@ TEMPLATE_MAPS = {
     "codex-cli": {
         "AGENTS.md.template": "AGENTS.md",
         "agents/skills/nous/SKILL.md.template": ".agents/skills/nous/SKILL.md",
-        "agents/logos/procedures/intake.md.template": ".agents/logos/procedures/intake.md",
-        "agents/logos/procedures/exploration.md.template": ".agents/logos/procedures/exploration.md",
-        "agents/logos/procedures/spec.md.template": ".agents/logos/procedures/spec.md",
-        "agents/logos/procedures/planning.md.template": ".agents/logos/procedures/planning.md",
-        "agents/logos/procedures/execution.md.template": ".agents/logos/procedures/execution.md",
-        "agents/logos/procedures/verification.md.template": ".agents/logos/procedures/verification.md",
-        "agents/logos/procedures/review.md.template": ".agents/logos/procedures/review.md",
-        "agents/logos/procedures/resume.md.template": ".agents/logos/procedures/resume.md",
         "codex/config.toml.template": ".codex/config.toml",
         "codex/hooks.json.template": ".codex/hooks.json",
         "codex/hooks/pre_tool_use.py.template": ".codex/hooks/pre_tool_use.py",
@@ -36,6 +28,19 @@ TEMPLATE_MAPS = {
         "logos/target.toml.template": ".logos/target.toml",
         "logos/active-profile.toml.template": ".logos/active-profile.toml",
         "logos/session/nous-state.json.template": ".logos/session/nous-state.json",
+    },
+}
+
+PROCEDURE_SOURCE_MAP = {
+    "codex-cli": {
+        "core/procedures/intake.md": ".agents/logos/procedures/intake.md",
+        "core/procedures/exploration.md": ".agents/logos/procedures/exploration.md",
+        "core/procedures/spec.md": ".agents/logos/procedures/spec.md",
+        "core/procedures/planning.md": ".agents/logos/procedures/planning.md",
+        "core/procedures/execution.md": ".agents/logos/procedures/execution.md",
+        "core/procedures/verification.md": ".agents/logos/procedures/verification.md",
+        "core/procedures/review.md": ".agents/logos/procedures/review.md",
+        "core/procedures/resume.md": ".agents/logos/procedures/resume.md",
     },
 }
 
@@ -130,6 +135,7 @@ def all_rendered_files(
         RenderedFile(Path(destination), render_template(source_root / template_root / template, context))
         for template, destination in template_map.items()
     ]
+    rendered.extend(render_procedure_sources(source_root, target))
     rendered.extend(render_role_sources(source_root, target))
     rendered.extend(render_rule_sources(source_root))
     rendered.extend(render_prompt_sources(source_root))
@@ -141,6 +147,14 @@ def render_template(path: Path, context: dict[str, str]) -> str:
     for key, value in context.items():
         text = text.replace("{{" + key + "}}", value)
     return text
+
+
+def render_procedure_sources(source_root: Path, target: str) -> list[RenderedFile]:
+    rendered: list[RenderedFile] = []
+    for source, destination in PROCEDURE_SOURCE_MAP[target].items():
+        content = (source_root / source).read_text(encoding="utf-8")
+        rendered.append(RenderedFile(Path(destination), content))
+    return rendered
 
 
 def render_role_sources(source_root: Path, target: str) -> list[RenderedFile]:

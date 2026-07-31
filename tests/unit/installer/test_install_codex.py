@@ -462,128 +462,6 @@ def create_codex_templates(root: Path) -> None:
             "Read `.logos/memory/resume-snapshot.md` first when context is unclear.\n"
             "{{logos_codex_nous_skill}}\n"
         ),
-        "agents/logos/procedures/intake.md.template": (
-            "---\nid: logos.procedure.intake\nkind: procedure\n"
-            "name: intake\ndescription: Intake.\n"
-            "status: active\nversion: 0.2.0\n"
-            "outputs:\n"
-            "  - intake-result\n"
-            "schemas:\n"
-            "  - schemas/intake-result.schema.json\n"
-            "related_rules:\n"
-            "  - logos.rule.context-handoff\n"
-            "---\n"
-            "essential_information_status\n"
-            "complexity: low | middle | high\n"
-            "no more than 10 at once\n"
-            "next_step: ask_user | exploration\n"
-            "interview_draft_update\n"
-            ".logos/memory/resume-snapshot.md\n"
-            "Do not scan `.logos/runs/` or `.logos/evidence/` by default during intake\n"
-        ),
-        "agents/logos/procedures/planning.md.template": (
-            "---\nid: logos.procedure.planning\nkind: procedure\n"
-            "name: planning\ndescription: Plan.\n"
-            "status: active\nversion: 0.2.0\n"
-            "outputs:\n"
-            "  - task-plan-result\n"
-            "  - context-handoff\n"
-            "schemas:\n"
-            "  - schemas/task-plan-result.schema.json\n"
-            "  - schemas/context-handoff.schema.json\n"
-            "depends_on:\n"
-            "  - logos.procedure.intake\n"
-            "  - logos.procedure.exploration\n"
-            "  - logos.procedure.spec\n"
-            "related_rules:\n"
-            "  - logos.rule.verification\n"
-            "---\n"
-            "<!-- logos-asset-version: 0.2.0 -->\n"
-            "Task Plan\n"
-            "task-plan-result\n"
-            "Context Handoff\n"
-            "context-handoff\n"
-            "Review-Lite\n"
-            "target_files\n"
-            "role_routing\n"
-            "verification_plan\n"
-            "rollback_criteria\n"
-            "next_step: executor | clarification | spec\n"
-        ),
-        "agents/logos/procedures/spec.md.template": (
-            "---\nid: logos.procedure.spec\nkind: procedure\n"
-            "name: spec\ndescription: Spec.\n"
-            "status: active\nversion: 0.1.0\n"
-            "outputs:\n"
-            "  - spec-result\n"
-            "schemas:\n"
-            "  - schemas/spec-result.schema.json\n"
-            "depends_on:\n"
-            "  - logos.procedure.intake\n"
-            "  - logos.procedure.exploration\n"
-            "  - logos.role.sp\n"
-            "---\n"
-            "## Low Fast Path\n"
-            "## Mini Spec\n"
-            "## Structured Spec\n"
-            "blocking_open_questions\n"
-            "next_step: task_plan | clarification\n"
-        ),
-        "agents/logos/procedures/exploration.md.template": (
-            "---\nid: logos.procedure.exploration\nkind: procedure\n"
-            "name: exploration\ndescription: Explore.\n"
-            "status: active\nversion: 0.2.0\n"
-            "outputs:\n"
-            "  - exploration-result\n"
-            "schemas:\n"
-            "  - schemas/exploration-result.schema.json\n"
-            "related_rules:\n"
-            "  - logos.rule.context-handoff\n"
-            "---\n"
-            "## Read-Only Boundary\n"
-            "## Snapshot Check\n"
-            "## Feature Scan\n"
-            "code_evidence\n"
-            "project_intent\n"
-            "hash_diff\n"
-            "interview_draft_update\n"
-            "next_step: clarification | spec\n"
-        ),
-        "agents/logos/procedures/execution.md.template": (
-            "---\nid: logos.procedure.execution\nkind: procedure\n"
-            "name: execution\ndescription: Execute.\n"
-            "status: active\nversion: 0.2.0\n"
-            "depends_on:\n"
-            "  - logos.procedure.planning\n"
-            "---\n"
-            "Execute only.\n"
-        ),
-        "agents/logos/procedures/review.md.template": (
-            "---\nid: logos.procedure.review\nkind: procedure\n"
-            "name: review\ndescription: Risk.\n"
-            "status: active\nversion: 0.2.0\n"
-            "related_rules:\n"
-            "  - logos.rule.security\n"
-            "---\n"
-            "## Guard Enforcement Status\n"
-            "Review risk.\n"
-        ),
-        "agents/logos/procedures/verification.md.template": (
-            "---\nid: logos.procedure.verification\nkind: procedure\n"
-            "name: verification\ndescription: Verify.\n"
-            "status: active\nversion: 0.2.0\n"
-            "related_rules:\n"
-            "  - logos.rule.verification\n"
-            "---\n"
-            "Verify only.\n"
-        ),
-        "agents/logos/procedures/resume.md.template": (
-            "---\nid: logos.procedure.resume\nkind: procedure\n"
-            "name: resume\ndescription: Resume.\n"
-            "status: active\nversion: 0.2.0\n"
-            "---\n"
-            "Resume only.\n"
-        ),
         "agents/logos/roles/orch.md.template": (
             "---\nid: logos.role.orch\nkind: role\nname: orch\n"
             "description: Orchestrate.\nstatus: active\nversion: 0.1.0\n"
@@ -751,6 +629,81 @@ def create_codex_templates(root: Path) -> None:
 
 
 def create_core_assets(root: Path) -> None:
+    write_asset(
+        root / "core" / "procedures" / "intake.md",
+        "logos.procedure.intake",
+        "procedure",
+        "essential_information_status\n"
+        "complexity: low | middle | high\n"
+        "no more than 10 at once\n"
+        "next_step: ask_user | exploration\n"
+        "interview_draft_update\n"
+        ".logos/memory/resume-snapshot.md\n"
+        "Do not scan `.logos/runs/` or `.logos/evidence/` by default during intake",
+    )
+    write_asset(
+        root / "core" / "procedures" / "exploration.md",
+        "logos.procedure.exploration",
+        "procedure",
+        "## Read-Only Boundary\n"
+        "## Snapshot Check\n"
+        "## Feature Scan\n"
+        "code_evidence\n"
+        "project_intent\n"
+        "hash_diff\n"
+        "interview_draft_update\n"
+        "next_step: clarification | spec",
+    )
+    write_asset(
+        root / "core" / "procedures" / "spec.md",
+        "logos.procedure.spec",
+        "procedure",
+        "## Low Fast Path\n"
+        "## Mini Spec\n"
+        "## Structured Spec\n"
+        "blocking_open_questions\n"
+        "next_step: task_plan | clarification",
+    )
+    write_asset(
+        root / "core" / "procedures" / "planning.md",
+        "logos.procedure.planning",
+        "procedure",
+        "<!-- logos-asset-version: 0.2.0 -->\n"
+        "Task Plan\n"
+        "task-plan-result\n"
+        "Context Handoff\n"
+        "context-handoff\n"
+        "Review-Lite\n"
+        "target_files\n"
+        "role_routing\n"
+        "verification_plan\n"
+        "rollback_criteria\n"
+        "next_step: executor | clarification | spec",
+    )
+    write_asset(
+        root / "core" / "procedures" / "execution.md",
+        "logos.procedure.execution",
+        "procedure",
+        "Execute only.",
+    )
+    write_asset(
+        root / "core" / "procedures" / "review.md",
+        "logos.procedure.review",
+        "procedure",
+        "## Guard Enforcement Status\nReview risk.",
+    )
+    write_asset(
+        root / "core" / "procedures" / "verification.md",
+        "logos.procedure.verification",
+        "procedure",
+        "Verify only.",
+    )
+    write_asset(
+        root / "core" / "procedures" / "resume.md",
+        "logos.procedure.resume",
+        "procedure",
+        "Resume only.",
+    )
     write_asset(
         root / "core" / "prompts" / "worker-envelope.md",
         "logos.prompt.worker-envelope",
