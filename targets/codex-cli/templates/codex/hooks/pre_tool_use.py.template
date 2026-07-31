@@ -499,10 +499,23 @@ def ensure_current_run(root: Path) -> dict[str, object]:
         "started_at": datetime.now(timezone.utc).isoformat(),
         "ended_at": None,
         "user_request": None,
+        "request_summary": "",
         "summary": "",
+        "execution_summary": "",
+        "execution_deviations": [],
+        "verification_summary": "",
+        "verification_status": "not_run",
+        "test_summary": "",
+        "final_response_summary": "",
+        "failure_reason": None,
+        "last_command": None,
+        "last_error": None,
         "touched_files": [],
         "command_count": 0,
         "guard_decision_count": 0,
+        "test_count": 0,
+        "failed_test_count": 0,
+        "artifact_paths": artifact_paths(active_plan_id),
     }
     write_json(root / ".logos" / "runs" / run_id / "run.json", run)
     active.update(
@@ -517,6 +530,24 @@ def ensure_current_run(root: Path) -> dict[str, object]:
     write_json(active_path, active)
     update_run_index(root, run)
     return run
+
+
+def artifact_paths(plan_id: object) -> dict[str, str]:
+    if not isinstance(plan_id, str) or not plan_id:
+        return {}
+    base = f".logos/plans/{plan_id}"
+    return {
+        "plan_state": f"{base}/plan-state.json",
+        "request": f"{base}/request.json",
+        "scan_result": f"{base}/stages/scan/result.json",
+        "intake_result": f"{base}/stages/intake/result.json",
+        "spec": f"{base}/spec.json",
+        "task_plan": f"{base}/task-plan.json",
+        "context_handoff": f"{base}/context-handoff.json",
+        "review_lite": f"{base}/review-lite.json",
+        "execution_result": f"{base}/execution-result.json",
+        "verification_result": f"{base}/verification-result.json",
+    }
 
 
 def initialize_memory_state(root: Path) -> None:

@@ -378,7 +378,15 @@ def test_completed_run_moves_deviations_out_of_last_error(tmp_path) -> None:
     assert run is not None
     assert run["status"] == "completed"
     assert run["last_error"] is None
-    assert run["execution_deviations"] == ["README title stayed unchanged because it already matched."]
+    assert run["execution_deviations"] == [
+        {
+            "description": "README title stayed unchanged because it already matched.",
+            "status": "unresolved",
+        }
+    ]
+    assert run["verification_status"] == "passed"
+    assert run["request_summary"] == "Update README."
+    assert run["final_response_summary"]
 
 
 def test_interview_draft_keeps_questions_while_waiting_user(tmp_path) -> None:
@@ -403,6 +411,63 @@ def test_interview_draft_keeps_questions_while_waiting_user(tmp_path) -> None:
     draft = json.loads(path.read_text(encoding="utf-8"))
 
     assert draft["open_questions"] == ["Which provider?"]
+
+
+def test_verification_with_remaining_risk_is_passed_with_risk(tmp_path) -> None:
+    store = PlanStore(tmp_path)
+    plan = store.create_plan("Add transfer feature.")
+    _prepare_ready_for_execute(tmp_path, plan.plan_id)
+
+    record_stage_result(
+        project_root=tmp_path,
+        plan_id=plan.plan_id,
+        stage=get_stage("execute"),
+        raw_text=_json(
+            {
+                "schema_version": 1,
+                "plan_id": plan.plan_id,
+                "status": "completed",
+                "implemented_steps": ["Implemented transfer."],
+                "modified_files": ["src/transfer/service.py"],
+                "commands_run": [],
+                "tests_run": [],
+                "verification_notes": [],
+                "deviations_from_plan": ["Full suite was not run during execute."],
+                "next_step": "verify",
+            }
+        ),
+    )
+    apply_stage_gate(tmp_path, plan.plan_id, "execute")
+    record_stage_result(
+        project_root=tmp_path,
+        plan_id=plan.plan_id,
+        stage=get_stage("verify"),
+        raw_text=_json(
+            {
+                "schema_version": 1,
+                "plan_id": plan.plan_id,
+                "passed": True,
+                "checked_files": ["src/transfer/service.py"],
+                "commands_run": [],
+                "tests_run": [],
+                "success_criteria_status": [{"criterion": "works", "status": "passed"}],
+                "quality_gate_status": [
+                    {"gate": "concurrency", "status": "passed_by_static_evidence"}
+                ],
+                "modified_files_review": [],
+                "remaining_risk": ["No production database concurrency test was run."],
+                "findings": ["Focused verification passed."],
+                "next_step": "complete",
+            }
+        ),
+    )
+    apply_stage_gate(tmp_path, plan.plan_id, "verify")
+
+    run = store.read_run(plan.plan_id)
+
+    assert run is not None
+    assert run["verification_status"] == "passed_with_risk"
+    assert "passed_with_risk" in run["verification_summary"]
 
 
 def _prepare_ready_for_execute(project_root, plan_id: str) -> None:

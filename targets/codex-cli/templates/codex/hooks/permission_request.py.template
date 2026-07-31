@@ -145,6 +145,14 @@ def write_hook_state(path: Path, state: dict[str, object]) -> None:
         return
 
 
+def read_json(path: Path) -> dict[str, object]:
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
 def record_permission_decision(cwd: str, result: dict[str, object]) -> None:
     if not cwd:
         return
@@ -154,6 +162,7 @@ def record_permission_decision(cwd: str, result: dict[str, object]) -> None:
     path = root / ".logos" / "evidence" / "guard-decisions.jsonl"
     record = {
         "schema_version": 1,
+        "run_id": current_run_id(root),
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "guard_id": result["guard"],
         "decision": result["decision"],
@@ -166,6 +175,25 @@ def record_permission_decision(cwd: str, result: dict[str, object]) -> None:
             stream.write(safe_json_dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
     except OSError:
         return
+
+
+def current_run_id(root: Path) -> str:
+    active = read_json(root / ".logos" / "memory" / "active-work.json")
+    value = active.get("active_run_id") if isinstance(active, dict) else None
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    runs_dir = root / ".logos" / "runs"
+    try:
+        candidates = sorted(runs_dir.glob("run-*/run.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+    except OSError:
+        return "unattributed"
+    for path in candidates:
+        run = read_json(path)
+        if isinstance(run, dict) and run.get("status") == "active":
+            run_id = run.get("run_id")
+            if isinstance(run_id, str) and run_id.strip():
+                return run_id.strip()
+    return "unattributed"
 
 
 def record_unhandled_hook_error(exc: Exception) -> None:

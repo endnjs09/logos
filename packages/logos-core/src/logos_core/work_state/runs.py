@@ -29,10 +29,12 @@ def create_run(
         "started_at": _now(),
         "ended_at": None,
         "user_request": user_request,
+        "request_summary": summarize_request(user_request),
         "summary": "",
         "execution_summary": "",
         "execution_deviations": [],
         "verification_summary": "",
+        "verification_status": "not_run",
         "test_summary": "",
         "final_response_summary": "",
         "failure_reason": None,
@@ -214,6 +216,12 @@ def summarize_tests(run: dict[str, Any], latest: dict[str, Any]) -> str:
     if failed:
         return f"{count} test record(s); {failed} failed. Latest: {status}. {summary}".strip()
     return f"{count} test record(s), all recorded as passing or non-failing. Latest: {status}. {summary}".strip()
+
+
+def summarize_request(value: str | None) -> str:
+    if not isinstance(value, str):
+        return ""
+    return " ".join(value.split())[:240]
 
 
 def normalize_touched_path(path: str) -> str:

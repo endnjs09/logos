@@ -155,6 +155,36 @@ def test_permission_request_asks_for_network_access(tmp_path: Path) -> None:
     assert "Logos approval note: network permission request" in result["systemMessage"]
 
 
+def test_permission_request_records_run_id(tmp_path: Path) -> None:
+    script = render_permission_request_hook(tmp_path)
+    project = tmp_path / "project"
+    run_dir = project / ".logos" / "runs" / "run-current"
+    run_dir.mkdir(parents=True)
+    (project / ".logos" / "memory").mkdir(parents=True)
+    (project / ".logos" / "memory" / "active-work.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "active",
+                "active_plan_id": "plan-current",
+                "active_run_id": "run-current",
+                "updated_at": "now",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "run.json").write_text(
+        json.dumps({"schema_version": 1, "run_id": "run-current", "status": "active"}),
+        encoding="utf-8",
+    )
+
+    run_hook(script, {"cwd": str(project), "request": "network access"})
+
+    evidence = project / ".logos" / "evidence" / "guard-decisions.jsonl"
+    record = json.loads(evidence.read_text(encoding="utf-8").strip())
+    assert record["run_id"] == "run-current"
+
+
 def test_permission_request_stays_silent_for_unknown_request(tmp_path: Path) -> None:
     script = render_permission_request_hook(tmp_path)
 

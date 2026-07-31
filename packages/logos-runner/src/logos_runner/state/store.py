@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
+import xml.etree.ElementTree as ET
 
 from logos_runner.paths import RunnerPaths
 from logos_runner.stages.registry import STAGE_REGISTRY, StageDefinition, get_stage
@@ -45,6 +46,14 @@ def _artifact_paths(plan_id: str | None) -> dict[str, str]:
         "execution_result": f"{base}/execution-result.json",
         "verification_result": f"{base}/verification-result.json",
     }
+
+
+def _read_json_if_exists(path: Path) -> dict[str, object]:
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
 
 
 @dataclass(frozen=True)
@@ -425,6 +434,23 @@ class PlanStore:
             run["test_count"] = int(run.get("test_count", 0)) + 1
             run["failed_test_count"] = int(run.get("failed_test_count", 0)) + int(record.get("failed_count", 0))
             run["test_summary"] = _summarize_tests(run, record)
+        gradle_summary = _read_gradle_test_summary(self.paths.project_root)
+        if gradle_summary is not None:
+            record = {
+                "schema_version": 1,
+                "run_id": run["run_id"],
+                "recorded_at": _now(),
+                **gradle_summary,
+                "detected_by": "gradle-test-xml",
+            }
+            if not _test_record_exists(
+                self.paths.runs_dir / str(run["run_id"]) / "tests.jsonl",
+                str(record.get("summary") or ""),
+            ):
+                _append_jsonl(self.paths.runs_dir / str(run["run_id"]) / "tests.jsonl", record)
+            run["test_count"] = int(record.get("passed_count", 0)) + int(record.get("failed_count", 0))
+            run["failed_test_count"] = int(record.get("failed_count", 0))
+            run["test_summary"] = str(record.get("summary") or "")
         self.write_run(run)
 
     def merge_touched_files(self, plan_id: str, files: object) -> None:
@@ -468,7 +494,11 @@ class PlanStore:
         )
         deviations = data.get("deviations_from_plan")
         if isinstance(deviations, list) and deviations:
-            run["execution_deviations"] = [str(item) for item in deviations if str(item).strip()]
+            run["execution_deviations"] = [
+                {"description": str(item), "status": "unresolved"}
+                for item in deviations
+                if str(item).strip()
+            ]
         self.write_run(run)
         self.merge_touched_files(plan_id, data.get("modified_files"))
         self.append_command_records(plan_id, data.get("commands_run"))
@@ -481,7 +511,11 @@ class PlanStore:
         passed = data.get("passed")
         findings = data.get("findings")
         remaining_risk = data.get("remaining_risk")
-        run["verification_summary"] = _verification_summary(data)
+        status = _verification_status(data)
+        run["verification_status"] = status
+        run["verification_summary"] = _verification_summary(data, status=status)
+        run["final_response_summary"] = _final_response_summary({}, data, status=status)
+        run["execution_deviations"] = _resolve_deviations(run.get("execution_deviations"), data)
         if isinstance(remaining_risk, list) and remaining_risk:
             run["summary"] = "Verification completed with remaining risk"
         if passed is False:
@@ -533,10 +567,12 @@ class PlanStore:
             "started_at": created_at,
             "ended_at": None,
             "user_request": request,
+            "request_summary": _summarize_request(request),
             "summary": "Active Logos plan",
             "execution_summary": "",
             "execution_deviations": [],
             "verification_summary": "",
+            "verification_status": "not_run",
             "test_summary": "",
             "final_response_summary": "",
             "failure_reason": None,
@@ -586,12 +622,39 @@ class PlanStore:
         run["status"] = "completed"
         run["ended_at"] = _now()
         run["summary"] = "Logos plan completed and verified"
+        self._finalize_run_fields(plan_id, run)
         if not run.get("failure_reason"):
             run["last_error"] = None
         _write_json(run_path, run)
         self._update_run_index(run)
         self._update_resume_snapshot(run)
         self._set_active_work(plan_id=None, run_id=run_id, status="completed", updated_at=str(run["ended_at"]))
+
+    def _finalize_run_fields(self, plan_id: str, run: dict[str, object]) -> None:
+        plan_dir = self.plan_dir(plan_id)
+        request = _read_json_if_exists(plan_dir / "request.json")
+        intake = _read_json_if_exists(self.existing_stage_result_path(plan_id, "intake", "intake-result.json"))
+        execution = _read_json_if_exists(self.existing_stage_result_path(plan_id, "execute", "execution-result.json"))
+        verification = _read_json_if_exists(
+            self.existing_stage_result_path(plan_id, "verify", "verification-result.json")
+        )
+
+        if not run.get("request_summary"):
+            run["request_summary"] = _request_summary_from_artifacts(request, intake)
+        if not run.get("execution_summary") and execution:
+            run["execution_summary"] = _summarize_list(
+                execution.get("implemented_steps"),
+                fallback=str(execution.get("status") or "Execution result recorded."),
+            )
+        if verification:
+            status = _verification_status(verification)
+            run["verification_status"] = status
+            run["verification_summary"] = _verification_summary(verification, status=status)
+            run["final_response_summary"] = _final_response_summary(execution, verification, status=status)
+            run["execution_deviations"] = _resolve_deviations(
+                run.get("execution_deviations"),
+                verification,
+            )
 
     def _set_active_work(
         self, *, plan_id: str | None, run_id: str | None, status: str, updated_at: str
@@ -744,7 +807,19 @@ def _summarize_item(item: object) -> str:
 def _format_deviations(value: object) -> str:
     if not isinstance(value, list) or not value:
         return "None"
-    return "; ".join(str(item) for item in value[:5])
+    unresolved = []
+    for item in value:
+        if isinstance(item, dict):
+            if item.get("status") == "resolved":
+                continue
+            description = item.get("description")
+            if isinstance(description, str) and description.strip():
+                unresolved.append(description.strip())
+        elif str(item).strip():
+            unresolved.append(str(item).strip())
+    if not unresolved:
+        return "None"
+    return "; ".join(unresolved[:5])
 
 
 def _file_record_exists(path: Path, candidate_path: str) -> bool:
@@ -771,12 +846,12 @@ def _active_run_id(project_root: Path) -> str | None:
     return value if isinstance(value, str) else None
 
 
-def _verification_summary(data: dict[str, object]) -> str:
+def _verification_summary(data: dict[str, object], *, status: str | None = None) -> str:
     passed = data.get("passed")
     criteria = data.get("success_criteria_status")
     gates = data.get("quality_gate_status")
     risk = data.get("remaining_risk")
-    parts = [f"passed={passed}"]
+    parts = [f"status={status or _verification_status(data)}", f"passed={passed}"]
     if isinstance(criteria, list):
         parts.append(f"success_criteria={len(criteria)}")
     if isinstance(gates, list):
@@ -784,6 +859,157 @@ def _verification_summary(data: dict[str, object]) -> str:
     if isinstance(risk, list) and risk:
         parts.append(f"remaining_risk={len(risk)}")
     return ", ".join(parts)
+
+
+def _verification_status(data: dict[str, object]) -> str:
+    if data.get("passed") is False:
+        return "failed"
+    blockers = data.get("blockers")
+    if isinstance(blockers, list) and blockers:
+        return "blocked"
+    risk = data.get("remaining_risk")
+    if isinstance(risk, list) and risk:
+        return "passed_with_risk"
+    for field in ("quality_gate_status", "success_criteria_status"):
+        values = data.get(field)
+        if not isinstance(values, list):
+            continue
+        for item in values:
+            if not isinstance(item, dict):
+                continue
+            status = str(item.get("status") or "").lower()
+            if status in {"partial", "not_run", "skipped", "passed_by_static_evidence", "passed_by_design_review"}:
+                return "passed_with_risk"
+            if status in {"failed", "blocked"}:
+                return status
+    return "passed" if data.get("passed") is True else "unknown"
+
+
+def _resolve_deviations(value: object, verification: dict[str, object]) -> list[dict[str, str]]:
+    deviations: list[dict[str, str]] = []
+    for item in value if isinstance(value, list) else []:
+        if isinstance(item, dict):
+            description = str(item.get("description") or "").strip()
+            status = str(item.get("status") or "unresolved")
+        else:
+            description = str(item).strip()
+            status = "unresolved"
+        if not description:
+            continue
+        if _deviation_resolved_by_verification(description, verification):
+            deviations.append(
+                {
+                    "description": description,
+                    "status": "resolved",
+                    "resolved_by": "verification-result.json",
+                }
+            )
+        else:
+            deviations.append({"description": description, "status": status})
+    return deviations
+
+
+def _deviation_resolved_by_verification(description: str, verification: dict[str, object]) -> bool:
+    text = json.dumps(verification, ensure_ascii=False).lower()
+    lowered = description.lower()
+    if "full gradle suite" in lowered and "complete gradle test suite" in text and '"result": "passed"' in text:
+        return True
+    if "test" in lowered and "complete gradle test suite" in text and "0 failures" in text:
+        return True
+    return False
+
+
+def _summarize_request(request: str) -> str:
+    text = " ".join(request.split())
+    return text[:240]
+
+
+def _request_summary_from_artifacts(
+    request: dict[str, object],
+    intake: dict[str, object],
+) -> str:
+    summary = intake.get("intake_summary")
+    if isinstance(summary, str) and summary.strip():
+        return summary.strip()[:360]
+    user_request = request.get("user_request")
+    if isinstance(user_request, str) and user_request.strip():
+        return _summarize_request(user_request)
+    return ""
+
+
+def _final_response_summary(
+    execution: dict[str, object],
+    verification: dict[str, object],
+    *,
+    status: str,
+) -> str:
+    implemented = _summarize_list(
+        execution.get("implemented_steps") if execution else None,
+        fallback="Implementation result recorded.",
+    )
+    findings = _summarize_list(
+        verification.get("findings"),
+        fallback="Verification result recorded.",
+    )
+    return f"{implemented} Verification: {status}. {findings}".strip()[:1000]
+
+
+def _read_gradle_test_summary(project_root: Path) -> dict[str, object] | None:
+    results_dir = project_root / "build" / "test-results" / "test"
+    if not results_dir.exists():
+        return None
+    suite_count = 0
+    tests = 0
+    failures = 0
+    errors = 0
+    skipped = 0
+    for path in results_dir.glob("TEST-*.xml"):
+        try:
+            root = ET.parse(path).getroot()
+        except (OSError, ET.ParseError):
+            continue
+        suite_count += 1
+        tests += _xml_int(root.get("tests"))
+        failures += _xml_int(root.get("failures"))
+        errors += _xml_int(root.get("errors"))
+        skipped += _xml_int(root.get("skipped"))
+    if suite_count == 0:
+        return None
+    failed = failures + errors
+    passed = max(tests - failed - skipped, 0)
+    status = "passed" if failed == 0 else "failed"
+    return {
+        "name": "Gradle test XML aggregate",
+        "command": None,
+        "status": status,
+        "summary": f"{tests} tests across {suite_count} suites; {failures} failures, {errors} errors, {skipped} skipped.",
+        "passed_count": passed,
+        "failed_count": failed,
+        "skipped_count": skipped,
+        "suite_count": suite_count,
+    }
+
+
+def _xml_int(value: object) -> int:
+    try:
+        return max(int(str(value or "0")), 0)
+    except ValueError:
+        return 0
+
+
+def _test_record_exists(path: Path, summary: str) -> bool:
+    if not path.exists() or not summary:
+        return False
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            data = json.loads(line)
+            if isinstance(data, dict) and data.get("summary") == summary:
+                return True
+    except (OSError, json.JSONDecodeError):
+        return False
+    return False
 
 
 def _paths_from_modified_file_review(value: object) -> list[str]:
