@@ -6,29 +6,66 @@
     {
       "type": "object",
       "required": ["schema_version", "status", "active_plan_id", "active_run_id", "updated_at"],
+      "additionalProperties": false,
       "properties": {
         "schema_version": { "const": 1 },
         "status": { "enum": ["idle", "active", "paused", "blocked", "completed"] },
         "active_plan_id": { "type": ["string", "null"] },
         "active_run_id": { "type": ["string", "null"] },
+        "current_stage": { "type": ["string", "null"] },
+        "next_action": { "type": ["string", "null"] },
+        "target_files": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "changed_files": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "verification_summary": { "type": ["string", "null"] },
+        "remaining_risk": { "type": "array", "items": { "type": "string" }, "default": [] },
         "updated_at": { "type": "string" }
       }
     },
     {
       "type": "object",
       "required": ["schema_version", "runs", "updated_at"],
+      "additionalProperties": false,
       "properties": {
         "schema_version": { "const": 1 },
-        "runs": { "type": "array", "items": { "type": "object" } },
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["run_id", "plan_id", "status"],
+            "properties": {
+              "run_id": { "type": ["string", "null"] },
+              "plan_id": { "type": ["string", "null"] },
+              "status": { "type": ["string", "null"] },
+              "started_at": { "type": ["string", "null"] },
+              "summary": { "type": ["string", "null"] },
+              "touched_files": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
         "updated_at": { "type": "string" }
       }
     },
     {
       "type": "object",
       "required": ["schema_version", "items", "updated_at"],
+      "additionalProperties": false,
       "properties": {
         "schema_version": { "const": 1 },
-        "items": { "type": "array" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "kind": { "type": "string" },
+              "status": { "type": "string" },
+              "summary": { "type": "string" },
+              "source": { "type": "string" }
+            }
+          }
+        },
         "updated_at": { "type": "string" }
       }
     }

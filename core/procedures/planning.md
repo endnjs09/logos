@@ -84,6 +84,7 @@ When `apply: true`, include:
 - `goal`
 - `success_criteria`
 - `target_files`
+- `allowed_write_paths`
 - `excluded_scope`
 - `verification_plan`
 - `risk_notes`
@@ -153,6 +154,28 @@ context_handoff:
   handoff_to:
     - exe
   reason: "<why handoff is or is not needed>"
+  required_fields:
+    - goal
+    - success_criteria
+    - target_files
+    - allowed_write_paths
+    - excluded_scope
+    - verification_plan
+    - risk_notes
+  payload:
+    goal: "<compact goal>"
+    success_criteria:
+      - "<criterion>"
+    target_files:
+      - "<approved target path>"
+    allowed_write_paths:
+      - "<approved write path>"
+    excluded_scope:
+      - "<non-goal>"
+    verification_plan:
+      - "<check>"
+    risk_notes:
+      - "<risk>"
   missing_required_fields: []
 review_lite:
   passed: true | false

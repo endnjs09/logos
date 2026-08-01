@@ -46,7 +46,7 @@ related_workflows:
 - target files
 - allowed write paths
 - implementation steps
-- role routing
+- handoff targets
 - verification plan
 - rollback criteria
 
@@ -82,6 +82,13 @@ It is dynamic per task, not a repository-wide static allow-list.
 
 If execution needs a file outside the approved paths, record an execution
 deviation and return to planning when the change expands scope or risk.
+
+`handoff_to` is the compact handoff form of planning role routing. It names only
+the next roles that need the payload, not the full implementation plan.
+
+Open questions are not handoff payload. Blocking open questions belong to the
+Spec or Task Plan gate and must stop execution. Non-blocking questions remain in
+Spec or Task Plan artifacts for review and final risk reporting.
 
 ## Compression Rules
 

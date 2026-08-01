@@ -31,10 +31,9 @@ and should not contain every fact discovered during planning.
 - success criteria
 - target files
 - allowed write paths
-- role routing
+- handoff targets (`handoff_to`)
 - verification plan
 - excluded scope
-- open questions
 - risk notes
 
 ## Exclude
@@ -47,8 +46,12 @@ and should not contain every fact discovered during planning.
 
 ## Gate
 
-If handoff is required but `target_files`, `allowed_write_paths`,
-`role_routing`, or `verification_plan` is missing, do not proceed to execution.
+If handoff is required but `target_files`, `allowed_write_paths`, `handoff_to`,
+or `verification_plan` is missing, do not proceed to execution.
+
+Blocking open questions stay in the Spec or Task Plan gate and must stop
+execution before handoff. Non-blocking open questions stay in Spec or Task Plan
+artifacts; do not copy them into the handoff payload.
 
 ## Details
 
