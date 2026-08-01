@@ -16,3 +16,8 @@ context handoff, and role routing for the current work. A new helper file may be
 acceptable when adjacent to an approved target and explicitly justified. Writes
 outside workspace, excluded scope, or approved plan boundaries should return to
 planning or review.
+
+Current Codex target behavior may detect a boundary escape after touched files
+are recorded rather than blocking every write before it happens. Treat this as a
+runtime guardrail and review gate until target-level pre-write blocking is
+verified.

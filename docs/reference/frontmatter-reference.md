@@ -544,6 +544,12 @@ Required guard-specific fields:
 - `inputs`
 - `outputs`
 
+`enforcement: hard` marks a guard as a runtime-governed policy, not a soft
+prompt instruction. It does not automatically prove target-level hard blocking.
+Use `enforcement_status`, `surfaces`, and target mapping docs to state whether
+the current target blocks before execution, routes to approval, records
+evidence, or fails a later review/verification gate.
+
 `enforcement_status` values:
 
 | Value | Meaning |

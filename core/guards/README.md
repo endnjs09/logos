@@ -14,6 +14,12 @@ not long prompt instructions. They define the behavior that Codex hooks, Logos
 Runner, generated manifests, and native Codex approval surfaces must implement
 or report honestly.
 
+`enforcement: hard` means the policy must be handled by runtime code, Runner
+gates, hook scripts, Codex approval policy, or target-native safety surfaces. It
+does not by itself mean that the current target can physically block every
+matching action before execution. The actual target behavior is described by
+`enforcement_status`, `surfaces`, and any `current_behavior` field.
+
 Use guard YAML files for machine-readable policy:
 
 - `enforcement_status: policy-only` means the policy is defined but not wired.

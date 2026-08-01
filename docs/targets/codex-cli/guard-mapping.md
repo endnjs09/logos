@@ -31,16 +31,25 @@ implementation.
 | `approval-gate` | `PermissionRequest`, `approval_policy = "on-request"` | request classifier and approval-note mapper | advisory-implemented | V8-C |
 | `secret-scan` | `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop` | deterministic secret pattern scanner | advisory-implemented | V8-D |
 | `working-tree-checkpoint` | `SessionStart` or first `PreToolUse` | git HEAD/status recorder and checkpoint manifest | advisory-implemented | V8-E |
-| `file-write-boundary` | `PreToolUse` for `apply_patch`, `Edit`, or `Write` | target file allow-list from task plan/context handoff | policy-only | after task-plan runtime |
-| `dependency-install-guard` | `PreToolUse` for package manager commands | package manager classifier and approval rule | partial via command action classifier | after V8 |
+| `file-write-boundary` | Runner execute/review gate, `PostToolUse`, verification | target file allow-list from task plan/context handoff | implemented as record-and-review gate | V9/V10 |
+| `dependency-install-guard` | `PreToolUse` for package manager commands | package manager classifier and approval rule | policy-only; partial via command action classifier | after V8 |
 | `high-risk-override-block` | `PermissionRequest`, `PreToolUse`, `Stop` | high-risk override classifier | policy-only | after risk taxonomy |
-| `excluded-scope` | `PreToolUse`, `PostToolUse`, `Stop` | scope matcher using task plan excluded scope | policy-only | after V10 |
-| `context-budget` | `UserPromptSubmit`, `Stop` | context size estimator and warning path | policy-only | after V10 |
-| `required-fields` | `Stop` | output/schema validator | policy-only | after V10 |
 
 The `advisory-implemented` rows are the V8 guardrail MVP. Policy-only rows are
 real Logos guard assets, but they depend on later task-plan, risk taxonomy,
 measurement, or output-schema runtime work and are not V8 completion blockers.
+
+## Future Guard Candidates
+
+These candidates are tracked in target design docs but are not canonical
+`core/guards/` assets yet. Promote one only after adding a guard YAML file,
+frontmatter, details reference, manifest entry, and target mapping.
+
+| Candidate | Likely Surface | Purpose | Status |
+|---|---|---|---|
+| `excluded-scope` | `PreToolUse`, `PostToolUse`, `Stop` | scope matcher using task plan excluded scope | candidate |
+| `context-budget` | `UserPromptSubmit`, `Stop` | context size estimator and warning path | candidate |
+| `required-fields` | `Stop`, Runner schema validation | output/schema validator | partially covered by Runner validation |
 
 ## Guard Details
 
@@ -142,12 +151,20 @@ Use to keep file edits inside the planned task scope.
 
 Codex surfaces:
 
-- `PreToolUse` can observe `apply_patch`, `Edit`, and `Write`-like calls.
+- Runner execution gates compare planned files, handoff write paths, and
+  recorded touched files.
+- `PostToolUse` and verification can record changed files and surface execution
+  deviations.
+- Future `PreToolUse` work may add stronger pre-write blocking for
+  `apply_patch`, `Edit`, and `Write`-like calls.
 
 Limit:
 
 - The guard depends on `task_plan.target_files` or context handoff allow lists.
-  It should be implemented after task plan schema work is available.
+- Current Codex target behavior is a runtime guardrail and review gate, not a
+  verified universal pre-write hard block.
+- If a write outside the approved boundary is needed, record an execution
+  deviation and return to planning or review when scope or risk expands.
 
 ### Dependency Install Guard
 

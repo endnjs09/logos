@@ -174,6 +174,11 @@ Use `policy-only` until runtime code exists. Use `implemented` only after the
 guard is wired into the target path. Use `verified` only after tests or recorded
 verification evidence prove the guard fires as intended.
 
+`enforcement: hard` means the policy belongs in runtime enforcement surfaces,
+not prompt-only guidance. The current target may still implement that policy as
+approval routing, evidence recording, or review-gate failure until a verified
+pre-execution block path exists.
+
 ## Workflow
 
 Use for multi-step state transitions.
