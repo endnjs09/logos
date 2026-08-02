@@ -7,7 +7,7 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [intake, planning, execute, review, verify]
+stages: [intake, plan, execute, review_lite, verify]
 globs:
   - "**/.env*"
   - "**/*secret*"
@@ -15,7 +15,7 @@ globs:
   - "**/*private*key*"
 related_guards:
   - logos.guard.secret-scan
-detail_reference: core/rules/references/secrets-details.md
+detail_reference: .agents/logos/rules/references/secrets-details.md
 ---
 
 # Secrets
@@ -33,4 +33,4 @@ Use names and placeholders for secrets; do not expose concrete secret values.
 - Copy user-provided secret values into examples, tests, or final responses.
 
 ## Details
-See `core/rules/references/secrets-details.md`.
+See `.agents/logos/rules/references/secrets-details.md`.

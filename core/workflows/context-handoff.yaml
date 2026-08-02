@@ -37,8 +37,12 @@ required_fields_when_applied:
   - role_routing
   - verification_plan
   - excluded_scope
-  - open_questions
   - risk_notes
+
+question_policy:
+  blocking_questions: block before execution and return to intake
+  non_blocking_questions: preserve in spec.json or task-plan.json, not in handoff payload
+  handoff_rule: do not put open_questions directly in context-handoff.json
 
 role_specific_fields:
   exp:
@@ -99,3 +103,5 @@ gates:
     next: plan
   handoff_contains_secret_value:
     next: blocked
+  blocking_question_present:
+    next: intake

@@ -7,13 +7,13 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [planning, execute, resume]
+stages: [plan, execute, resume]
 globs:
   - ".logos/plans/**/context-handoff.json"
   - ".logos/memory/**"
 related_context:
   - logos.context.handoff
-detail_reference: core/rules/references/context-handoff-details.md
+detail_reference: .agents/logos/rules/references/context-handoff-details.md
 ---
 
 # Context Handoff
@@ -30,4 +30,4 @@ Pass the smallest sufficient context to the next stage or role.
 - Hide blocking unknowns as assumptions.
 
 ## Details
-See `core/rules/references/context-handoff-details.md`.
+See `.agents/logos/rules/references/context-handoff-details.md`.

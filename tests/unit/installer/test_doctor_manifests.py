@@ -2,6 +2,7 @@ from pathlib import Path
 
 from logos_installer.doctor import (
     validate_codex_config,
+    validate_codex_rules,
     validate_codex_work_state,
     validate_core_hashes,
     validate_guards_manifest,
@@ -265,6 +266,71 @@ def test_validate_target_provides_reports_invalid_toml(tmp_path: Path) -> None:
     assert any(error.startswith("Invalid target TOML:") for error in errors)
 
 
+def test_validate_codex_rules_rejects_rule_codes_stage_mismatch(tmp_path: Path) -> None:
+    write_installed_rule_card(
+        tmp_path,
+        ".agents/logos/rules/security.md",
+        "logos.rule.security",
+        "security",
+        ["spec", "plan", "review_lite"],
+        ["logos.guard.secret-scan"],
+    )
+    write_rule_codes(
+        tmp_path,
+        "id: logos.reference.rule-codes\n"
+        "kind: reference\n"
+        "name: rule-codes\n"
+        "description: Installed rule code index.\n"
+        "status: active\n"
+        "version: 0.1.0\n"
+        "rules:\n"
+        "  - id: logos.rule.security\n"
+        "    stages: [planning]\n"
+        "    related_guards: [logos.guard.secret-scan]\n",
+    )
+    ok: list[str] = []
+    errors: list[str] = []
+
+    validate_codex_rules(tmp_path, ok, errors)
+
+    assert ".agents/logos/rules/rule-codes.yaml: logos.rule.security: unknown rule stage planning." in errors
+    assert ".agents/logos/rules/rule-codes.yaml: logos.rule.security.stages must match installed rule card." in errors
+
+
+def test_validate_codex_rules_rejects_core_detail_reference(tmp_path: Path) -> None:
+    write_installed_rule_card(
+        tmp_path,
+        ".agents/logos/rules/security.md",
+        "logos.rule.security",
+        "security",
+        ["spec", "plan", "review_lite"],
+        ["logos.guard.secret-scan"],
+        detail_reference="core/rules/references/security-details.md",
+    )
+    write_rule_codes(
+        tmp_path,
+        "id: logos.reference.rule-codes\n"
+        "kind: reference\n"
+        "name: rule-codes\n"
+        "description: Installed rule code index.\n"
+        "status: active\n"
+        "version: 0.1.0\n"
+        "rules:\n"
+        "  - id: logos.rule.security\n"
+        "    stages: [spec, plan, review_lite]\n"
+        "    related_guards: [logos.guard.secret-scan]\n",
+    )
+    ok: list[str] = []
+    errors: list[str] = []
+
+    validate_codex_rules(tmp_path, ok, errors)
+
+    assert (
+        ".agents/logos/rules/security.md: detail_reference must use "
+        ".agents/logos/rules/references/."
+    ) in errors
+
+
 def test_validate_codex_work_state_rejects_bad_jsonl(tmp_path: Path) -> None:
     memory = tmp_path / ".logos" / "memory"
     memory.mkdir(parents=True)
@@ -305,5 +371,48 @@ def write_codex_config(root: Path, content: str) -> None:
 
 def write_target_toml(root: Path, content: str) -> None:
     path = root / ".logos/target.toml"
+    path.parent.mkdir(parents=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def write_installed_rule_card(
+    root: Path,
+    relative: str,
+    rule_id: str,
+    name: str,
+    stages: list[str],
+    related_guards: list[str],
+    *,
+    detail_reference: str = ".agents/logos/rules/references/security-details.md",
+) -> None:
+    path = root / relative
+    path.parent.mkdir(parents=True)
+    stage_lines = "".join(f"  - {stage}\n" for stage in stages)
+    guard_lines = "".join(f"  - {guard}\n" for guard in related_guards)
+    path.write_text(
+        "---\n"
+        f"id: {rule_id}\n"
+        "kind: rule\n"
+        f"name: {name}\n"
+        "description: Test installed rule.\n"
+        "status: active\n"
+        "version: 0.1.0\n"
+        "enforcement: soft\n"
+        "always_apply: false\n"
+        "stages:\n"
+        f"{stage_lines}"
+        "globs: []\n"
+        "related_guards:\n"
+        f"{guard_lines}"
+        f"detail_reference: {detail_reference}\n"
+        "---\n"
+        "\n"
+        "# Rule\n",
+        encoding="utf-8",
+    )
+
+
+def write_rule_codes(root: Path, content: str) -> None:
+    path = root / ".agents/logos/rules/rule-codes.yaml"
     path.parent.mkdir(parents=True)
     path.write_text(content, encoding="utf-8")

@@ -11,42 +11,45 @@ rules:
     related_guards:
       - logos.guard.dangerous-command-denylist
       - logos.guard.approval-gate
+      - logos.guard.working-tree-checkpoint
   - id: logos.rule.context-handoff
     default_injection: conditional
-    stages: [planning, execute, resume]
+    stages: [plan, execute, resume]
     related_context:
       - logos.context.handoff
   - id: logos.rule.filesystem
     default_injection: conditional
-    stages: [exploration, planning, execute, verify]
+    stages: [scan, plan, execute, verify]
     related_guards:
       - logos.guard.file-write-boundary
   - id: logos.rule.git
     default_injection: conditional
-    stages: [exploration, execute, verify]
+    stages: [scan, execute, verify]
     related_guards:
       - logos.guard.protected-branch-guard
       - logos.guard.working-tree-checkpoint
+      - logos.guard.dangerous-command-denylist
   - id: logos.rule.security
     default_injection: conditional
-    stages: [intake, spec, planning, execute, review, verify]
+    stages: [intake, spec, plan, execute, review_lite, verify]
     related_guards:
       - logos.guard.high-risk-override-block
       - logos.guard.secret-scan
+      - logos.guard.approval-gate
   - id: logos.rule.secrets
     default_injection: conditional
-    stages: [intake, planning, execute, review, verify]
+    stages: [intake, plan, execute, review_lite, verify]
     related_guards:
       - logos.guard.secret-scan
   - id: logos.rule.testing
     default_injection: conditional
-    stages: [planning, execute, verify]
+    stages: [plan, execute, verify]
   - id: logos.rule.user-approval
     default_injection: conditional
-    stages: [intake, planning, execute, review]
+    stages: [intake, plan, execute, review_lite]
     related_guards:
       - logos.guard.approval-gate
       - logos.guard.high-risk-override-block
   - id: logos.rule.verification
     default_injection: conditional
-    stages: [planning, execute, verify, review]
+    stages: [plan, execute, verify, review_lite]

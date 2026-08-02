@@ -203,6 +203,17 @@ CODEX_RULE_IDS = {
     ".agents/logos/rules/verification.md": "logos.rule.verification",
 }
 
+ALLOWED_RULE_STAGES = {
+    "scan",
+    "intake",
+    "spec",
+    "plan",
+    "review_lite",
+    "execute",
+    "verify",
+    "resume",
+}
+
 CODEX_RULE_REFERENCE_IDS = {
     ".agents/logos/rules/README.md": "logos.reference.rules-overview",
     ".agents/logos/rules/references/command-execution-details.md": "logos.reference.command-execution-details",
@@ -885,6 +896,7 @@ def validate_codex_references(root: Path, ok: list[str], errors: list[str]) -> N
 
 def validate_codex_rules(root: Path, ok: list[str], errors: list[str]) -> None:
     error_count = len(errors)
+    rule_frontmatter_by_id: dict[str, dict[str, object]] = {}
     for relative, expected_id in CODEX_RULE_IDS.items():
         path = root / relative
         if not path.exists():
@@ -905,8 +917,17 @@ def validate_codex_rules(root: Path, ok: list[str], errors: list[str]) -> None:
             errors.append(f"{relative}: enforcement must be soft.")
         if not isinstance(frontmatter.get("stages"), list):
             errors.append(f"{relative}: stages must be a list.")
+        else:
+            validate_rule_stage_values(relative, frontmatter["stages"], errors)
         if not isinstance(frontmatter.get("globs"), list):
             errors.append(f"{relative}: globs must be a list.")
+        detail_reference = frontmatter.get("detail_reference")
+        if isinstance(detail_reference, str) and detail_reference:
+            if not detail_reference.startswith(".agents/logos/rules/references/"):
+                errors.append(
+                    f"{relative}: detail_reference must use .agents/logos/rules/references/."
+                )
+        rule_frontmatter_by_id[expected_id] = frontmatter
 
     for relative, expected_id in CODEX_RULE_REFERENCE_IDS.items():
         path = root / relative
@@ -934,11 +955,71 @@ def validate_codex_rules(root: Path, ok: list[str], errors: list[str]) -> None:
             errors.append(".agents/logos/rules/rule-codes.yaml: kind must be reference.")
         if loaded.get("status") != "active":
             errors.append(".agents/logos/rules/rule-codes.yaml: status must be active.")
-        if not isinstance(loaded.get("rules"), list):
+        rules = loaded.get("rules")
+        if not isinstance(rules, list):
             errors.append(".agents/logos/rules/rule-codes.yaml: rules must be a list.")
+        else:
+            validate_rule_code_consistency(rules, rule_frontmatter_by_id, errors)
 
     if len(errors) == error_count:
         ok.append("Codex rule frontmatter shape")
+
+
+def validate_rule_stage_values(relative: str, stages: list[object], errors: list[str]) -> None:
+    for stage in stages:
+        if not isinstance(stage, str):
+            errors.append(f"{relative}: stages entries must be strings.")
+        elif stage not in ALLOWED_RULE_STAGES:
+            errors.append(f"{relative}: unknown rule stage {stage}.")
+
+
+def validate_rule_code_consistency(
+    entries: list[object],
+    rule_frontmatter_by_id: dict[str, dict[str, object]],
+    errors: list[str],
+) -> None:
+    seen: set[str] = set()
+    source = ".agents/logos/rules/rule-codes.yaml"
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            errors.append(f"{source}: rules[{index}] must be a mapping.")
+            continue
+        rule_id = entry.get("id")
+        if not isinstance(rule_id, str):
+            errors.append(f"{source}: rules[{index}] requires string id.")
+            continue
+        seen.add(rule_id)
+        frontmatter = rule_frontmatter_by_id.get(rule_id)
+        if frontmatter is None:
+            errors.append(f"{source}: rule entry {rule_id} has no installed rule card.")
+            continue
+        validate_rule_code_list_match(source, rule_id, entry, frontmatter, "stages", errors)
+        validate_rule_code_list_match(source, rule_id, entry, frontmatter, "related_guards", errors)
+
+    for rule_id in sorted(rule_frontmatter_by_id):
+        if rule_id not in seen:
+            errors.append(f"{source}: missing rule entry for {rule_id}.")
+
+
+def validate_rule_code_list_match(
+    source: str,
+    rule_id: str,
+    entry: dict[object, object],
+    frontmatter: dict[str, object],
+    field: str,
+    errors: list[str],
+) -> None:
+    entry_value = entry.get(field, [])
+    frontmatter_value = frontmatter.get(field, [])
+    if not isinstance(entry_value, list):
+        errors.append(f"{source}: {rule_id}.{field} must be a list.")
+        return
+    if not isinstance(frontmatter_value, list):
+        return
+    if field == "stages":
+        validate_rule_stage_values(f"{source}: {rule_id}", entry_value, errors)
+    if entry_value != frontmatter_value:
+        errors.append(f"{source}: {rule_id}.{field} must match installed rule card.")
 
 
 def validate_codex_prompts(root: Path, ok: list[str], errors: list[str]) -> None:

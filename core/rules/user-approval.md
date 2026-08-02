@@ -7,12 +7,12 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [intake, planning, execute, review]
+stages: [intake, plan, execute, review_lite]
 globs: []
 related_guards:
   - logos.guard.approval-gate
   - logos.guard.high-risk-override-block
-detail_reference: core/rules/references/user-approval-details.md
+detail_reference: .agents/logos/rules/references/user-approval-details.md
 ---
 
 # User Approval
@@ -30,4 +30,4 @@ Ask before crossing a meaningful risk, scope, or external-effect boundary.
 - Treat approval for one risk as approval for unrelated risks.
 
 ## Details
-See `core/rules/references/user-approval-details.md`.
+See `.agents/logos/rules/references/user-approval-details.md`.

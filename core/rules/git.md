@@ -7,7 +7,7 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [exploration, execute, verify]
+stages: [scan, execute, verify]
 globs:
   - ".git/**"
   - "**/.gitignore"
@@ -16,7 +16,7 @@ related_guards:
   - logos.guard.protected-branch-guard
   - logos.guard.working-tree-checkpoint
   - logos.guard.dangerous-command-denylist
-detail_reference: core/rules/references/git-details.md
+detail_reference: .agents/logos/rules/references/git-details.md
 ---
 
 # Git
@@ -34,4 +34,4 @@ Treat git as evidence and preserve user work.
 - Revert unrelated changes unless the user explicitly asks.
 
 ## Details
-See `core/rules/references/git-details.md`.
+See `.agents/logos/rules/references/git-details.md`.

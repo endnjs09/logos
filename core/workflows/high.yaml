@@ -6,7 +6,7 @@ status: active
 version: 0.1.0
 description: Structured workflow for broad, risky, cross-cutting, or hard-to-reverse work.
 
-mode: high
+complexity_profile: high
 default_spec: structured_spec
 default_context_handoff: true
 
@@ -39,7 +39,7 @@ stage_policy:
       - constraints
       - edge_cases
       - excluded_scope
-      - open_questions
+      - blocking_open_questions
   plan:
     shape: task_plan_with_context_handoff
     require:

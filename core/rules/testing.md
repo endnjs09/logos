@@ -7,7 +7,7 @@ status: active
 version: 0.1.0
 enforcement: soft
 always_apply: false
-stages: [planning, execute, verify]
+stages: [plan, execute, verify]
 globs:
   - "**/*Test.*"
   - "**/*Tests.*"
@@ -15,7 +15,7 @@ globs:
   - "**/tests/**"
   - "**/__tests__/**"
 related_guards: []
-detail_reference: core/rules/references/testing-details.md
+detail_reference: .agents/logos/rules/references/testing-details.md
 ---
 
 # Testing
@@ -33,4 +33,4 @@ Tests should prove the changed behavior, not merely exercise files.
 - Hide failing tests or skip relevant tests to make the task look complete.
 
 ## Details
-See `core/rules/references/testing-details.md`.
+See `.agents/logos/rules/references/testing-details.md`.

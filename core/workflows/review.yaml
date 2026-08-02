@@ -34,7 +34,7 @@ review_types:
       - secrets, credentials, tokens, or sensitive configuration are involved
       - data deletion or irreversible mutation is involved
       - dependency, deployment, external system, or production-like behavior is involved
-    output: security-review
+    output: security-review.json or review-lite/verification finding
     pass_conditions:
       - sensitive behavior is not weakened
       - user-provided secrets are not persisted in official artifacts

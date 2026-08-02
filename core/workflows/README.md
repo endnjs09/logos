@@ -17,9 +17,9 @@ Codex during normal task execution.
 
 | File | Purpose |
 | --- | --- |
-| `low.yaml` | Minimal flow for small, clear, low-risk work. |
-| `middle.yaml` | Default flow for ordinary development work. |
-| `high.yaml` | Structured flow for broad, risky, or hard-to-reverse work. |
+| `low.yaml` | Internal complexity profile for small, clear, low-risk work. |
+| `middle.yaml` | Internal complexity profile for ordinary development work. |
+| `high.yaml` | Internal complexity profile for broad, risky, or hard-to-reverse work. |
 | `planning.yaml` | State transitions from request to execution gate. |
 | `execution.yaml` | Preconditions and routing for implementation work. |
 | `review.yaml` | Pre-execution, security, and verification review policy. |
@@ -34,6 +34,10 @@ Procedures are copied from `core/procedures/`; workflows remain the structured
 source for Runner state transitions, gates, and generated manifests. If a future
 target needs local workflow inspection, install a manifest or selected workflow
 summary instead of loading every workflow file as default context.
+
+Current Runner implementations may still encode stage order and gates in
+`packages/logos-runner/`. Keep these workflow assets synchronized with Runner
+registry and gate behavior until the Runner reads workflow YAML directly.
 
 ## Authoring Rules
 

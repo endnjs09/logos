@@ -116,3 +116,60 @@ def test_validates_id_kind_name_pattern(tmp_path: Path) -> None:
     assert [issue.message for issue in scan.validation_issues] == [
         "id must match logos.<kind>.<name>: expected logos.rule.bad-id"
     ]
+
+
+def test_validates_rule_stage_values(tmp_path: Path) -> None:
+    core = tmp_path / "core" / "rules"
+    core.mkdir(parents=True)
+    (core / "bad-stage.md").write_text(
+        "---\n"
+        "id: logos.rule.bad-stage\n"
+        "kind: rule\n"
+        "name: bad-stage\n"
+        "description: Bad stage rule.\n"
+        "status: active\n"
+        "version: 0.1.0\n"
+        "enforcement: soft\n"
+        "always_apply: false\n"
+        "stages:\n"
+        "  - planning\n"
+        "globs: []\n"
+        "---\n"
+        "\n"
+        "# Bad Stage\n",
+        encoding="utf-8",
+    )
+
+    scan = scan_core_assets(tmp_path)
+
+    assert [issue.message for issue in scan.validation_issues] == [
+        "unknown rule stage: planning"
+    ]
+
+
+def test_validates_workflow_stage_values(tmp_path: Path) -> None:
+    core = tmp_path / "core" / "workflows"
+    core.mkdir(parents=True)
+    (core / "bad-workflow.yaml").write_text(
+        "schema_version: 1\n"
+        "id: logos.workflow.bad-workflow\n"
+        "kind: workflow\n"
+        "name: bad-workflow\n"
+        "description: Bad workflow.\n"
+        "status: active\n"
+        "version: 0.1.0\n"
+        "required_stages:\n"
+        "  - scan\n"
+        "  - planning\n"
+        "stage_policy:\n"
+        "  exploration:\n"
+        "    depth: focused\n",
+        encoding="utf-8",
+    )
+
+    scan = scan_core_assets(tmp_path)
+
+    assert [issue.message for issue in scan.validation_issues] == [
+        "legacy workflow stage planning in required_stages; use plan",
+        "legacy workflow stage exploration in stage_policy; use scan",
+    ]

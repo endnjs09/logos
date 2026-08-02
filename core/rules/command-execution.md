@@ -13,7 +13,7 @@ related_guards:
   - logos.guard.dangerous-command-denylist
   - logos.guard.approval-gate
   - logos.guard.working-tree-checkpoint
-detail_reference: core/rules/references/command-execution-details.md
+detail_reference: .agents/logos/rules/references/command-execution-details.md
 ---
 
 # Command Execution
@@ -31,4 +31,4 @@ Run commands deliberately, narrowly, and for a clear task purpose.
 - Treat a command prompt note as proof that a hard guard blocked execution.
 
 ## Details
-See `core/rules/references/command-execution-details.md`.
+See `.agents/logos/rules/references/command-execution-details.md`.

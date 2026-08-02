@@ -7,7 +7,7 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [intake, spec, planning, execute, review, verify]
+stages: [intake, spec, plan, execute, review_lite, verify]
 globs:
   - "**/*Security*"
   - "**/*Auth*"
@@ -19,7 +19,7 @@ related_guards:
   - logos.guard.high-risk-override-block
   - logos.guard.secret-scan
   - logos.guard.approval-gate
-detail_reference: core/rules/references/security-details.md
+detail_reference: .agents/logos/rules/references/security-details.md
 ---
 
 # Security
@@ -37,4 +37,4 @@ Preserve security boundaries while implementing requested behavior.
 - Treat user impatience as permission to bypass high-risk guardrails.
 
 ## Details
-See `core/rules/references/security-details.md`.
+See `.agents/logos/rules/references/security-details.md`.

@@ -31,6 +31,30 @@ ALLOWED_KINDS = {
 }
 
 ALLOWED_STATUS = {"draft", "active", "deprecated", "experimental"}
+ALLOWED_RULE_STAGES = {
+    "scan",
+    "intake",
+    "spec",
+    "plan",
+    "review_lite",
+    "execute",
+    "verify",
+    "resume",
+}
+ALLOWED_RUNNER_STAGES = {
+    "scan",
+    "intake",
+    "spec",
+    "plan",
+    "review_lite",
+    "execute",
+    "verify",
+}
+LEGACY_STAGE_NAMES = {
+    "exploration": "scan",
+    "planning": "plan",
+    "review": "review_lite",
+}
 HIGH_RISK_GUARDS = {
     "logos.guard.secret-scan",
     "logos.guard.high-risk-override-block",
@@ -131,6 +155,8 @@ def validate_frontmatter(asset: Asset) -> list[ValidationIssue]:
         issues.extend(validate_guard(asset))
     elif kind == "rule":
         issues.extend(validate_rule(asset))
+    elif kind == "workflow":
+        issues.extend(validate_workflow(asset))
 
     if kind == "hook":
         issues.extend(validate_hook(asset))
@@ -185,6 +211,12 @@ def validate_rule(asset: Asset) -> list[ValidationIssue]:
         issues.append(ValidationIssue(asset.path, "rule assets require stages"))
     elif not isinstance(fm.get("stages"), list):
         issues.append(ValidationIssue(asset.path, "rule assets require stages list"))
+    else:
+        for stage in fm["stages"]:
+            if not isinstance(stage, str):
+                issues.append(ValidationIssue(asset.path, "rule stages must contain strings"))
+            elif stage not in ALLOWED_RULE_STAGES:
+                issues.append(ValidationIssue(asset.path, f"unknown rule stage: {stage}"))
     if "globs" not in fm:
         issues.append(ValidationIssue(asset.path, "rule assets require globs"))
     elif not isinstance(fm.get("globs"), list):
@@ -193,6 +225,120 @@ def validate_rule(asset: Asset) -> list[ValidationIssue]:
         issues.append(ValidationIssue(asset.path, "rule assets require boolean always_apply"))
 
     return issues
+
+
+def validate_workflow(asset: Asset) -> list[ValidationIssue]:
+    fm = asset.frontmatter
+    issues: list[ValidationIssue] = []
+
+    required_stages = fm.get("required_stages")
+    if isinstance(required_stages, list):
+        validate_workflow_stage_list(asset, "required_stages", required_stages, issues)
+
+    stage_policy = fm.get("stage_policy")
+    if isinstance(stage_policy, dict):
+        for stage in stage_policy:
+            if isinstance(stage, str):
+                validate_workflow_stage_name(asset, "stage_policy", stage, issues)
+
+    blocked_transitions = fm.get("blocked_transitions")
+    if isinstance(blocked_transitions, list):
+        for index, transition in enumerate(blocked_transitions):
+            if not isinstance(transition, dict):
+                continue
+            for field in ("from", "to"):
+                value = transition.get(field)
+                if isinstance(value, str):
+                    validate_workflow_stage_name(
+                        asset,
+                        f"blocked_transitions[{index}].{field}",
+                        value,
+                        issues,
+                        allow_non_stage_state=True,
+                    )
+
+    states = fm.get("states")
+    if isinstance(states, dict):
+        for state_name, state in states.items():
+            if isinstance(state_name, str):
+                validate_workflow_stage_name(
+                    asset,
+                    "states",
+                    state_name,
+                    issues,
+                    allow_non_stage_state=True,
+                )
+            if isinstance(state, dict):
+                validate_workflow_next(asset, state.get("next"), f"states.{state_name}.next", issues)
+
+    return issues
+
+
+def validate_workflow_stage_list(
+    asset: Asset,
+    field: str,
+    stages: list[object],
+    issues: list[ValidationIssue],
+) -> None:
+    for stage in stages:
+        if not isinstance(stage, str):
+            issues.append(ValidationIssue(asset.path, f"workflow {field} must contain strings"))
+        else:
+            validate_workflow_stage_name(asset, field, stage, issues)
+
+
+def validate_workflow_next(
+    asset: Asset,
+    value: object,
+    field: str,
+    issues: list[ValidationIssue],
+) -> None:
+    if isinstance(value, str):
+        validate_workflow_stage_name(asset, field, value, issues, allow_non_stage_state=True)
+    elif isinstance(value, dict):
+        for key, next_value in value.items():
+            if isinstance(key, str):
+                validate_workflow_stage_name(
+                    asset,
+                    field,
+                    key,
+                    issues,
+                    allow_non_stage_state=True,
+                    validate_only_legacy=True,
+                )
+            if isinstance(next_value, str):
+                validate_workflow_stage_name(
+                    asset,
+                    f"{field}.{key}",
+                    next_value,
+                    issues,
+                    allow_non_stage_state=True,
+                )
+
+
+def validate_workflow_stage_name(
+    asset: Asset,
+    field: str,
+    stage: str,
+    issues: list[ValidationIssue],
+    *,
+    allow_non_stage_state: bool = False,
+    validate_only_legacy: bool = False,
+) -> None:
+    if stage in LEGACY_STAGE_NAMES:
+        issues.append(
+            ValidationIssue(
+                asset.path,
+                f"legacy workflow stage {stage} in {field}; use {LEGACY_STAGE_NAMES[stage]}",
+            )
+        )
+        return
+    if validate_only_legacy:
+        return
+    if allow_non_stage_state and stage not in ALLOWED_RUNNER_STAGES:
+        return
+    if stage not in ALLOWED_RUNNER_STAGES:
+        issues.append(ValidationIssue(asset.path, f"unknown workflow stage: {stage}"))
 
 
 def validate_hook(asset: Asset) -> list[ValidationIssue]:

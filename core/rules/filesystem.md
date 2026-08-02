@@ -7,12 +7,12 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [exploration, planning, execute, verify]
+stages: [scan, plan, execute, verify]
 globs:
   - "**/*"
 related_guards:
   - logos.guard.file-write-boundary
-detail_reference: core/rules/references/filesystem-details.md
+detail_reference: .agents/logos/rules/references/filesystem-details.md
 ---
 
 # Filesystem
@@ -30,4 +30,4 @@ Read before editing and keep file changes inside the approved task scope.
 - Use file changes to bypass planning or guard decisions.
 
 ## Details
-See `core/rules/references/filesystem-details.md`.
+See `.agents/logos/rules/references/filesystem-details.md`.

@@ -27,7 +27,12 @@ files, and installed role prompts.
 | --- | --- | --- |
 | `execute` | `exe` plus specialist roles | `execution-result.json` |
 | `verify` | `vf` | `verification-result.json` |
-| `final_response` | `orch` | user-facing final response |
+
+## Terminal Outputs
+
+| Output | Owner | Meaning |
+| --- | --- | --- |
+| `final_response` | `orch` | User-facing completion response after verification. This is not a Runner stage. |
 
 ## Specialist Role Codes
 
@@ -65,3 +70,14 @@ files, and installed role prompts.
 | `review_lite_to_execute` | Execution when plan review fails. |
 | `execute_to_verify` | Verification when execution result is incomplete. |
 | `verify_to_final` | Final response when evidence is missing or criteria fail. |
+
+## Complexity Profiles
+
+Complexity profiles are internal agent judgments. The user does not select
+`low`, `middle`, or `high` directly.
+
+| Profile | Default Use |
+| --- | --- |
+| `low` | Tiny, local, clear, reversible work. |
+| `middle` | Default ordinary development work. |
+| `high` | Broad, risky, cross-surface, or hard-to-reverse work. |

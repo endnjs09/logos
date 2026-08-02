@@ -7,10 +7,10 @@ status: active
 version: 0.2.0
 enforcement: soft
 always_apply: false
-stages: [planning, execute, verify, review]
+stages: [plan, execute, verify, review_lite]
 globs: []
 related_guards: []
-detail_reference: core/rules/references/verification-details.md
+detail_reference: .agents/logos/rules/references/verification-details.md
 ---
 
 # Verification
@@ -28,4 +28,4 @@ Final claims must be backed by recorded evidence.
 - Hide known failures, skipped checks, or environmental blockers.
 
 ## Details
-See `core/rules/references/verification-details.md`.
+See `.agents/logos/rules/references/verification-details.md`.

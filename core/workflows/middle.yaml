@@ -6,7 +6,7 @@ status: active
 version: 0.1.0
 description: Default workflow for ordinary development work that needs a scoped spec and task plan.
 
-mode: middle
+complexity_profile: middle
 default_spec: mini_spec
 default_context_handoff: conditional
 
