@@ -67,15 +67,3 @@ Targets are not model implementations. They are installation surfaces that map
 Logos core assets into each CLI host's command, prompt, hook, tool, and template
 format.
 
-## Implementation Strategy
-
-Structure is complete from the start. Implementation is incremental:
-
-1. v1: installer, doctor, target templates, Nous session state, and asset
-   validation.
-2. v2: core asset scanning, prompt assembly, manifests, and Codex target
-   checks.
-3. v3: guard runtime, approvals, checkpoints, evidence, and hook emulation.
-4. v4: workflow orchestration, role routing, context handoff, and retry policy.
-5. v5: evaluator, measurement logs, benchmark suite, and reproducibility.
-6. v6: Codex target automation and evaluation.
